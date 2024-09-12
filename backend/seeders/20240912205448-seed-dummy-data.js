@@ -320,6 +320,48 @@ module.exports = {
       },
     ]);
 
+    await queryInterface.bulkInsert(
+      "SimulationLog",
+      [
+        {
+          eventType: "START",
+          details: "Simulation started successfully.",
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          eventType: "MACHINE_CHECK",
+          details: "Machine A is operational.",
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          eventType: "TRANSPORT",
+          details: "Material batch 1 transported to workstation 3.",
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          eventType: "PROCESS_STEP_COMPLETION",
+          details: "Process step 5 completed on machine B.",
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          eventType: "STOP",
+          details: "Simulation stopped.",
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      {}
+    );
+
     await queryInterface.bulkInsert("Inventory", [
       { materialId: 1, quantity: 100, locationId: 1, updatedAt: new Date() },
       { materialId: 2, quantity: 50, locationId: 2, updatedAt: new Date() },
@@ -349,6 +391,7 @@ module.exports = {
     await queryInterface.bulkDelete("ExternalEvent", null, {});
     await queryInterface.bulkDelete("PerformanceMetric", null, {});
     await queryInterface.bulkDelete("SimulationSetting", null, {});
+    await queryInterface.bulkDelete("SimulationLog", null, {});
     await queryInterface.bulkDelete("Hall", null, {});
 
     await sequelize.query('ALTER SEQUENCE "User_id_seq" RESTART WITH 1;');
@@ -391,6 +434,9 @@ module.exports = {
     );
     await sequelize.query('ALTER SEQUENCE "Machine_id_seq" RESTART WITH 1;');
     await sequelize.query('ALTER SEQUENCE "Inventory_id_seq" RESTART WITH 1;');
+    await sequelize.query(
+      'ALTER SEQUENCE "SimulationLog_id_seq" RESTART WITH 1;'
+    );
     await sequelize.query('ALTER SEQUENCE "Hall_id_seq" RESTART WITH 1;');
   },
 };
