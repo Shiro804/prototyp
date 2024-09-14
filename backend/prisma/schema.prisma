@@ -1,0 +1,393 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int        @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  email         String     @unique
+  passwordHash  String
+  role          String
+  status        UserStatus @default(Active)
+  workstationId Int?
+  machineId     Int?       @unique
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  workstation Workstation? @relation(fields: [workstationId], references: [id], onDelete: SetNull)
+  machine     Machine?     @relation(fields: [machineId], references: [id]) // Defines the foreign key for the machine
+
+  workerAvailability WorkerAvailability[]
+  taskQueue TaskQueue[]
+  processStep ProcessStep[]
+}
+
+
+enum UserStatus {
+  Active
+  Inactive
+}
+
+model Event {
+  id             Int              @id @default(autoincrement())
+  type           EventType
+  entityId       Int
+  timestamp      DateTime         @default(now())
+  details        String? // Optional field
+  exceptionEvent ExceptionEvent[]
+
+  @@map("Event") // Maps the Prisma model to the table name "Event"
+  processStep ProcessStep[]
+}
+
+// Enum to handle the "type" field
+enum EventType {
+  Transport
+  Process
+  Exception
+}
+
+model ExceptionEvent {
+  id          Int      @id @default(autoincrement())
+  eventId     Int
+  severity    Severity
+  description String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+enum Severity {
+  Low
+  Medium
+  Critical
+}
+
+model ExternalEvent {
+  id           Int      @id @default(autoincrement())
+  sourceSystem String
+  eventType    String
+  eventTime    DateTime @default(now())
+  details      String?
+}
+
+model Workstation {
+  id         Int      @id @default(autoincrement())
+  name       String
+  locationId Int
+  status     Status   @default(Active)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  hall  Hall   @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users User[] @relation
+
+}
+
+enum Status {
+  Active
+  Inactive
+}
+
+model Machine {
+  id         Int           @id @default(autoincrement())
+  name       String
+  status     MachineStatus @default(Operational)
+  locationId Int
+  userId     Int?          // Foreign key in the User model
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  hall  Hall  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user  User? // No fields or references here, just the relation
+  taskQueue TaskQueue[]
+  processStep ProcessStep[]
+
+  sensor Sensor[]
+}
+
+
+
+enum MachineStatus {
+  Operational
+  Maintenance
+  Offline
+}
+
+model Hall {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workstations    Workstation[]
+  machines        Machine[]
+  materials       Material[]
+  materialBatch   MaterialBatch[]
+  startTransportSystems TransportSystem[] @relation(name: "StartLocation")
+  endTransportSystems   TransportSystem[] @relation(name: "EndLocation")
+
+  Inventory Inventory[]
+}
+
+model MaterialBatch {
+  id          Int      @id @default(autoincrement())
+  materialId  Int
+  batchNumber String
+  quantity    Int
+  locationId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  hall     Hall     @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Material {
+  id               Int              @id @default(autoincrement())
+  type             String
+  quantity         Int
+  locationId       Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  transportSystemId Int?             @unique
+
+  // Relations
+  hall             Hall             @relation(fields: [locationId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  materialBatches  MaterialBatch[]
+  transportSystem  TransportSystem?  @relation(fields: [transportSystemId], references: [id], onDelete: SetNull)
+
+  productionOrder ProductionOrder[]
+
+  qualityCheck QualityCheck[]
+
+  scanner Scanner[]
+
+  Inventory Inventory[]
+}
+
+model TransportSystem {
+  id              Int      @id @default(autoincrement())
+  transportMethod String   @map("transportMethod")
+  materialId      Int?     @map("materialId")
+  startLocationId Int      @map("startLocationId")
+  endLocationId   Int      @map("endLocationId")
+  createdAt       DateTime @default(now()) @map("createdAt")
+  updatedAt       DateTime @updatedAt @map("updatedAt")
+
+  // Relations
+  material       Material?    @relation
+  startLocation  Hall         @relation(name: "StartLocation", fields: [startLocationId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  endLocation    Hall         @relation(name: "EndLocation", fields: [endLocationId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  GPSTracker     GPSTracker[]
+}
+
+
+model GPSTracker {
+  id          Int      @id @default(autoincrement())
+  transportId Int
+  latitude    Float
+  longitude   Float
+  timestamp   DateTime @default(now())
+
+  transportSystem TransportSystem @relation(fields: [transportId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model WorkerAvailability {
+  id                Int       @id @default(autoincrement())
+  userId            Int?
+  availabilityStatus WorkerAvailabilityStatus @default(Available)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  user              User?     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+}
+
+enum WorkerAvailabilityStatus {
+  Available
+  Unavailable
+}
+
+model TaskQueue {
+  id            Int      @id @default(autoincrement())
+  processStepId Int
+  userId        Int?
+  machineId     Int?
+  status        TaskQueueStatus @default(Pending)
+  priority      Int      @default(0)
+  startAt       DateTime?
+  endAt         DateTime?
+  dependencies  Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  processStep   ProcessStep @relation(fields: [processStepId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user          User?       @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+  machine       Machine?    @relation(fields: [machineId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+}
+
+enum TaskQueueStatus {
+  Pending
+  InProgress
+  Complete
+}
+
+model ProductionOrder {
+  id          Int       @id @default(autoincrement())
+  orderNumber String    @unique
+  materialId  Int
+  quantity    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  material    Material  @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  processStep ProcessStep[] @relation
+
+}
+
+
+model ProcessStep {
+  id           Int              @id @default(autoincrement())
+  name         String
+  orderId      Int
+  machineId    Int
+  status       ProcessStepStatus @default(Pending)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // Relations
+  productionOrder ProductionOrder @relation(fields: [orderId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  machine         Machine         @relation(fields: [machineId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  users User[] @relation
+  events          Event[]
+  taskQueue       TaskQueue[]
+}
+
+enum ProcessStepStatus {
+  Pending
+  InProgress
+  Complete
+}
+
+model QualityCheck {
+  id         Int        @id @default(autoincrement())
+  materialId Int
+  result     QualityCheckResult
+  checkTime  DateTime   @default(now())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relations
+  material   Material   @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+enum QualityCheckResult {
+  Pass
+  Fail
+}
+
+model PerformanceMetric {
+  id         Int      @id @default(autoincrement())
+  entityId   Int
+  metricName String
+  value      Float
+  timestamp  DateTime @default(now())
+
+  @@map("PerformanceMetric")
+}
+
+model Scanner {
+  id         Int      @id @default(autoincrement())
+  type       ScannerType
+  materialId Int?
+  scanTime   DateTime @default(now())
+
+  // Relations
+  material   Material? @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+}
+
+enum ScannerType {
+  Barcode
+  RFID
+}
+
+model Inventory {
+  id         Int      @id @default(autoincrement())
+  materialId Int
+  quantity   Int
+  locationId Int
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  material   Material   @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  hall       Hall       @relation(fields: [locationId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model Sensor {
+  id         Int         @id @default(autoincrement())
+  type       SensorType
+  machineId  Int
+  value      Float
+  timestamp  DateTime    @default(now())
+
+  // Relations
+  machine    Machine      @relation(fields: [machineId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+enum SensorType {
+  Temperature
+  Pressure
+}
+
+model SimulationLog {
+  id         Int      @id @default(autoincrement())
+  eventType  String
+  details    String?
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("SimulationLog") // Map to "SimulationLog" table
+}
+
+model SimulationSetting {
+  id           Int      @id @default(autoincrement())
+  settingName  String
+  settingValue String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("SimulationSetting") // Map to "SimulationSetting" table
+}
+
+
+
+
+
+
+
