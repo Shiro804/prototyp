@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import bodyParser from "body-parser";
-import db from "./models/Index";
+import router from "./routes/router";
+import sequelize from "./models/Index"; // Ensure you're importing sequelize correctly
 
 const app = express();
 
@@ -12,6 +13,8 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "API is running" });
 });
 
+app.get("/api", router);
+
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
@@ -22,7 +25,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 const PORT = process.env.PORT || 5000;
 
 // Use the Sequelize instance from your models folder to sync the database
-db.sequelize
+sequelize
   .sync({ force: false })
   .then(() => {
     app.listen(PORT, () => {

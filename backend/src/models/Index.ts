@@ -1,53 +1,46 @@
+import { Sequelize } from "sequelize-typescript";
 import fs from "fs";
 import path from "path";
-import { Sequelize } from "sequelize-typescript";
-import process from "process";
-import { DataTypes } from "sequelize";
+import config, { IConfig } from "../config/config"; // Import your config class
+import { Dialect } from "sequelize"; // For type safety of dialect
 
-const basename = path.basename(__filename);
+// Get environment configuration
 const env = process.env.NODE_ENV || "development";
-const config = require(__dirname + "/../config/config.json")[env]; // Adjust the config import if needed
-const db: { [key: string]: any } = {};
+const dbConfig: IConfig = config[env]; // This now works because config holds multiple environment configs
 
+// Initialize Sequelize
 let sequelize: Sequelize;
-
-if (config.use_env_variable) {
-  sequelize = new Sequelize(
-    process.env[config.use_env_variable] as string,
-    config
-  );
+if (dbConfig.use_env_variable) {
+  // Use environment variable for the database connection if provided
+  sequelize = new Sequelize(process.env[dbConfig.use_env_variable] as string, {
+    dialect: dbConfig.dialect,
+    models: [path.join(__dirname, "models")], // Path to models folder
+  });
 } else {
-  sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-  );
+  // Use config for the database connection
+  sequelize = new Sequelize({
+    database: dbConfig.database,
+    username: dbConfig.username,
+    password: dbConfig.password,
+    host: dbConfig.host,
+    dialect: dbConfig.dialect,
+    models: [path.join(__dirname, "models")], // Path to models folder
+  });
 }
 
-// Read all model files in the directory
-fs.readdirSync(__dirname)
-  .filter((file: string) => {
-    return (
-      file.indexOf(".") !== 0 &&
-      file !== basename &&
-      file.slice(-3) === ".ts" && // Adjusted for TypeScript files
-      file.indexOf(".test.ts") === -1
-    );
-  })
-  .forEach((file: string) => {
-    const model = require(path.join(__dirname, file))(sequelize, DataTypes);
-    db[model.name] = model;
+// Dynamically load all model files
+const modelsPath = path.resolve(__dirname, "./");
+fs.readdirSync(modelsPath)
+  .filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts")) // Filter out test files
+  .forEach((file) => {
+    const model = require(path.join(modelsPath, file)).default;
+    sequelize.addModels([model]); // Add model to Sequelize
   });
 
-// Set up associations if they exist
-Object.keys(db).forEach((modelName: string) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
+// Sync the database (optional)
+sequelize
+  .sync({ force: false })
+  .then(() => console.log("Database synced successfully"))
+  .catch((err) => console.error("Failed to sync the database:", err));
 
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
-
-export default db;
+export default sequelize;
