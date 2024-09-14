@@ -6,10 +6,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "npx tsc && node dist/app.js",
-    "reset-database": "npx sequelize-cli db:seed:undo:all && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all",
-    "seed-database": "npx sequelize-cli db:seed:all",
-    "migrate-database": "npx sequelize-cli db:migrate",
-    "drop-database": "npx sequelize-cli db:seed:undo:all"
+    "migration": "npx prisma migrate dev --name init"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

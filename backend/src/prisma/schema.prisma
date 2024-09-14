@@ -21,7 +21,7 @@ model Role {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  User User[] // Users associated with this role
+  user User[] // Users associated with this role
 }
 
 model User {
@@ -42,7 +42,7 @@ model User {
   roles               Role[] // Roles assigned to the user
   event               Event?               @relation(fields: [eventId], references: [id])
   eventId             Int? // Foreign key for the event
-  QualityCheck        QualityCheck[] // Quality checks performed by the user
+  qualityCheck        QualityCheck[] // Quality checks performed by the user
 }
 
 enum UserStatus {
@@ -136,9 +136,9 @@ model Machine {
   // Relations
   hall               Hall                 @relation(fields: [locationId], references: [id], onDelete: Cascade)
   sensor             Sensor[] // Sensors associated with the machine
-  ProcessStep        ProcessStep[] // Process steps involving this machine
-  ResourceAssignment ResourceAssignment[] // Resource assignments for this machine
-  QualityCheck       QualityCheck[] // Quality checks performed by this machine
+  processStep        ProcessStep[] // Process steps involving this machine
+  resourceAssignment ResourceAssignment[] // Resource assignments for this machine
+  qualityCheck       QualityCheck[] // Quality checks performed by this machine
 }
 
 enum MachineStatus {
