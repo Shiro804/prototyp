@@ -8,8 +8,13 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      name: {
-        type: Sequelize.STRING,
+      step: {
+        type: Sequelize.ENUM(
+          "Good Arrival",
+          "Manufacturing",
+          "Quality Control",
+          "Shipping"
+        ),
         allowNull: false,
       },
       orderId: {

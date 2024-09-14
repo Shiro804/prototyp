@@ -8,16 +8,6 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      userId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "User",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "SET NULL",
-      },
       processStepId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -28,10 +18,47 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "User",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
+      machineId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Machine",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
       status: {
-        type: Sequelize.ENUM("Pending", "Assigned", "Complete"),
+        type: Sequelize.ENUM("Pending", "InProgress", "Complete"),
         allowNull: false,
         defaultValue: "Pending",
+      },
+      priority: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0, // Default priority
+      },
+      startAt: {
+        type: Sequelize.DATE,
+        allowNull: true, // Start time for the task
+      },
+      endAt: {
+        type: Sequelize.DATE,
+        allowNull: true, // End or completion time for the task
+      },
+      dependencies: {
+        type: Sequelize.JSON, // Storing dependencies as a JSON array or object
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,

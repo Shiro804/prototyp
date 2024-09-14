@@ -1,12 +1,16 @@
 "use strict";
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable("MaterialBatch", {
+    await queryInterface.createTable("TransportSystem", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
+      },
+      transportMethod: {
+        type: Sequelize.ENUM("Manual", "Rollwagen", "Automated"),
+        allowNull: false,
       },
       materialId: {
         type: Sequelize.INTEGER,
@@ -16,15 +20,27 @@ module.exports = {
           key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "CASCADE",
+        onDelete: "SET NULL",
       },
-      batchNumber: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      quantity: {
+      startLocationId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: "Hall",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
+      endLocationId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Hall",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       createdAt: {
         allowNull: false,
@@ -39,6 +55,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable("MaterialBatch");
+    await queryInterface.dropTable("TransportSystem");
   },
 };

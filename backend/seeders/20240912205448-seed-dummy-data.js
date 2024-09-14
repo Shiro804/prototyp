@@ -100,6 +100,7 @@ module.exports = {
         materialId: 1,
         batchNumber: "BATCH001",
         quantity: 100,
+        locationId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -107,12 +108,13 @@ module.exports = {
         materialId: 2,
         batchNumber: "BATCH002",
         quantity: 50,
+        locationId: 2,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ]);
 
-    await queryInterface.bulkInsert("Transport", [
+    await queryInterface.bulkInsert("TransportSystem", [
       {
         transportMethod: "Manual",
         materialId: 1,
@@ -150,7 +152,7 @@ module.exports = {
 
     await queryInterface.bulkInsert("ProcessStep", [
       {
-        name: "Step 1",
+        step: "Shipping",
         orderId: 1,
         machineId: 1,
         status: "Pending",
@@ -158,7 +160,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        name: "Step 2",
+        step: "Manufacturing",
         orderId: 2,
         machineId: 2,
         status: "InProgress",
@@ -224,7 +226,7 @@ module.exports = {
         type: "Transport",
         entityId: 1,
         timestamp: new Date(),
-        details: "Transport initiated.",
+        details: "TransportSystem initiated.",
       },
       {
         type: "Process",
@@ -379,7 +381,7 @@ module.exports = {
     await queryInterface.bulkDelete("User", null, {});
     await queryInterface.bulkDelete("Workstation", null, {});
     await queryInterface.bulkDelete("GPSTracker", null, {});
-    await queryInterface.bulkDelete("Transport", null, {});
+    await queryInterface.bulkDelete("TransportSystem", null, {});
     await queryInterface.bulkDelete("Scanner", null, {});
     await queryInterface.bulkDelete("QualityCheck", null, {});
     await queryInterface.bulkDelete("Inventory", null, {});
@@ -402,7 +404,9 @@ module.exports = {
     await sequelize.query(
       'ALTER SEQUENCE "MaterialBatch_id_seq" RESTART WITH 1;'
     );
-    await sequelize.query('ALTER SEQUENCE "Transport_id_seq" RESTART WITH 1;');
+    await sequelize.query(
+      'ALTER SEQUENCE "TransportSystem_id_seq" RESTART WITH 1;'
+    );
     await sequelize.query(
       'ALTER SEQUENCE "ProductionOrder_id_seq" RESTART WITH 1;'
     );
