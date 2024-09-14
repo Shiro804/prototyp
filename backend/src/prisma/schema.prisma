@@ -1,0 +1,389 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Role name like "Admin", "User", etc.
+  description String? // Optional description of the role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  User User[] // Users associated with this role
+}
+
+model User {
+  id           Int                      @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String                   @unique
+  passwordHash String
+  status       UserStatus               @default(Active)
+  availability WorkerAvailabilityStatus @default(Available) // Tracks availability
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resourceAssignments ResourceAssignment[] // Dynamic assignments to workstations and machines
+  processStep         ProcessStep[] // Process steps assigned to the user
+  roles               Role[] // Roles assigned to the user
+  event               Event?               @relation(fields: [eventId], references: [id])
+  eventId             Int? // Foreign key for the event
+  QualityCheck        QualityCheck[] // Quality checks performed by the user
+}
+
+enum UserStatus {
+  Active
+  Inactive
+}
+
+enum WorkerAvailabilityStatus {
+  Available
+  Unavailable
+}
+
+model Event {
+  id        Int         @id @default(autoincrement())
+  type      EventType
+  entityId  Int? // Optional, depending on whether the event is linked to a specific entity
+  timestamp DateTime    @default(now())
+  details   String? // Additional details or metadata for the event
+  severity  Severity? // For events like exceptions where severity is important
+  status    EventStatus @default(Pending) // Status to track the progression of the event
+
+  // Relations
+  processStep     ProcessStep?     @relation(fields: [entityId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Event_processStep_entityId_fkey")
+  transportSystem TransportSystem? @relation(fields: [entityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users           User[] // Users related to this event (e.g., workers involved)
+
+  @@map("Event") // Maps the Prisma model to the table name "Event"
+}
+
+enum EventType {
+  ProcessStep
+  Transport
+  Exception
+}
+
+enum Severity {
+  Low
+  Medium
+  Critical
+}
+
+enum EventStatus {
+  Pending
+  InProgress
+  Complete
+}
+
+model Workstation {
+  id         Int               @id @default(autoincrement())
+  name       String
+  locationId Int
+  status     WorkstationStatus @default(Active)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  type       WorkstationType   @default(Assembly)
+
+  // Relations
+  hall               Hall                 @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceAssignment ResourceAssignment[] // Resource assignments for this workstation
+}
+
+enum WorkstationType {
+  Assembly
+  Inspection
+  Packaging
+  Welding
+  Painting
+  QualityControl
+  Machining
+  MaterialHandling
+  Maintenance
+  Storage
+}
+
+enum WorkstationStatus {
+  Active
+  Inactive
+}
+
+model Machine {
+  id              Int           @id @default(autoincrement())
+  userId          Int? // Foreign key in the User model
+  locationId      Int
+  name            String
+  status          MachineStatus @default(Operational)
+  lastMaintenance DateTime? // Track last maintenance date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hall               Hall                 @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  sensor             Sensor[] // Sensors associated with the machine
+  ProcessStep        ProcessStep[] // Process steps involving this machine
+  ResourceAssignment ResourceAssignment[] // Resource assignments for this machine
+  QualityCheck       QualityCheck[] // Quality checks performed by this machine
+}
+
+enum MachineStatus {
+  Operational
+  Maintenance
+  Offline
+}
+
+model Hall {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workstations          Workstation[] // Workstations located in this hall
+  machines              Machine[] // Machines located in this hall
+  materialsInventory    MaterialInventory[] // Materials stored in this hall
+  startTransportSystems TransportSystem[]   @relation(name: "StartLocation")
+  endTransportSystems   TransportSystem[]   @relation(name: "EndLocation")
+}
+
+model TransportSystem {
+  id                  Int                   @id @default(autoincrement())
+  transportMethod     String                @map("transportMethod")
+  materialInventoryId Int?                  @map("materialInventoryId")
+  startLocationId     Int                   @map("startLocationId")
+  endLocationId       Int                   @map("endLocationId")
+  createdAt           DateTime              @default(now()) @map("createdAt")
+  updatedAt           DateTime              @updatedAt @map("updatedAt")
+  status              TransportSystemStatus @default(Operational)
+
+  // Relations
+  material      MaterialInventory? @relation // Material being transported
+  startLocation Hall               @relation(name: "StartLocation", fields: [startLocationId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  endLocation   Hall               @relation(name: "EndLocation", fields: [endLocationId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  trackingSystem TrackingSystem[] // Tracking systems associated with this transport system
+
+  event Event[] @relation(map: "Event_transportSystem_entityId_fkey") // Events related to this transport system
+}
+
+enum TransportSystemStatus {
+  Operational
+  Maintenance
+  Offline
+  InTransit
+  Idle
+  Loading
+  Unloading
+}
+
+model ProductionOrder {
+  id                  Int      @id @default(autoincrement())
+  orderNumber         String   @unique
+  materialInventoryId Int
+  quantity            Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  materialInventory MaterialInventory @relation(fields: [materialInventoryId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  processStep ProcessStep[] @relation // Process steps associated with this production order
+}
+
+model ResourceAssignment {
+  id            Int                      @id @default(autoincrement())
+  processStepId Int
+  userId        Int?
+  machineId     Int? // Machine involved in the task
+  status        ResourceAssignmentStatus @default(Pending)
+  priority      Int                      @default(0) // Priority level (0 being normal priority)
+  startAt       DateTime? // Scheduled start time
+  endAt         DateTime? // Actual or planned end time
+  dependencies  Json? // Dependencies, if any
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  processStep   ProcessStep  @relation(fields: [processStepId], references: [id], onDelete: Cascade)
+  user          User?        @relation(fields: [userId], references: [id])
+  machine       Machine?     @relation(fields: [machineId], references: [id])
+  workstation   Workstation? @relation(fields: [workstationId], references: [id])
+  workstationId Int? // Foreign key for the workstation
+}
+
+enum ResourceAssignmentStatus {
+  Pending
+  InProgress
+  Complete
+}
+
+model ProcessStep {
+  id        Int               @id @default(autoincrement())
+  name      String
+  orderId   Int
+  machineId Int
+  status    ProcessStepStatus @default(Pending)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Relations
+  productionOrder ProductionOrder @relation(fields: [orderId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  machine         Machine         @relation(fields: [machineId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  // Users assigned to this step, based on availability
+  assignedUsers User[] // Users assigned to this process step
+  events        Event[] // Events related to this process step
+
+  resourceAssignment ResourceAssignment[] // Resource assignments for this process step
+}
+
+enum ProcessStepStatus {
+  Pending
+  InProgress
+  Complete
+}
+
+model QualityCheck {
+  id                  Int                @id @default(autoincrement())
+  materialInventoryId Int
+  result              QualityCheckResult
+  checkTime           DateTime           @default(now())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  userId              Int? // User who performed the quality check
+  machineId           Int? // Machine used for quality check
+  // Relations
+  materialInventory   MaterialInventory  @relation(fields: [materialInventoryId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user                User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  machine             Machine?           @relation(fields: [machineId], references: [id], onDelete: SetNull)
+}
+
+enum QualityCheckResult {
+  Pass
+  Fail
+}
+
+model Metric {
+  id           Int        @id @default(autoincrement())
+  type         MetricType
+  metricTypeId Int
+  entityId     Int // refers to the entity (machine, user, process step, etc.) the metric is associated with
+  value        Float
+  targetValue  Float? // Optional field to track target values for metrics
+  description  String?
+  createdAt    DateTime   @default(now())
+
+  @@map("Metric")
+}
+
+enum MetricType {
+  Throughput
+  CycleTime
+  UtilizationRate
+  Downtime
+  Efficiency
+  ErrorRate
+  EnergyConsumption
+  TaskCompletionTime
+  OEE
+  LeadTime
+  ResourceAllocationEfficiency
+  TaskQueueLength
+  WorkerEfficiency
+  QualityYield
+  MaintenanceFrequency
+  WIP
+}
+
+model TrackingSystem {
+  id                  Int          @id @default(autoincrement())
+  trackingType        TrackingType
+  materialInventoryId Int
+  timestamp           DateTime     @default(now())
+  transportSystemId   Int? // Optional association with transport system
+
+  // Relations
+  materialInventory MaterialInventory @relation(fields: [materialInventoryId], references: [id], onDelete: Cascade, onUpdate: Cascade) // Link to MaterialInventory instead of Material
+  transportSystem   TransportSystem?  @relation(fields: [transportSystemId], references: [id], onDelete: SetNull)
+}
+
+enum TrackingType {
+  Barcode
+  RFID
+  GPS
+}
+
+model MaterialInventory {
+  id           Int      @id @default(autoincrement())
+  materialType String // Type of material (e.g., wood, metal, etc.)
+  quantity     Int // Total quantity of material in stock
+  locationId   Int      @unique
+  batchNumber  String? // Optional, can be used to track batch numbers if needed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  hall            Hall              @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  transportSystem TransportSystem?  @relation(fields: [locationId], references: [id], onDelete: Cascade, map: "MaterialInventory_transportSystem_fkey")
+  qualityCheck    QualityCheck[] // Quality checks associated with the material
+  trackingSystems TrackingSystem[] // Multiple tracking systems for material tracking
+  productionOrder ProductionOrder[] // Materials linked to production orders
+}
+
+model Sensor {
+  id           Int        @id @default(autoincrement())
+  type         SensorType
+  machineId    Int
+  value        Float
+  timestamp    DateTime   @default(now())
+  minThreshold Float? // Minimum allowed value
+  maxThreshold Float? // Maximum allowed value
+
+  // Relations
+  machine Machine @relation(fields: [machineId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+enum SensorType {
+  Temperature
+  Pressure
+  FinishedProductCounter
+}
+
+model SimulationLog {
+  id        Int      @id @default(autoincrement())
+  eventType String
+  details   String?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("SimulationLog") // Map to "SimulationLog" table
+}
+
+model SimulationSetting {
+  id           Int      @id @default(autoincrement())
+  settingName  String
+  settingValue String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("SimulationSetting") // Map to "SimulationSetting" table
+}
