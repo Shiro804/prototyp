@@ -1,9 +1,10 @@
 import express, { Request, Response, NextFunction } from "express";
 import bodyParser from "body-parser";
 import router from "./routes/router";
-import sequelize from "./models/Index"; // Ensure you're importing sequelize correctly
+import { PrismaClient } from "@prisma/client"; // Import Prisma Client
 
 const app = express();
+const prisma = new PrismaClient(); // Initialize Prisma Client
 
 // Middleware
 app.use(bodyParser.json());
@@ -19,21 +20,30 @@ app.get("/api", router);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
+  
 });
 
-// Sync database and start server
+// Start server and connect Prisma
 const PORT = process.env.PORT || 5000;
 
-// Use the Sequelize instance from your models folder to sync the database
-sequelize
-  .sync({ force: false })
-  .then(() => {
+async function main() {
+  try {
+    // Replace Sequelize sync with Prisma database connection check
+    await prisma.$connect(); // Connect to the database
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+  }
+}
+
+main()
+  .catch((err) => {
+    console.error("Server error:", err);
   })
-  .catch((err: any) => {
-    console.error("Unable to connect to the database:", err);
+  .finally(async () => {
+    await prisma.$disconnect(); // Disconnect Prisma Client when app shuts down
   });
 
 export default app;
