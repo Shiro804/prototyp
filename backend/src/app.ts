@@ -2,6 +2,9 @@ import express, { Request, Response, NextFunction } from "express";
 import bodyParser from "body-parser";
 import router from "./routes/router";
 import { PrismaClient } from "@prisma/client"; // Import Prisma Client
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient(); // Initialize Prisma Client
@@ -11,7 +14,7 @@ app.use(bodyParser.json());
 
 // Simple Route for health check
 app.get("/", (req: Request, res: Response) => {
-  res.status(200).json({ message: "API is running" });
+  res.status(200).json({ message: "API is rusnning" });
 });
 
 app.get("/api", router);
@@ -20,7 +23,6 @@ app.get("/api", router);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
-  
 });
 
 // Start server and connect Prisma
