@@ -1,17 +1,12 @@
-import {
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  BaseEntity,
-} from "typeorm";
+import { PrimaryKey, Property } from "@mikro-orm/core";
 
-export abstract class CommonEntity extends BaseEntity {
-  @PrimaryGeneratedColumn()
+export abstract class CommonEntity {
+  @PrimaryKey()
   id!: number;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+  @Property()
+  createdAt: Date = new Date();
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @Property({ onUpdate: () => new Date() })
+  updatedAt = new Date();
 }

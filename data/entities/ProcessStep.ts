@@ -1,8 +1,17 @@
-import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import {
+  Collection,
+  Entity,
+  Enum,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  Property,
+} from "@mikro-orm/core";
 
 import { CommonEntity } from "./CommonEntity";
 import { ProcessStepEvent } from "./events/ProcessStep";
-import { Location } from "./Location";
+import type { ProcessStepInventory } from "./Inventory";
+import type { Location } from "./Location";
 import { Resource } from "./resources/Resource";
 import { Sensor } from "./Sensor";
 import { TransportSystem } from "./TransportSystem";
@@ -15,37 +24,39 @@ enum ProcessStepStatus {
 
 @Entity()
 export class ProcessStep extends CommonEntity {
-  @Column()
+  @Property()
   name!: string;
 
-  @Column({
-    type: "simple-enum",
-    enum: ProcessStepStatus,
-    default: ProcessStepStatus.Pending,
-  })
-  status!: ProcessStepStatus;
+  @Enum()
+  status: ProcessStepStatus = ProcessStepStatus.Pending;
 
   @OneToMany(() => Resource, (resource) => resource.processStep)
-  resources!: Resource[];
+  resources = new Collection<Resource>(this);
 
-  @ManyToOne(() => Location, (location) => location.processSteps)
+  @ManyToOne()
   location!: Location;
 
   @OneToMany(
     () => TransportSystem,
     (transportSystem) => transportSystem.startStep
   )
-  outputs!: TransportSystem[];
+  outputs = new Collection<TransportSystem>(this);
 
   @OneToMany(
     () => TransportSystem,
     (transportSystem) => transportSystem.endStep
   )
-  inputs!: TransportSystem[];
+  inputs = new Collection<TransportSystem>(this);
 
-  @OneToMany(() => ProcessStepEvent, (event) => event.processStep)
-  events!: ProcessStepEvent[];
+  @OneToMany(
+    () => ProcessStepEvent,
+    (processStepEvent) => processStepEvent.processStep
+  )
+  events = new Collection<ProcessStepEvent>(this);
 
   @OneToMany(() => Sensor, (sensor) => sensor.processStep)
-  sensors!: Sensor[];
+  sensors = new Collection<Sensor>(this);
+
+  @OneToOne()
+  inventory!: ProcessStepInventory;
 }

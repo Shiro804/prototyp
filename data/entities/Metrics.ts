@@ -1,39 +1,38 @@
 import {
-  ChildEntity,
-  Column,
-  CreateDateColumn,
   Entity,
   Index,
   ManyToOne,
-  PrimaryGeneratedColumn,
-  TableInheritance,
-} from "typeorm";
+  PrimaryKey,
+  Property,
+  types,
+} from "@mikro-orm/core";
 
-import { Sensor } from "./Sensor";
+import type { Sensor } from "./Sensor";
 
-@Entity()
-@TableInheritance({ column: "type" })
+@Entity({
+  discriminatorColumn: "type",
+  abstract: true,
+})
+@Index({ properties: ["timestamp", "type"] })
 export abstract class Metric {
-  @PrimaryGeneratedColumn()
+  @PrimaryKey()
   id!: number;
 
-  @CreateDateColumn()
-  @Index()
-  timestamp!: Date;
+  @Property()
+  timestamp: Date = new Date();
 
-  @Column()
-  @Index()
+  @Property()
   type!: string;
 
-  @ManyToOne(() => Sensor, (sensor) => sensor.metrics)
+  @ManyToOne()
   sensor!: Sensor;
 }
 
-@ChildEntity()
+@Entity()
 export class ItemProcessed extends Metric {
-  @Column()
+  @Property()
   item!: string;
 
-  @Column("int")
+  @Property({ type: types.integer })
   quantity!: number;
 }

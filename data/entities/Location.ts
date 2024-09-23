@@ -1,24 +1,24 @@
-import { Column, Entity, OneToMany } from "typeorm";
+import { Collection, Entity, OneToMany, Property } from "@mikro-orm/core";
 
 import { CommonEntity } from "./CommonEntity";
-import { Resource } from "./resources/Resource";
-import { Inventory } from "./Inventory";
+import { GenericInventory } from "./Inventory";
 import { ProcessStep } from "./ProcessStep";
+import { Resource } from "./resources/Resource";
 
 @Entity()
 export class Location extends CommonEntity {
-  @Column()
+  @Property()
   name!: string;
 
-  @Column({ nullable: true })
-  description: string | null = null;
+  @Property()
+  description?: string;
 
   @OneToMany(() => Resource, (resource) => resource.location)
-  resources!: Resource[];
+  resources = new Collection<Resource>(this);
 
-  @OneToMany(() => Inventory, (inventory) => inventory.location)
-  inventories!: Inventory[];
+  @OneToMany(() => GenericInventory, (inventory) => inventory.location)
+  genericInventories = new Collection<GenericInventory>(this);
 
   @OneToMany(() => ProcessStep, (processStep) => processStep.location)
-  processSteps!: ProcessStep[];
+  processSteps = new Collection<ProcessStep>(this);
 }

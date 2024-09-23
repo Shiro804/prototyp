@@ -1,13 +1,12 @@
-import { ChildEntity, Entity, ManyToOne } from "typeorm";
+import { Entity, ManyToOne } from "@mikro-orm/core";
 
-import { TransportSystem } from "../TransportSystem";
+import type { TransportSystem } from "../TransportSystem";
 import { Event, EventSeverity } from "./Event";
 
 @Entity()
-@ChildEntity()
 export class TransportEvent extends Event {
   readonly severity: EventSeverity = EventSeverity.Low;
 
-  @ManyToOne(() => TransportSystem, (transportSystem) => transportSystem.events)
+  @ManyToOne()
   transportSystem!: TransportSystem;
 }

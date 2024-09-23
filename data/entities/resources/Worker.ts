@@ -1,11 +1,10 @@
-import { ChildEntity, JoinTable, ManyToMany } from "typeorm";
+import { Collection, Entity, ManyToMany } from "@mikro-orm/core";
 
-import { WorkerRole } from "../WorkerRole";
 import { Resource } from "./Resource";
+import { WorkerRole } from "./WorkerRole";
 
-@ChildEntity()
+@Entity()
 export class Worker extends Resource {
-  @ManyToMany(() => WorkerRole, (workerRole) => workerRole.workers)
-  @JoinTable()
-  roles!: WorkerRole[];
+  @ManyToMany()
+  roles = new Collection<WorkerRole>(this);
 }

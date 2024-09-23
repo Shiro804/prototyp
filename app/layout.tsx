@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
+import MainContainer from "@/components/MainContainer";
 
 export const metadata: Metadata = {
   title: "Projektseminar",
@@ -20,7 +22,9 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider>{children}</MantineProvider>
+        <MantineProvider>
+          <MainContainer>{children}</MainContainer>
+        </MantineProvider>
       </body>
     </html>
   );

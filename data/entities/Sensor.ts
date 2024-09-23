@@ -1,17 +1,23 @@
-import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import {
+  Collection,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  Property,
+} from "@mikro-orm/core";
 
 import { CommonEntity } from "./CommonEntity";
 import { Metric } from "./Metrics";
-import { ProcessStep } from "./ProcessStep";
+import type { ProcessStep } from "./ProcessStep";
 
 @Entity()
 export class Sensor extends CommonEntity {
-  @Column()
+  @Property()
   name!: string;
 
-  @ManyToOne(() => ProcessStep, (processStep) => processStep.sensors)
+  @ManyToOne()
   processStep!: ProcessStep;
 
   @OneToMany(() => Metric, (metric) => metric.sensor)
-  metrics!: Metric[];
+  metrics = new Collection<Metric>(this);
 }

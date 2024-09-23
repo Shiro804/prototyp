@@ -1,14 +1,15 @@
 import {
-  Column,
+  Collection,
   Entity,
+  Enum,
   ManyToOne,
   OneToMany,
-  TableInheritance,
-} from "typeorm";
+  Property,
+} from "@mikro-orm/core";
 
 import { CommonEntity } from "../CommonEntity";
-import { Location } from "../Location";
-import { ProcessStep } from "../ProcessStep";
+import type { Location } from "../Location";
+import type { ProcessStep } from "../ProcessStep";
 import { QualityCheckEvent } from "../events/QualityCheck";
 
 export enum ResourceStatus {
@@ -16,29 +17,26 @@ export enum ResourceStatus {
   Inactive,
 }
 
-@Entity()
-@TableInheritance({ column: "type" })
+@Entity({
+  discriminatorColumn: "type",
+  abstract: true,
+})
 export abstract class Resource extends CommonEntity {
-  @Column()
+  @Property()
   type!: string;
 
-  @Column({ nullable: true })
-  name!: string | null;
+  @Property()
+  name?: string;
 
-  @Column({
-    type: "simple-enum",
-    enum: ResourceStatus,
-    default: ResourceStatus.Active,
-  })
-  status!: ResourceStatus;
+  @Enum()
+  status: ResourceStatus = ResourceStatus.Active;
 
-  @ManyToOne(() => Location, (location) => location.resources)
+  @ManyToOne()
   location!: Location;
 
-  @Column({ nullable: true })
-  @ManyToOne(() => ProcessStep, (processStep) => processStep.resources)
-  processStep: ProcessStep | null = null;
+  @ManyToOne()
+  processStep?: ProcessStep;
 
-  @OneToMany(() => QualityCheckEvent, (event) => event.resources)
-  qualityChecks!: QualityCheckEvent[];
+  @OneToMany(() => QualityCheckEvent, (event) => event.resource)
+  qualityChecks = new Collection<QualityCheckEvent>(this);
 }

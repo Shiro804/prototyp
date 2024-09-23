@@ -1,10 +1,4 @@
-import {
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  Entity,
-  TableInheritance,
-} from "typeorm";
+import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 
 export enum EventSeverity {
   Low,
@@ -12,19 +6,21 @@ export enum EventSeverity {
   Critical,
 }
 
-@Entity()
-@TableInheritance({ column: "type" })
+@Entity({
+  discriminatorColumn: "type",
+  abstract: true,
+})
 export abstract class Event {
-  @PrimaryGeneratedColumn()
+  @PrimaryKey()
   id!: number;
 
-  @CreateDateColumn()
-  timestamp!: Date;
+  @Property()
+  timestamp: Date = new Date();
 
-  @Column({ nullable: true })
-  details!: string | null;
+  @Property()
+  details?: string;
 
-  @Column()
+  @Property()
   type!: string;
 
   abstract readonly severity: EventSeverity;

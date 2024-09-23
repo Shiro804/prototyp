@@ -1,7 +1,7 @@
-import { ChildEntity, Column, Entity, ManyToOne } from "typeorm";
+import { Entity, Enum, ManyToOne } from "@mikro-orm/core";
 
+import type { Resource } from "../resources/Resource";
 import { Event, EventSeverity } from "./Event";
-import { Resource } from "../resources/Resource";
 
 enum QualityCheckResult {
   Pass,
@@ -9,16 +9,12 @@ enum QualityCheckResult {
 }
 
 @Entity()
-@ChildEntity()
 export class QualityCheckEvent extends Event {
   readonly severity: EventSeverity = EventSeverity.Critical;
 
-  @Column({
-    type: "simple-enum",
-    enum: QualityCheckResult,
-  })
+  @Enum()
   result!: QualityCheckResult;
 
-  @ManyToOne(() => Resource, (resource) => resource.qualityChecks)
-  resources!: Resource;
+  @ManyToOne()
+  resource!: Resource;
 }

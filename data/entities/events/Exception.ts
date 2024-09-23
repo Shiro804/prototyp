@@ -1,9 +1,8 @@
-import { ChildEntity, Entity } from "typeorm";
+import { Entity } from "@mikro-orm/core";
 
 import { Event, EventSeverity } from "./Event";
 
 @Entity()
-@ChildEntity()
 export class ExceptionEvent extends Event {
   readonly severity: EventSeverity = EventSeverity.Critical;
 }

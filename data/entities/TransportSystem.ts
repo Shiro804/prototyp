@@ -1,16 +1,17 @@
 import {
-  Column,
+  Collection,
   Entity,
-  JoinColumn,
+  Enum,
   ManyToOne,
   OneToMany,
   OneToOne,
-} from "typeorm";
+  Property,
+} from "@mikro-orm/core";
 
 import { CommonEntity } from "./CommonEntity";
 import { TransportEvent } from "./events/Transport";
-import { Inventory } from "./Inventory";
-import { ProcessStep } from "./ProcessStep";
+import type { TransportSystemInventory } from "./Inventory";
+import type { ProcessStep } from "./ProcessStep";
 
 enum TransportSystemStatus {
   Operational,
@@ -24,26 +25,24 @@ enum TransportSystemStatus {
 
 @Entity()
 export class TransportSystem extends CommonEntity {
-  @Column()
+  @Property()
   name!: string;
 
-  @Column({
-    type: "simple-enum",
-    enum: TransportSystemStatus,
-    default: TransportSystemStatus.Operational,
-  })
-  status!: TransportSystemStatus;
+  @Enum()
+  status: TransportSystemStatus = TransportSystemStatus.Operational;
 
-  @OneToOne(() => Inventory)
-  @JoinColumn()
-  inventory!: Inventory;
+  @OneToOne()
+  inventory!: TransportSystemInventory;
 
-  @ManyToOne(() => ProcessStep, (processStep) => processStep.outputs)
+  @ManyToOne()
   startStep!: ProcessStep;
 
-  @ManyToOne(() => ProcessStep, (processStep) => processStep.inputs)
+  @ManyToOne()
   endStep!: ProcessStep;
 
-  @OneToMany(() => TransportEvent, (event) => event.transportSystem)
-  events!: TransportEvent[];
+  @OneToMany(
+    () => TransportEvent,
+    (transportEvent) => transportEvent.transportSystem
+  )
+  events = new Collection<TransportEvent>(this);
 }
