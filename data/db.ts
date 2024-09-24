@@ -1,19 +1,9 @@
-import { EntityManager } from "@mikro-orm/core";
-import { MikroORM } from "@mikro-orm/sqlite";
+import { PrismaClient } from "@prisma/client";
 
-import config from "./mikro-orm.config";
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const typedGlobal = global as unknown as {
-  db?: EntityManager;
-};
+export const prisma = globalForPrisma.prisma || new PrismaClient();
 
-export async function getDb() {
-  if (typedGlobal.db) {
-    return typedGlobal.db.fork();
-  }
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-  const db = await MikroORM.init(config);
-  await db.schema.updateSchema();
-  typedGlobal.db = db.em;
-  return typedGlobal.db.fork();
-}
+export default prisma;

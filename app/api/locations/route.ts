@@ -1,9 +1,7 @@
-import { getDb } from "@/data/db";
-import { Location } from "@/data/entities/Location";
+import prisma from "@/data/db";
 
 export async function GET() {
-  const db = await getDb();
-  const locations = await db.findAll(Location);
+  const locations = await prisma.location.findMany();
 
   return Response.json(locations);
 }

@@ -1,0 +1,204 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./dev.db"
+}
+
+model Event {
+    id        Int      @id @default(autoincrement())
+    timestamp DateTime @default(now())
+    details   String?
+
+    ExceptionEvent    ExceptionEvent?
+    ProcessStepEvent  ProcessStepEvent?
+    QualityCheckEvent QualityCheckEvent?
+    TransportEvent    TransportEvent?
+}
+
+model ExceptionEvent {
+    id      Int   @id @default(autoincrement())
+    event   Event @relation(fields: [eventId], references: [id])
+    eventId Int   @unique
+}
+
+model ProcessStepEvent {
+    id      Int   @id @default(autoincrement())
+    event   Event @relation(fields: [eventId], references: [id])
+    eventId Int   @unique
+
+    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+    processStepId Int
+}
+
+model QualityCheckEvent {
+    id      Int   @id @default(autoincrement())
+    event   Event @relation(fields: [eventId], references: [id])
+    eventId Int   @unique
+
+    result     Boolean
+    resource   Resource @relation(fields: [resourceId], references: [id])
+    resourceId Int
+}
+
+model TransportEvent {
+    id      Int   @id @default(autoincrement())
+    event   Event @relation(fields: [eventId], references: [id])
+    eventId Int   @unique
+
+    transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
+    transportSystemId Int
+}
+
+model Resource {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name   String?
+    active Boolean @default(true)
+
+    location      Location     @relation(fields: [locationId], references: [id])
+    locationId    Int
+    processStep   ProcessStep? @relation(fields: [processStepId], references: [id])
+    processStepId Int
+
+    Machine Machine?
+    Worker  Worker?
+
+    qualityChecks QualityCheckEvent[]
+}
+
+model Machine {
+    id         Int      @id @default(autoincrement())
+    resource   Resource @relation(fields: [resourceId], references: [id])
+    resourceId Int      @unique
+}
+
+model Worker {
+    id         Int      @id @default(autoincrement())
+    resource   Resource @relation(fields: [resourceId], references: [id])
+    resourceId Int      @unique
+
+    workerRoles WorkerRole[]
+}
+
+model WorkerRole {
+    id          Int     @id @default(autoincrement())
+    name        String  @unique
+    description String?
+
+    workers Worker[]
+}
+
+model Inventory {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    type    String
+    entries InventoryEntry[]
+
+    // If type == "generic" 
+    location        Location?        @relation(fields: [locationId], references: [id])
+    locationId      Int?
+    // If type == "transportSystem"
+    transportSystem TransportSystem?
+    // If type == "processStep"
+    processStep     ProcessStep?
+}
+
+model InventoryEntry {
+    id Int @id @default(autoincrement())
+
+    material String
+    quantity Int
+
+    inventory   Inventory @relation(fields: [inventoryId], references: [id])
+    inventoryId Int
+
+    @@unique([material, inventoryId])
+}
+
+model Location {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String
+    description String?
+
+    resources          Resource[]
+    genericInventories Inventory[]
+    processSteps       ProcessStep[]
+}
+
+model Metric {
+    id Int @id @default(autoincrement())
+
+    timestamp DateTime @default(now())
+    type      String
+    data      String
+
+    sensor   Sensor @relation(fields: [sensorId], references: [id])
+    sensorId Int
+}
+
+model ProcessStep {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name   String
+    status String
+
+    location   Location @relation(fields: [locationId], references: [id])
+    locationId Int
+
+    inventory   Inventory @relation(fields: [inventoryId], references: [id])
+    inventoryId Int       @unique
+
+    resources         Resource[]
+    inputs            TransportSystem[]  @relation("stepInputs")
+    outputs           TransportSystem[]  @relation("stepOutputs")
+    sensors           Sensor[]
+    processStepEvents ProcessStepEvent[]
+}
+
+model Sensor {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+    processStepId Int
+
+    metrics Metric[]
+}
+
+model TransportSystem {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    inventory   Inventory   @relation(fields: [inventoryId], references: [id])
+    inventoryId Int         @unique
+    startStep   ProcessStep @relation("stepOutputs", fields: [startStepId], references: [id])
+    startStepId Int
+    endStep     ProcessStep @relation("stepInputs", fields: [endStepId], references: [id])
+    endStepId   Int
+
+    events TransportEvent[]
+}

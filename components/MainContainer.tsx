@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications, Notifications } from "@mantine/notifications";
-import { IconBuildingFactory2 } from "@tabler/icons-react";
+import { IconAddressBook, IconBuildingFactory2 } from "@tabler/icons-react";
 import { ReactNode, useEffect, useLayoutEffect } from "react";
 import useSWR from "swr";
 
@@ -47,6 +47,11 @@ function LocationLinks() {
   ));
 }
 
+const entityLinks = [
+  { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
+  { icon: IconAddressBook, label: "Resources", href: "/resources" },
+];
+
 export default function MainContainer({
   children,
 }: Readonly<{
@@ -67,9 +72,20 @@ export default function MainContainer({
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="md">
-        <AppShell.Section grow my="md" component={ScrollArea}>
+        <AppShell.Section my="md" component={ScrollArea}>
           Overview
           <LocationLinks />
+        </AppShell.Section>
+        <AppShell.Section grow my="md" component={ScrollArea}>
+          Entities
+          {entityLinks.map((l) => (
+            <NavLink
+              key={l.href}
+              href={l.href}
+              label={l.label}
+              leftSection={<l.icon />}
+            />
+          ))}
         </AppShell.Section>
         <AppShell.Section>
           <Flex align="center" gap="md">

@@ -14,19 +14,13 @@
     "@mantine/form": "^7.12.2",
     "@mantine/hooks": "^7.12.2",
     "@mantine/notifications": "^7.12.2",
-    "@mikro-orm/cli": "^6.3.10",
-    "@mikro-orm/core": "^6.3.10",
-    "@mikro-orm/reflection": "^6.3.10",
-    "@mikro-orm/sqlite": "^6.3.10",
+    "@prisma/client": "^5.19.1",
     "@tabler/icons-react": "^3.17.0",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.12.7",
-    "reflect-metadata": "^0.2.2",
-    "sqlite3": "^5.1.7",
-    "swr": "^2.2.5",
-    "ts-node": "^10.9.2"
+    "swr": "^2.2.5"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -37,12 +31,7 @@
     "postcss": "^8.4.47",
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.1",
+    "prisma": "^5.19.1",
     "typescript": "^5"
-  },
-  "mikro-orm": {
-    "configPaths": [
-      "./data/mikro-orm.config.ts",
-      "./dist/mikro-orm.config.js"
-    ]
   }
 }
