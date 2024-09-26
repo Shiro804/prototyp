@@ -7,20 +7,24 @@ import {
   Flex,
   Group,
   NavLink,
-  Notification,
   ScrollArea,
   Skeleton,
-  Text,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications, Notifications } from "@mantine/notifications";
-import { IconAddressBook, IconBuildingFactory2 } from "@tabler/icons-react";
-import { ReactNode, useEffect, useLayoutEffect } from "react";
+import {
+  IconAddressBook,
+  IconBuildingFactory2,
+  IconHome,
+} from "@tabler/icons-react";
+import { ExoticComponent, ReactNode, useEffect } from "react";
 import useSWR from "swr";
 
-import type { Location } from "@/data/entities/Location";
 import { fetcher } from "@/lib/fetcher";
+import { Location } from "@prisma/client";
 import { Logo } from "./Logo";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function LocationLinks() {
   const { data, error } = useSWR<Location[], Error>("/api/locations", fetcher);
@@ -47,10 +51,35 @@ function LocationLinks() {
   ));
 }
 
-const entityLinks = [
+interface LinkDescription {
+  icon: ExoticComponent;
+  label: string;
+  href: string;
+}
+
+const overviewLinks: LinkDescription[] = [
+  { icon: IconHome, label: "Dashboard", href: "/" },
+];
+
+const entityLinks: LinkDescription[] = [
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
 ];
+
+const menuLink = (l: LinkDescription) => {
+  const path = usePathname();
+
+  return (
+    <NavLink
+      active={path === l.href}
+      key={l.href}
+      href={l.href}
+      label={l.label}
+      leftSection={<l.icon />}
+      component={Link}
+    />
+  );
+};
 
 export default function MainContainer({
   children,
@@ -74,18 +103,12 @@ export default function MainContainer({
       <AppShell.Navbar p="md">
         <AppShell.Section my="md" component={ScrollArea}>
           Overview
+          {overviewLinks.map(menuLink)}
           <LocationLinks />
         </AppShell.Section>
         <AppShell.Section grow my="md" component={ScrollArea}>
           Entities
-          {entityLinks.map((l) => (
-            <NavLink
-              key={l.href}
-              href={l.href}
-              label={l.label}
-              leftSection={<l.icon />}
-            />
-          ))}
+          {entityLinks.map(menuLink)}
         </AppShell.Section>
         <AppShell.Section>
           <Flex align="center" gap="md">
