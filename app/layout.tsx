@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import MainContainer from "@/components/MainContainer";
+import { theme } from "@/lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import MainContainer from "@/components/MainContainer";
 
 export const metadata: Metadata = {
   title: "Projektseminar",
@@ -22,7 +23,7 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider>
+        <MantineProvider theme={theme}>
           <MainContainer>{children}</MainContainer>
         </MantineProvider>
       </body>

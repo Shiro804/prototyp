@@ -8,48 +8,19 @@ import {
   Group,
   NavLink,
   ScrollArea,
-  Skeleton,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { notifications, Notifications } from "@mantine/notifications";
+import { Notifications } from "@mantine/notifications";
 import {
   IconAddressBook,
   IconBuildingFactory2,
   IconHome,
 } from "@tabler/icons-react";
-import { ExoticComponent, ReactNode, useEffect } from "react";
-import useSWR from "swr";
+import { ExoticComponent, ReactNode } from "react";
 
-import { fetcher } from "@/lib/fetcher";
-import { Location } from "@prisma/client";
-import { Logo } from "./Logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-function LocationLinks() {
-  const { data, error } = useSWR<Location[], Error>("/api/locations", fetcher);
-
-  useEffect(() => {
-    if (error) {
-      notifications.show({
-        color: "red",
-        title: "Error while loading locations",
-        message: error.message,
-      });
-    }
-  }, [error]);
-
-  if (!data) return <Skeleton h={28} mt="sm" />;
-
-  return data.map((l) => (
-    <NavLink
-      key={l.id}
-      href={`/locations/${l.id}`}
-      label={l.name}
-      leftSection={<IconBuildingFactory2 />}
-    />
-  ));
-}
+import { Logo } from "./Logo";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -66,20 +37,20 @@ const entityLinks: LinkDescription[] = [
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
 ];
 
-const menuLink = (l: LinkDescription) => {
+function MenuLink({ link }: { link: LinkDescription }) {
   const path = usePathname();
 
   return (
     <NavLink
-      active={path === l.href}
-      key={l.href}
-      href={l.href}
-      label={l.label}
-      leftSection={<l.icon />}
+      active={path === link.href}
+      key={link.href}
+      href={link.href}
+      label={link.label}
+      leftSection={<link.icon />}
       component={Link}
     />
   );
-};
+}
 
 export default function MainContainer({
   children,
@@ -103,12 +74,15 @@ export default function MainContainer({
       <AppShell.Navbar p="md">
         <AppShell.Section my="md" component={ScrollArea}>
           Overview
-          {overviewLinks.map(menuLink)}
-          <LocationLinks />
+          {overviewLinks.map((l) => (
+            <MenuLink key={l.href} link={l} />
+          ))}
         </AppShell.Section>
         <AppShell.Section grow my="md" component={ScrollArea}>
           Entities
-          {entityLinks.map(menuLink)}
+          {entityLinks.map((l) => (
+            <MenuLink key={l.href} link={l} />
+          ))}
         </AppShell.Section>
         <AppShell.Section>
           <Flex align="center" gap="md">
@@ -116,7 +90,7 @@ export default function MainContainer({
           </Flex>
         </AppShell.Section>
       </AppShell.Navbar>
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main m="lg">{children}</AppShell.Main>
       <Notifications />
     </AppShell>
   );
