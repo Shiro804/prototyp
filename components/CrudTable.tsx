@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Table, TableData } from "@mantine/core";
-import { IconEdit, IconPlus, IconX } from "@tabler/icons-react";
+import { IconEdit, IconX } from "@tabler/icons-react";
 import Link from "next/link";
 import { ReactNode } from "react";
 
@@ -14,8 +14,8 @@ export interface CrudTableProps<T extends Indexable> {
   data: T[];
   props: (keyof T)[];
   editBaseUrl: string;
-  onAdd?: () => void;
   onDelete?: (entity: T) => void;
+  convertToString?: (keyof T)[];
 }
 
 export function CrudTable<T extends Indexable>({
@@ -23,13 +23,19 @@ export function CrudTable<T extends Indexable>({
   data,
   props,
   editBaseUrl,
-  onAdd,
   onDelete,
+  convertToString = [],
 }: Readonly<CrudTableProps<T>>) {
   const tableData: TableData = {
     head: [...header, "Edit", "Delete"],
     body: data.map((d) => [
-      ...(props.map((p) => d[p]) as JSX.Element[]),
+      ...(props.map((p) => {
+        if (convertToString.includes(p)) {
+          return String(d[p]);
+        } else {
+          return d[p];
+        }
+      }) as JSX.Element[]),
       <Button
         key={d.id}
         component={Link}
@@ -44,13 +50,5 @@ export function CrudTable<T extends Indexable>({
     ]),
   };
 
-  return (
-    <>
-      <Table data={tableData} />
-
-      <Button color="green" onClick={() => onAdd && onAdd()} mt="md">
-        <IconPlus />
-      </Button>
-    </>
-  );
+  return <Table data={tableData} />;
 }
