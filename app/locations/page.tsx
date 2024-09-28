@@ -1,9 +1,8 @@
 import { Title } from "@mantine/core";
 
-import { CrudTable } from "@/components/CrudTable";
+import { LocationsTable } from "@/components/crud/LocationsTable";
 import prisma from "@/data/db";
-import { CreateLocationModal } from "@/components/modals/CreateLocation";
-import { create, del } from "./actions";
+import { create, del, update } from "./actions";
 
 export default async function Locations() {
   const locations = await prisma.location.findMany();
@@ -11,15 +10,12 @@ export default async function Locations() {
   return (
     <>
       <Title>Locations</Title>
-      <CrudTable
-        header={["ID", "Name", "Description", "Created at", "Updated at"]}
+      <LocationsTable
         data={locations}
-        props={["id", "name", "description", "createdAt", "updatedAt"]}
-        editBaseUrl="/locations"
-        convertToString={["createdAt", "updatedAt"]}
-        onDelete={del}
+        create={create}
+        remove={del}
+        update={update}
       />
-      <CreateLocationModal onSubmit={create} />
     </>
   );
 }

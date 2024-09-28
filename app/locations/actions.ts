@@ -1,10 +1,10 @@
 "use server";
 
 import prisma from "@/data/db";
-import { Location } from "@prisma/client";
+import { Prisma, Location } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-export async function create(location: Location) {
+export async function create(location: Prisma.LocationCreateInput) {
   await prisma.location.create({
     data: location,
   });
@@ -12,11 +12,22 @@ export async function create(location: Location) {
   revalidatePath("/locations");
 }
 
-export async function del(location: Location) {
+export async function del(id: number) {
   await prisma.location.delete({
     where: {
-      id: location.id,
+      id: id,
     },
+  });
+
+  revalidatePath("/locations");
+}
+
+export async function update(id: number, location: Prisma.LocationUpdateInput) {
+  await prisma.location.update({
+    where: {
+      id,
+    },
+    data: location,
   });
 
   revalidatePath("/locations");
