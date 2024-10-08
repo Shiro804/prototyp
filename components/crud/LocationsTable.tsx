@@ -70,7 +70,7 @@ export function LocationsTable({
         },
       },
     ],
-    [validationErrors]
+    [validationErrors, resetValidationErrors]
   );
 
   const handleCreate: MRT_TableOptions<Location>["onCreatingRowSave"] = async ({

@@ -37,7 +37,7 @@ export function useValidation<T>(schema: z.ZodType) {
 
   const resetValidationErrors = (key?: keyof T) => {
     if (key) {
-      let newErrors = { ...validationErrors };
+      const newErrors = { ...validationErrors };
       newErrors[key] = undefined;
       setValidationErrors(newErrors);
     }

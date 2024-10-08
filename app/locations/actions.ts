@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/data/db";
-import { Prisma, Location } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export async function create(location: Prisma.LocationCreateInput) {
@@ -9,6 +9,7 @@ export async function create(location: Prisma.LocationCreateInput) {
     data: location,
   });
 
+  revalidatePath("/");
   revalidatePath("/locations");
 }
 
@@ -19,6 +20,7 @@ export async function del(id: number) {
     },
   });
 
+  revalidatePath("/");
   revalidatePath("/locations");
 }
 

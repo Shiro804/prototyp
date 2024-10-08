@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function useSubmit<T>(fn: (data: T) => Promise<any>) {
+export function useSubmit<T>(fn: (data: T) => Promise<void>) {
   const [pending, setPending] = useState(false);
 
   const wrappedSubmit = async (data: T) => {
