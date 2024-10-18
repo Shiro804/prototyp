@@ -11,50 +11,50 @@ datasource db {
     url      = "file:./dev.db"
 }
 
-model Event {
-    id        Int      @id @default(autoincrement())
-    timestamp DateTime @default(now())
-    details   String?
+// model Event {
+//     id        Int      @id @default(autoincrement())
+//     timestamp DateTime @default(now())
+//     details   String?
 
-    ExceptionEvent    ExceptionEvent?
-    ProcessStepEvent  ProcessStepEvent?
-    QualityCheckEvent QualityCheckEvent?
-    TransportEvent    TransportEvent?
-}
+//     ExceptionEvent    ExceptionEvent?
+//     ProcessStepEvent  ProcessStepEvent?
+//     QualityCheckEvent QualityCheckEvent?
+//     TransportEvent    TransportEvent?
+// }
 
-model ExceptionEvent {
-    id      Int   @id @default(autoincrement())
-    event   Event @relation(fields: [eventId], references: [id])
-    eventId Int   @unique
-}
+// model ExceptionEvent {
+//     id      Int   @id @default(autoincrement())
+//     event   Event @relation(fields: [eventId], references: [id])
+//     eventId Int   @unique
+// }
 
-model ProcessStepEvent {
-    id      Int   @id @default(autoincrement())
-    event   Event @relation(fields: [eventId], references: [id])
-    eventId Int   @unique
+// model ProcessStepEvent {
+//     id      Int   @id @default(autoincrement())
+//     event   Event @relation(fields: [eventId], references: [id])
+//     eventId Int   @unique
 
-    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
-    processStepId Int
-}
+//     processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+//     processStepId Int
+// }
 
-model QualityCheckEvent {
-    id      Int   @id @default(autoincrement())
-    event   Event @relation(fields: [eventId], references: [id])
-    eventId Int   @unique
+// model QualityCheckEvent {
+//     id      Int   @id @default(autoincrement())
+//     event   Event @relation(fields: [eventId], references: [id])
+//     eventId Int   @unique
 
-    result     Boolean
-    resource   Resource @relation(fields: [resourceId], references: [id])
-    resourceId Int
-}
+//     result     Boolean
+//     resource   Resource @relation(fields: [resourceId], references: [id])
+//     resourceId Int
+// }
 
-model TransportEvent {
-    id      Int   @id @default(autoincrement())
-    event   Event @relation(fields: [eventId], references: [id])
-    eventId Int   @unique
+// model TransportEvent {
+//     id      Int   @id @default(autoincrement())
+//     event   Event @relation(fields: [eventId], references: [id])
+//     eventId Int   @unique
 
-    transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
-    transportSystemId Int
-}
+//     transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
+//     transportSystemId Int
+// }
 
 model Resource {
     id Int @id @default(autoincrement())
@@ -73,7 +73,7 @@ model Resource {
     Machine Machine?
     Worker  Worker?
 
-    qualityChecks QualityCheckEvent[]
+    // qualityChecks QualityCheckEvent[]
 }
 
 model Machine {
@@ -119,13 +119,13 @@ model Inventory {
 model InventoryEntry {
     id Int @id @default(autoincrement())
 
+    addedAt DateTime @default(now())
+
     material String
     quantity Int
 
     inventory   Inventory @relation(fields: [inventoryId], references: [id])
     inventoryId Int
-
-    @@unique([material, inventoryId])
 }
 
 model Location {
@@ -142,16 +142,16 @@ model Location {
     processSteps       ProcessStep[]
 }
 
-model Metric {
-    id Int @id @default(autoincrement())
+// model Metric {
+//     id Int @id @default(autoincrement())
 
-    timestamp DateTime @default(now())
-    type      String
-    data      String
+//     timestamp DateTime @default(now())
+//     type      String
+//     data      String
 
-    sensor   Sensor @relation(fields: [sensorId], references: [id])
-    sensorId Int
-}
+//     sensor   Sensor @relation(fields: [sensorId], references: [id])
+//     sensorId Int
+// }
 
 model ProcessStep {
     id Int @id @default(autoincrement())
@@ -159,8 +159,10 @@ model ProcessStep {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name   String
-    status String
+    name        String
+    status      String
+    inputSpeed  Int
+    outputSpeed Int
 
     location   Location @relation(fields: [locationId], references: [id])
     locationId Int
@@ -168,11 +170,11 @@ model ProcessStep {
     inventory   Inventory @relation(fields: [inventoryId], references: [id])
     inventoryId Int       @unique
 
-    resources         Resource[]
-    inputs            TransportSystem[]  @relation("stepInputs")
-    outputs           TransportSystem[]  @relation("stepOutputs")
-    sensors           Sensor[]
-    processStepEvents ProcessStepEvent[]
+    resources Resource[]
+    inputs    TransportSystem[] @relation("stepInputs")
+    outputs   TransportSystem[] @relation("stepOutputs")
+    sensors   Sensor[]
+    // processStepEvents ProcessStepEvent[]
 }
 
 model Sensor {
@@ -186,7 +188,7 @@ model Sensor {
     processStep   ProcessStep @relation(fields: [processStepId], references: [id])
     processStepId Int
 
-    metrics Metric[]
+    // metrics Metric[]
 }
 
 model TransportSystem {
@@ -195,7 +197,9 @@ model TransportSystem {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name String
+    name        String
+    inputSpeed  Int
+    outputSpeed Int
 
     inventory   Inventory   @relation(fields: [inventoryId], references: [id])
     inventoryId Int         @unique
@@ -204,5 +208,5 @@ model TransportSystem {
     endStep     ProcessStep @relation("stepInputs", fields: [endStepId], references: [id])
     endStepId   Int
 
-    events TransportEvent[]
+    // events TransportEvent[]
 }
