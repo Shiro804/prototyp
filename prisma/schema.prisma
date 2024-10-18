@@ -174,7 +174,42 @@ model ProcessStep {
     inputs    TransportSystem[] @relation("stepInputs")
     outputs   TransportSystem[] @relation("stepOutputs")
     sensors   Sensor[]
+    recipe    Recipe?           @relation(fields: [recipeId], references: [id])
+    recipeId  Int?
+
     // processStepEvents ProcessStepEvent[]
+}
+
+model Recipe {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    inputs  RecipeInput[]
+    outputs RecipeOutput[]
+
+    processSteps ProcessStep[]
+}
+
+model RecipeInput {
+    id Int @id @default(autoincrement())
+
+    material String
+    quantity Int
+    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
+    recipeId Int?
+}
+
+model RecipeOutput {
+    id Int @id @default(autoincrement())
+
+    material String
+    quantity Int
+    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
+    recipeId Int?
 }
 
 model Sensor {
