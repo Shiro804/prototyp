@@ -44,6 +44,7 @@ const overviewLinks: LinkDescription[] = [
 ];
 
 const entityLinks: LinkDescription[] = [
+  { icon: IconBuildingFactory2, label: "Incoming Goods", href: "/incoming-goods" },
   { icon: IconChartInfographic, label: "Operational Efficiency Reports", href: "/placeholder" },
   { icon: IconReportSearch, label: "Inventory and Stock Reports", href: "/placeholder" },
   { icon: IconReportAnalytics, label: "Quality Control & Compliance Reports", href: "/placeholder" },

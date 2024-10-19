@@ -71,12 +71,6 @@ export interface SimulationRun {
   events: Event[];
 }
 
-interface InventoryModification {
-  inventoryId: number;
-  entriesToAdd?: InventoryEntry[];
-  entriesToRemove?: number[];
-}
-
 export class Simulation {
   private readonly initialState: SimulationEntityState;
 
