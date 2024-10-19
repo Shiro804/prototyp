@@ -23,17 +23,4 @@ describe("distributeRoundRobin", () => {
       [6, 7, 8],
     ]);
   });
-
-  // test("distributes items correctly 3", () => {
-  //   let items = [1, 7, 2, 8, 2];
-  //   let distributeTo = [1, 2, 3, 4];
-  //   let take = 2;
-
-  //   expect(distributeRoundRobin(items, distributeTo, take)).toStrictEqual({
-  //     1: [1],
-  //     2: [7],
-  //     3: [],
-  //     4: [],
-  //   });
-  // });
 });
