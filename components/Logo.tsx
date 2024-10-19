@@ -1,0 +1,1 @@
+export const Logo = () => <span>Projektseminar</span>;
