@@ -129,7 +129,7 @@ export function LocationsTable({
     onEditingRowSave: handleUpdate,
     renderCreateRowModalContent: ({ table, row, internalEditComponents }) => (
       <Stack>
-        <Title order={3}>Create New User</Title>
+        <Title order={3}>Create New Location</Title>
         {internalEditComponents}
         <Flex justify="flex-end" mt="xl">
           <MRT_EditActionButtons variant="text" table={table} row={row} />
