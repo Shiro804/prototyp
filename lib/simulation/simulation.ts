@@ -1,6 +1,7 @@
 import { InventoryEntry, Prisma } from "@prisma/client";
 import { Event } from "./events";
 import { distributeRoundRobin } from "./round-robin";
+import { nextFreeInventoryEntryId } from "./inventories";
 
 export type LocationFull = Prisma.LocationGetPayload<{
   include: {
@@ -12,11 +13,6 @@ export type LocationFull = Prisma.LocationGetPayload<{
             workerRoles: true;
           };
         };
-      };
-    };
-    genericInventories: {
-      include: {
-        entries: true;
       };
     };
     processSteps: {
@@ -109,7 +105,7 @@ export class Simulation {
   }
 
   private static objectsToReferences(state: SimulationEntityState) {
-    // Transform transport systems to references
+    // Inventories to references
     const transportSystems = Object.fromEntries(
       state.locations
         .flatMap((l) => l.processSteps)
@@ -136,64 +132,96 @@ export class Simulation {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    const inventoryModifications: InventoryModification[] = [];
-
-    // Phase 1: Outlet
+    // Phase 1: Production
 
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
-        const outputIds = processStep.outputs.map((o) => o.id);
+        if (processStep.recipe) {
+          for (let r = 0; r < processStep.recipeRate; r++) {
+            let inputsFulfilled = true;
+            let inputEntries = [];
+
+            for (let recipeInput of processStep.recipe.inputs) {
+              let possibleInputEntries = [];
+
+              for (const entry of processStep.inventory.entries) {
+                if (recipeInput.material === entry.material) {
+                  possibleInputEntries.push(entry);
+                }
+
+                if (possibleInputEntries.length >= recipeInput.quantity) {
+                  break;
+                }
+              }
+
+              if (possibleInputEntries.length >= recipeInput.quantity) {
+                inputEntries.push(...possibleInputEntries);
+              } else {
+                inputsFulfilled = false;
+              }
+            }
+
+            if (inputsFulfilled) {
+              processStep.inventory.entries =
+                processStep.inventory.entries.filter((e) =>
+                  inputEntries.some((ie) => ie.id === e.id)
+                );
+
+              for (const output of processStep.recipe.outputs) {
+                for (
+                  let outputStep = 0;
+                  outputStep < output.quantity;
+                  outputStep++
+                ) {
+                  processStep.inventory.entries.push({
+                    id: nextFreeInventoryEntryId(newState),
+                    addedAt: new Date(),
+                    inventoryId: processStep.inventory.id,
+                    material: output.material,
+                  });
+                }
+              }
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Phase 2: Outlet
+
+    for (const location of newState.locations) {
+      for (const processStep of location.processSteps) {
         const outputSpeeds = processStep.outputs.map((o) =>
           Math.min(processStep.outputSpeed, o.inputSpeed)
         );
 
-        const itemsPerOutput = distributeRoundRobin(
+        const outputItems = distributeRoundRobin(
           processStep.inventory.entries
             .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
             .map((e) => e.id),
           outputSpeeds
         );
 
-        for (let output = 0; output < itemsPerOutput.length; output++) {
-          inventoryModifications.push({
-            inventoryId: processStep.inventory.id,
-            entriesToRemove: itemsPerOutput[output],
-          });
-        }
+        const entriesPerOutput = outputItems.map((o) =>
+          o.map((i) => processStep.inventory.entries.find((e) => e.id === i)!)
+        );
 
-        // for (let total = 0; total < itemsLeft; total++) {
-        //   for (let item = 0; item < processStep.inventory.entries.length; item++) {
+        for (let output = 0; output < outputItems.length; output++) {
+          let entriesToAddToOuptut = entriesPerOutput[output].map((e) => ({
+            ...e,
+            addedAt: new Date(),
+            inventoryId: processStep.outputs[output].inventory.id,
+          }));
 
-        //   }
-        // }
+          processStep.outputs
+            .find((o) => o.id === processStep.outputs[output].id)!
+            .inventory.entries.push(...entriesToAddToOuptut);
 
-        for (const output of processStep.outputs) {
-          let outputSpeed = Math.min(
-            processStep.outputSpeed,
-            output.outputSpeed
+          processStep.inventory.entries = processStep.inventory.entries.filter(
+            (e) => entriesToAddToOuptut.some((eo) => eo.id === e.id)
           );
-          let outputItems = input.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .splice(0, inputSpeed)
-            .map((e) => ({ ...e, addedAt: new Date() }));
-
-          processStep.inventory.entries.push(...inputItems);
-        }
-      }
-    }
-
-    // Phase 2: Production
-
-    for (const location of newState.locations) {
-      for (const processSteps of location.processSteps) {
-        for (const input of processSteps.inputs) {
-          let inputSpeed = Math.min(processSteps.inputSpeed, input.outputSpeed);
-          let inputItems = input.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .splice(0, inputSpeed)
-            .map((e) => ({ ...e, addedAt: new Date() }));
-
-          processSteps.inventory.entries.push(...inputItems);
         }
       }
     }
@@ -210,8 +238,14 @@ export class Simulation {
             .map((e) => ({ ...e, addedAt: new Date() }));
 
           processStep.inventory.entries.push(...inputItems);
+          input.inventory.entries = input.inventory.entries.filter((e) =>
+            inputItems.some((ie) => ie.id === e.id)
+          );
         }
       }
     }
+
+    // Phase 4: Update state
+    this.frames.push(newState);
   }
 }
