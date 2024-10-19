@@ -122,7 +122,6 @@ model InventoryEntry {
     addedAt DateTime @default(now())
 
     material String
-    quantity Int
 
     inventory   Inventory @relation(fields: [inventoryId], references: [id])
     inventoryId Int
@@ -187,6 +186,7 @@ model Recipe {
     updatedAt DateTime @updatedAt
 
     name String
+    rate Int
 
     inputs  RecipeInput[]
     outputs RecipeOutput[]

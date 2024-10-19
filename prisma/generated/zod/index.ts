@@ -22,11 +22,17 @@ export const WorkerRoleScalarFieldEnumSchema = z.enum(['id','name','description'
 
 export const InventoryScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','type','locationId']);
 
-export const InventoryEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','quantity','inventoryId']);
+export const InventoryEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','inventoryId']);
 
 export const LocationScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','description']);
 
-export const ProcessStepScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','status','inputSpeed','outputSpeed','locationId','inventoryId']);
+export const ProcessStepScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','status','inputSpeed','outputSpeed','locationId','inventoryId','recipeId']);
+
+export const RecipeScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name']);
+
+export const RecipeInputScalarFieldEnumSchema = z.enum(['id','material','quantity','recipeId']);
+
+export const RecipeOutputScalarFieldEnumSchema = z.enum(['id','material','quantity','recipeId']);
 
 export const SensorScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','processStepId']);
 
@@ -111,7 +117,6 @@ export const InventoryEntrySchema = z.object({
   id: z.number().int(),
   addedAt: z.coerce.date(),
   material: z.string(),
-  quantity: z.number().int(),
   inventoryId: z.number().int(),
 })
 
@@ -145,9 +150,49 @@ export const ProcessStepSchema = z.object({
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().nullable(),
 })
 
 export type ProcessStep = z.infer<typeof ProcessStepSchema>
+
+/////////////////////////////////////////
+// RECIPE SCHEMA
+/////////////////////////////////////////
+
+export const RecipeSchema = z.object({
+  id: z.number().int(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  name: z.string(),
+})
+
+export type Recipe = z.infer<typeof RecipeSchema>
+
+/////////////////////////////////////////
+// RECIPE INPUT SCHEMA
+/////////////////////////////////////////
+
+export const RecipeInputSchema = z.object({
+  id: z.number().int(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().nullable(),
+})
+
+export type RecipeInput = z.infer<typeof RecipeInputSchema>
+
+/////////////////////////////////////////
+// RECIPE OUTPUT SCHEMA
+/////////////////////////////////////////
+
+export const RecipeOutputSchema = z.object({
+  id: z.number().int(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().nullable(),
+})
+
+export type RecipeOutput = z.infer<typeof RecipeOutputSchema>
 
 /////////////////////////////////////////
 // SENSOR SCHEMA
@@ -344,7 +389,6 @@ export const InventoryEntrySelectSchema: z.ZodType<Prisma.InventoryEntrySelect> 
   id: z.boolean().optional(),
   addedAt: z.boolean().optional(),
   material: z.boolean().optional(),
-  quantity: z.boolean().optional(),
   inventoryId: z.boolean().optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
 }).strict()
@@ -396,6 +440,7 @@ export const ProcessStepIncludeSchema: z.ZodType<Prisma.ProcessStepInclude> = z.
   inputs: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
   outputs: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
   sensors: z.union([z.boolean(),z.lazy(() => SensorFindManyArgsSchema)]).optional(),
+  recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => ProcessStepCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
@@ -425,13 +470,91 @@ export const ProcessStepSelectSchema: z.ZodType<Prisma.ProcessStepSelect> = z.ob
   outputSpeed: z.boolean().optional(),
   locationId: z.boolean().optional(),
   inventoryId: z.boolean().optional(),
+  recipeId: z.boolean().optional(),
   location: z.union([z.boolean(),z.lazy(() => LocationArgsSchema)]).optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
   resources: z.union([z.boolean(),z.lazy(() => ResourceFindManyArgsSchema)]).optional(),
   inputs: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
   outputs: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
   sensors: z.union([z.boolean(),z.lazy(() => SensorFindManyArgsSchema)]).optional(),
+  recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => ProcessStepCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+// RECIPE
+//------------------------------------------------------
+
+export const RecipeIncludeSchema: z.ZodType<Prisma.RecipeInclude> = z.object({
+  inputs: z.union([z.boolean(),z.lazy(() => RecipeInputFindManyArgsSchema)]).optional(),
+  outputs: z.union([z.boolean(),z.lazy(() => RecipeOutputFindManyArgsSchema)]).optional(),
+  processSteps: z.union([z.boolean(),z.lazy(() => ProcessStepFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => RecipeCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+export const RecipeArgsSchema: z.ZodType<Prisma.RecipeDefaultArgs> = z.object({
+  select: z.lazy(() => RecipeSelectSchema).optional(),
+  include: z.lazy(() => RecipeIncludeSchema).optional(),
+}).strict();
+
+export const RecipeCountOutputTypeArgsSchema: z.ZodType<Prisma.RecipeCountOutputTypeDefaultArgs> = z.object({
+  select: z.lazy(() => RecipeCountOutputTypeSelectSchema).nullish(),
+}).strict();
+
+export const RecipeCountOutputTypeSelectSchema: z.ZodType<Prisma.RecipeCountOutputTypeSelect> = z.object({
+  inputs: z.boolean().optional(),
+  outputs: z.boolean().optional(),
+  processSteps: z.boolean().optional(),
+}).strict();
+
+export const RecipeSelectSchema: z.ZodType<Prisma.RecipeSelect> = z.object({
+  id: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  name: z.boolean().optional(),
+  inputs: z.union([z.boolean(),z.lazy(() => RecipeInputFindManyArgsSchema)]).optional(),
+  outputs: z.union([z.boolean(),z.lazy(() => RecipeOutputFindManyArgsSchema)]).optional(),
+  processSteps: z.union([z.boolean(),z.lazy(() => ProcessStepFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => RecipeCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+// RECIPE INPUT
+//------------------------------------------------------
+
+export const RecipeInputIncludeSchema: z.ZodType<Prisma.RecipeInputInclude> = z.object({
+  Recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
+}).strict()
+
+export const RecipeInputArgsSchema: z.ZodType<Prisma.RecipeInputDefaultArgs> = z.object({
+  select: z.lazy(() => RecipeInputSelectSchema).optional(),
+  include: z.lazy(() => RecipeInputIncludeSchema).optional(),
+}).strict();
+
+export const RecipeInputSelectSchema: z.ZodType<Prisma.RecipeInputSelect> = z.object({
+  id: z.boolean().optional(),
+  material: z.boolean().optional(),
+  quantity: z.boolean().optional(),
+  recipeId: z.boolean().optional(),
+  Recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
+}).strict()
+
+// RECIPE OUTPUT
+//------------------------------------------------------
+
+export const RecipeOutputIncludeSchema: z.ZodType<Prisma.RecipeOutputInclude> = z.object({
+  Recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
+}).strict()
+
+export const RecipeOutputArgsSchema: z.ZodType<Prisma.RecipeOutputDefaultArgs> = z.object({
+  select: z.lazy(() => RecipeOutputSelectSchema).optional(),
+  include: z.lazy(() => RecipeOutputIncludeSchema).optional(),
+}).strict();
+
+export const RecipeOutputSelectSchema: z.ZodType<Prisma.RecipeOutputSelect> = z.object({
+  id: z.boolean().optional(),
+  material: z.boolean().optional(),
+  quantity: z.boolean().optional(),
+  recipeId: z.boolean().optional(),
+  Recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
 }).strict()
 
 // SENSOR
@@ -814,7 +937,6 @@ export const InventoryEntryWhereInputSchema: z.ZodType<Prisma.InventoryEntryWher
   id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
-  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
 }).strict();
@@ -823,7 +945,6 @@ export const InventoryEntryOrderByWithRelationInputSchema: z.ZodType<Prisma.Inve
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional()
 }).strict();
@@ -838,7 +959,6 @@ export const InventoryEntryWhereUniqueInputSchema: z.ZodType<Prisma.InventoryEnt
   NOT: z.union([ z.lazy(() => InventoryEntryWhereInputSchema),z.lazy(() => InventoryEntryWhereInputSchema).array() ]).optional(),
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
-  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
 }).strict());
@@ -847,7 +967,6 @@ export const InventoryEntryOrderByWithAggregationInputSchema: z.ZodType<Prisma.I
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   _count: z.lazy(() => InventoryEntryCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => InventoryEntryAvgOrderByAggregateInputSchema).optional(),
@@ -863,7 +982,6 @@ export const InventoryEntryScalarWhereWithAggregatesInputSchema: z.ZodType<Prism
   id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   addedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
-  quantity: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
@@ -946,12 +1064,14 @@ export const ProcessStepWhereInputSchema: z.ZodType<Prisma.ProcessStepWhereInput
   outputSpeed: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   locationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   location: z.union([ z.lazy(() => LocationRelationFilterSchema),z.lazy(() => LocationWhereInputSchema) ]).optional(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   resources: z.lazy(() => ResourceListRelationFilterSchema).optional(),
   inputs: z.lazy(() => TransportSystemListRelationFilterSchema).optional(),
   outputs: z.lazy(() => TransportSystemListRelationFilterSchema).optional(),
-  sensors: z.lazy(() => SensorListRelationFilterSchema).optional()
+  sensors: z.lazy(() => SensorListRelationFilterSchema).optional(),
+  recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const ProcessStepOrderByWithRelationInputSchema: z.ZodType<Prisma.ProcessStepOrderByWithRelationInput> = z.object({
@@ -964,12 +1084,14 @@ export const ProcessStepOrderByWithRelationInputSchema: z.ZodType<Prisma.Process
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   location: z.lazy(() => LocationOrderByWithRelationInputSchema).optional(),
   inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional(),
   resources: z.lazy(() => ResourceOrderByRelationAggregateInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemOrderByRelationAggregateInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemOrderByRelationAggregateInputSchema).optional(),
-  sensors: z.lazy(() => SensorOrderByRelationAggregateInputSchema).optional()
+  sensors: z.lazy(() => SensorOrderByRelationAggregateInputSchema).optional(),
+  recipe: z.lazy(() => RecipeOrderByWithRelationInputSchema).optional()
 }).strict();
 
 export const ProcessStepWhereUniqueInputSchema: z.ZodType<Prisma.ProcessStepWhereUniqueInput> = z.union([
@@ -997,12 +1119,14 @@ export const ProcessStepWhereUniqueInputSchema: z.ZodType<Prisma.ProcessStepWher
   inputSpeed: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   outputSpeed: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   locationId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   location: z.union([ z.lazy(() => LocationRelationFilterSchema),z.lazy(() => LocationWhereInputSchema) ]).optional(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   resources: z.lazy(() => ResourceListRelationFilterSchema).optional(),
   inputs: z.lazy(() => TransportSystemListRelationFilterSchema).optional(),
   outputs: z.lazy(() => TransportSystemListRelationFilterSchema).optional(),
-  sensors: z.lazy(() => SensorListRelationFilterSchema).optional()
+  sensors: z.lazy(() => SensorListRelationFilterSchema).optional(),
+  recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
 }).strict());
 
 export const ProcessStepOrderByWithAggregationInputSchema: z.ZodType<Prisma.ProcessStepOrderByWithAggregationInput> = z.object({
@@ -1015,6 +1139,7 @@ export const ProcessStepOrderByWithAggregationInputSchema: z.ZodType<Prisma.Proc
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => ProcessStepCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => ProcessStepAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => ProcessStepMaxOrderByAggregateInputSchema).optional(),
@@ -1035,6 +1160,178 @@ export const ProcessStepScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.P
   outputSpeed: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   locationId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
+}).strict();
+
+export const RecipeWhereInputSchema: z.ZodType<Prisma.RecipeWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeWhereInputSchema),z.lazy(() => RecipeWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeWhereInputSchema),z.lazy(() => RecipeWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  inputs: z.lazy(() => RecipeInputListRelationFilterSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputListRelationFilterSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepListRelationFilterSchema).optional()
+}).strict();
+
+export const RecipeOrderByWithRelationInputSchema: z.ZodType<Prisma.RecipeOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  inputs: z.lazy(() => RecipeInputOrderByRelationAggregateInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputOrderByRelationAggregateInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepOrderByRelationAggregateInputSchema).optional()
+}).strict();
+
+export const RecipeWhereUniqueInputSchema: z.ZodType<Prisma.RecipeWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => RecipeWhereInputSchema),z.lazy(() => RecipeWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeWhereInputSchema),z.lazy(() => RecipeWhereInputSchema).array() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  inputs: z.lazy(() => RecipeInputListRelationFilterSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputListRelationFilterSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepListRelationFilterSchema).optional()
+}).strict());
+
+export const RecipeOrderByWithAggregationInputSchema: z.ZodType<Prisma.RecipeOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => RecipeCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => RecipeAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => RecipeMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => RecipeMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => RecipeSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const RecipeScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.RecipeScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  name: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+}).strict();
+
+export const RecipeInputWhereInputSchema: z.ZodType<Prisma.RecipeInputWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeInputWhereInputSchema),z.lazy(() => RecipeInputWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeInputWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeInputWhereInputSchema),z.lazy(() => RecipeInputWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+  Recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeInputOrderByWithRelationInputSchema: z.ZodType<Prisma.RecipeInputOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  Recipe: z.lazy(() => RecipeOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const RecipeInputWhereUniqueInputSchema: z.ZodType<Prisma.RecipeInputWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => RecipeInputWhereInputSchema),z.lazy(() => RecipeInputWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeInputWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeInputWhereInputSchema),z.lazy(() => RecipeInputWhereInputSchema).array() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
+  Recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
+}).strict());
+
+export const RecipeInputOrderByWithAggregationInputSchema: z.ZodType<Prisma.RecipeInputOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  _count: z.lazy(() => RecipeInputCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => RecipeInputAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => RecipeInputMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => RecipeInputMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => RecipeInputSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const RecipeInputScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.RecipeInputScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeInputScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeInputScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeInputScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeInputScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeInputScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
+}).strict();
+
+export const RecipeOutputWhereInputSchema: z.ZodType<Prisma.RecipeOutputWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeOutputWhereInputSchema),z.lazy(() => RecipeOutputWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeOutputWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeOutputWhereInputSchema),z.lazy(() => RecipeOutputWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+  Recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeOutputOrderByWithRelationInputSchema: z.ZodType<Prisma.RecipeOutputOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  Recipe: z.lazy(() => RecipeOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const RecipeOutputWhereUniqueInputSchema: z.ZodType<Prisma.RecipeOutputWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => RecipeOutputWhereInputSchema),z.lazy(() => RecipeOutputWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeOutputWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeOutputWhereInputSchema),z.lazy(() => RecipeOutputWhereInputSchema).array() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
+  Recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
+}).strict());
+
+export const RecipeOutputOrderByWithAggregationInputSchema: z.ZodType<Prisma.RecipeOutputOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  _count: z.lazy(() => RecipeOutputCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => RecipeOutputAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => RecipeOutputMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => RecipeOutputMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => RecipeOutputSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const RecipeOutputScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.RecipeOutputScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeOutputScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeOutputScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeOutputScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeOutputScalarWhereWithAggregatesInputSchema),z.lazy(() => RecipeOutputScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const SensorWhereInputSchema: z.ZodType<Prisma.SensorWhereInput> = z.object({
@@ -1441,7 +1738,6 @@ export const InventoryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Inventory
 export const InventoryEntryCreateInputSchema: z.ZodType<Prisma.InventoryEntryCreateInput> = z.object({
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  quantity: z.number().int(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutEntriesInputSchema)
 }).strict();
 
@@ -1449,14 +1745,12 @@ export const InventoryEntryUncheckedCreateInputSchema: z.ZodType<Prisma.Inventor
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  quantity: z.number().int(),
   inventoryId: z.number().int()
 }).strict();
 
 export const InventoryEntryUpdateInputSchema: z.ZodType<Prisma.InventoryEntryUpdateInput> = z.object({
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutEntriesNestedInputSchema).optional()
 }).strict();
 
@@ -1464,7 +1758,6 @@ export const InventoryEntryUncheckedUpdateInputSchema: z.ZodType<Prisma.Inventor
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
@@ -1472,21 +1765,18 @@ export const InventoryEntryCreateManyInputSchema: z.ZodType<Prisma.InventoryEntr
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  quantity: z.number().int(),
   inventoryId: z.number().int()
 }).strict();
 
 export const InventoryEntryUpdateManyMutationInputSchema: z.ZodType<Prisma.InventoryEntryUpdateManyMutationInput> = z.object({
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const InventoryEntryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateManyInput> = z.object({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
@@ -1567,7 +1857,8 @@ export const ProcessStepCreateInputSchema: z.ZodType<Prisma.ProcessStepCreateInp
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateInput> = z.object({
@@ -1580,6 +1871,7 @@ export const ProcessStepUncheckedCreateInputSchema: z.ZodType<Prisma.ProcessStep
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
@@ -1598,7 +1890,8 @@ export const ProcessStepUpdateInputSchema: z.ZodType<Prisma.ProcessStepUpdateInp
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateInput> = z.object({
@@ -1611,6 +1904,7 @@ export const ProcessStepUncheckedUpdateInputSchema: z.ZodType<Prisma.ProcessStep
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
@@ -1626,7 +1920,8 @@ export const ProcessStepCreateManyInputSchema: z.ZodType<Prisma.ProcessStepCreat
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
-  inventoryId: z.number().int()
+  inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
 }).strict();
 
 export const ProcessStepUpdateManyMutationInputSchema: z.ZodType<Prisma.ProcessStepUpdateManyMutationInput> = z.object({
@@ -1648,6 +1943,155 @@ export const ProcessStepUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Process
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeCreateInputSchema: z.ZodType<Prisma.RecipeCreateInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputCreateNestedManyWithoutRecipeInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedCreateInputSchema: z.ZodType<Prisma.RecipeUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateInputSchema: z.ZodType<Prisma.RecipeUpdateInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedUpdateInputSchema: z.ZodType<Prisma.RecipeUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeCreateManyInputSchema: z.ZodType<Prisma.RecipeCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string()
+}).strict();
+
+export const RecipeUpdateManyMutationInputSchema: z.ZodType<Prisma.RecipeUpdateManyMutationInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeUncheckedUpdateManyInputSchema: z.ZodType<Prisma.RecipeUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeInputCreateInputSchema: z.ZodType<Prisma.RecipeInputCreateInput> = z.object({
+  material: z.string(),
+  quantity: z.number().int(),
+  Recipe: z.lazy(() => RecipeCreateNestedOneWithoutInputsInputSchema).optional()
+}).strict();
+
+export const RecipeInputUncheckedCreateInputSchema: z.ZodType<Prisma.RecipeInputUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
+}).strict();
+
+export const RecipeInputUpdateInputSchema: z.ZodType<Prisma.RecipeInputUpdateInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  Recipe: z.lazy(() => RecipeUpdateOneWithoutInputsNestedInputSchema).optional()
+}).strict();
+
+export const RecipeInputUncheckedUpdateInputSchema: z.ZodType<Prisma.RecipeInputUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeInputCreateManyInputSchema: z.ZodType<Prisma.RecipeInputCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
+}).strict();
+
+export const RecipeInputUpdateManyMutationInputSchema: z.ZodType<Prisma.RecipeInputUpdateManyMutationInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeInputUncheckedUpdateManyInputSchema: z.ZodType<Prisma.RecipeInputUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeOutputCreateInputSchema: z.ZodType<Prisma.RecipeOutputCreateInput> = z.object({
+  material: z.string(),
+  quantity: z.number().int(),
+  Recipe: z.lazy(() => RecipeCreateNestedOneWithoutOutputsInputSchema).optional()
+}).strict();
+
+export const RecipeOutputUncheckedCreateInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
+}).strict();
+
+export const RecipeOutputUpdateInputSchema: z.ZodType<Prisma.RecipeOutputUpdateInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  Recipe: z.lazy(() => RecipeUpdateOneWithoutOutputsNestedInputSchema).optional()
+}).strict();
+
+export const RecipeOutputUncheckedUpdateInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RecipeOutputCreateManyInputSchema: z.ZodType<Prisma.RecipeOutputCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
+}).strict();
+
+export const RecipeOutputUpdateManyMutationInputSchema: z.ZodType<Prisma.RecipeOutputUpdateManyMutationInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeOutputUncheckedUpdateManyInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const SensorCreateInputSchema: z.ZodType<Prisma.SensorCreateInput> = z.object({
@@ -2165,13 +2609,11 @@ export const InventoryEntryCountOrderByAggregateInputSchema: z.ZodType<Prisma.In
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntryAvgOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntryAvgOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
@@ -2179,7 +2621,6 @@ export const InventoryEntryMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Inve
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
@@ -2187,13 +2628,11 @@ export const InventoryEntryMinOrderByAggregateInputSchema: z.ZodType<Prisma.Inve
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntrySumOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntrySumOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  quantity: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
@@ -2271,6 +2710,11 @@ export const SensorListRelationFilterSchema: z.ZodType<Prisma.SensorListRelation
   none: z.lazy(() => SensorWhereInputSchema).optional()
 }).strict();
 
+export const RecipeNullableRelationFilterSchema: z.ZodType<Prisma.RecipeNullableRelationFilter> = z.object({
+  is: z.lazy(() => RecipeWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => RecipeWhereInputSchema).optional().nullable()
+}).strict();
+
 export const TransportSystemOrderByRelationAggregateInputSchema: z.ZodType<Prisma.TransportSystemOrderByRelationAggregateInput> = z.object({
   _count: z.lazy(() => SortOrderSchema).optional()
 }).strict();
@@ -2288,7 +2732,8 @@ export const ProcessStepCountOrderByAggregateInputSchema: z.ZodType<Prisma.Proce
   inputSpeed: z.lazy(() => SortOrderSchema).optional(),
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const ProcessStepAvgOrderByAggregateInputSchema: z.ZodType<Prisma.ProcessStepAvgOrderByAggregateInput> = z.object({
@@ -2296,7 +2741,8 @@ export const ProcessStepAvgOrderByAggregateInputSchema: z.ZodType<Prisma.Process
   inputSpeed: z.lazy(() => SortOrderSchema).optional(),
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const ProcessStepMaxOrderByAggregateInputSchema: z.ZodType<Prisma.ProcessStepMaxOrderByAggregateInput> = z.object({
@@ -2308,7 +2754,8 @@ export const ProcessStepMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Process
   inputSpeed: z.lazy(() => SortOrderSchema).optional(),
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const ProcessStepMinOrderByAggregateInputSchema: z.ZodType<Prisma.ProcessStepMinOrderByAggregateInput> = z.object({
@@ -2320,7 +2767,8 @@ export const ProcessStepMinOrderByAggregateInputSchema: z.ZodType<Prisma.Process
   inputSpeed: z.lazy(() => SortOrderSchema).optional(),
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const ProcessStepSumOrderByAggregateInputSchema: z.ZodType<Prisma.ProcessStepSumOrderByAggregateInput> = z.object({
@@ -2328,7 +2776,123 @@ export const ProcessStepSumOrderByAggregateInputSchema: z.ZodType<Prisma.Process
   inputSpeed: z.lazy(() => SortOrderSchema).optional(),
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   locationId: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputListRelationFilterSchema: z.ZodType<Prisma.RecipeInputListRelationFilter> = z.object({
+  every: z.lazy(() => RecipeInputWhereInputSchema).optional(),
+  some: z.lazy(() => RecipeInputWhereInputSchema).optional(),
+  none: z.lazy(() => RecipeInputWhereInputSchema).optional()
+}).strict();
+
+export const RecipeOutputListRelationFilterSchema: z.ZodType<Prisma.RecipeOutputListRelationFilter> = z.object({
+  every: z.lazy(() => RecipeOutputWhereInputSchema).optional(),
+  some: z.lazy(() => RecipeOutputWhereInputSchema).optional(),
+  none: z.lazy(() => RecipeOutputWhereInputSchema).optional()
+}).strict();
+
+export const RecipeInputOrderByRelationAggregateInputSchema: z.ZodType<Prisma.RecipeInputOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputOrderByRelationAggregateInputSchema: z.ZodType<Prisma.RecipeOutputOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeCountOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeAvgOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeMaxOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeMinOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeSumOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputCountOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeInputCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputAvgOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeInputAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputMaxOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeInputMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputMinOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeInputMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeInputSumOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeInputSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputCountOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeOutputCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputAvgOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeOutputAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputMaxOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeOutputMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputMinOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeOutputMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RecipeOutputSumOrderByAggregateInputSchema: z.ZodType<Prisma.RecipeOutputSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  recipeId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const ProcessStepRelationFilterSchema: z.ZodType<Prisma.ProcessStepRelationFilter> = z.object({
@@ -2956,6 +3520,12 @@ export const SensorCreateNestedManyWithoutProcessStepInputSchema: z.ZodType<Pris
   connect: z.union([ z.lazy(() => SensorWhereUniqueInputSchema),z.lazy(() => SensorWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
+export const RecipeCreateNestedOneWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeCreateNestedOneWithoutProcessStepsInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutProcessStepsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutProcessStepsInputSchema).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional()
+}).strict();
+
 export const ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema: z.ZodType<Prisma.ResourceUncheckedCreateNestedManyWithoutProcessStepInput> = z.object({
   create: z.union([ z.lazy(() => ResourceCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateWithoutProcessStepInputSchema).array(),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema).array() ]).optional(),
@@ -3056,6 +3626,16 @@ export const SensorUpdateManyWithoutProcessStepNestedInputSchema: z.ZodType<Pris
   deleteMany: z.union([ z.lazy(() => SensorScalarWhereInputSchema),z.lazy(() => SensorScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
+export const RecipeUpdateOneWithoutProcessStepsNestedInputSchema: z.ZodType<Prisma.RecipeUpdateOneWithoutProcessStepsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutProcessStepsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutProcessStepsInputSchema).optional(),
+  upsert: z.lazy(() => RecipeUpsertWithoutProcessStepsInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => RecipeUpdateToOneWithWhereWithoutProcessStepsInputSchema),z.lazy(() => RecipeUpdateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutProcessStepsInputSchema) ]).optional(),
+}).strict();
+
 export const ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema: z.ZodType<Prisma.ResourceUncheckedUpdateManyWithoutProcessStepNestedInput> = z.object({
   create: z.union([ z.lazy(() => ResourceCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateWithoutProcessStepInputSchema).array(),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema).array() ]).optional(),
@@ -3110,6 +3690,164 @@ export const SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema: z.Zod
   update: z.union([ z.lazy(() => SensorUpdateWithWhereUniqueWithoutProcessStepInputSchema),z.lazy(() => SensorUpdateWithWhereUniqueWithoutProcessStepInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => SensorUpdateManyWithWhereWithoutProcessStepInputSchema),z.lazy(() => SensorUpdateManyWithWhereWithoutProcessStepInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => SensorScalarWhereInputSchema),z.lazy(() => SensorScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeInputCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeInputCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeOutputCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeOutputCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ProcessStepCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeInputUncheckedCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUncheckedCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeInputCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeOutputUncheckedCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeOutputCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUncheckedCreateNestedManyWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateNestedManyWithoutRecipeInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ProcessStepCreateManyRecipeInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeInputUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.RecipeInputUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RecipeInputUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeInputCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RecipeInputUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RecipeInputUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RecipeInputScalarWhereInputSchema),z.lazy(() => RecipeInputScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeOutputUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.RecipeOutputUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RecipeOutputUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeOutputCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RecipeOutputUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RecipeOutputUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RecipeOutputScalarWhereInputSchema),z.lazy(() => RecipeOutputScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.ProcessStepUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ProcessStepCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ProcessStepUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ProcessStepScalarWhereInputSchema),z.lazy(() => ProcessStepScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeInputUncheckedUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.RecipeInputUncheckedUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeInputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RecipeInputUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeInputCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RecipeInputWhereUniqueInputSchema),z.lazy(() => RecipeInputWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RecipeInputUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RecipeInputUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => RecipeInputUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RecipeInputScalarWhereInputSchema),z.lazy(() => RecipeInputScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeOutputUncheckedUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema).array(),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => RecipeOutputCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => RecipeOutputUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => RecipeOutputCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => RecipeOutputWhereUniqueInputSchema),z.lazy(() => RecipeOutputWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => RecipeOutputUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => RecipeOutputUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => RecipeOutputScalarWhereInputSchema),z.lazy(() => RecipeOutputScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUncheckedUpdateManyWithoutRecipeNestedInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateManyWithoutRecipeNestedInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutRecipeInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => ProcessStepCreateManyRecipeInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutRecipeInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ProcessStepUpdateManyWithWhereWithoutRecipeInputSchema),z.lazy(() => ProcessStepUpdateManyWithWhereWithoutRecipeInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ProcessStepScalarWhereInputSchema),z.lazy(() => ProcessStepScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const RecipeCreateNestedOneWithoutInputsInputSchema: z.ZodType<Prisma.RecipeCreateNestedOneWithoutInputsInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutInputsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutInputsInputSchema).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateOneWithoutInputsNestedInputSchema: z.ZodType<Prisma.RecipeUpdateOneWithoutInputsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutInputsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutInputsInputSchema).optional(),
+  upsert: z.lazy(() => RecipeUpsertWithoutInputsInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => RecipeUpdateToOneWithWhereWithoutInputsInputSchema),z.lazy(() => RecipeUpdateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutInputsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeCreateNestedOneWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeCreateNestedOneWithoutOutputsInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutOutputsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutOutputsInputSchema).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateOneWithoutOutputsNestedInputSchema: z.ZodType<Prisma.RecipeUpdateOneWithoutOutputsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RecipeCreateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutOutputsInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutOutputsInputSchema).optional(),
+  upsert: z.lazy(() => RecipeUpsertWithoutOutputsInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => RecipeWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => RecipeWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => RecipeUpdateToOneWithWhereWithoutOutputsInputSchema),z.lazy(() => RecipeUpdateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutOutputsInputSchema) ]).optional(),
 }).strict();
 
 export const ProcessStepCreateNestedOneWithoutSensorsInputSchema: z.ZodType<Prisma.ProcessStepCreateNestedOneWithoutSensorsInput> = z.object({
@@ -3379,7 +4117,8 @@ export const ProcessStepCreateWithoutResourcesInputSchema: z.ZodType<Prisma.Proc
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutResourcesInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutResourcesInput> = z.object({
@@ -3392,6 +4131,7 @@ export const ProcessStepUncheckedCreateWithoutResourcesInputSchema: z.ZodType<Pr
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional()
@@ -3480,7 +4220,8 @@ export const ProcessStepUpdateWithoutResourcesInputSchema: z.ZodType<Prisma.Proc
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutResourcesInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutResourcesInput> = z.object({
@@ -3493,6 +4234,7 @@ export const ProcessStepUncheckedUpdateWithoutResourcesInputSchema: z.ZodType<Pr
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional()
@@ -3733,15 +4475,13 @@ export const WorkerScalarWhereInputSchema: z.ZodType<Prisma.WorkerScalarWhereInp
 
 export const InventoryEntryCreateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateWithoutInventoryInput> = z.object({
   addedAt: z.coerce.date().optional(),
-  material: z.string(),
-  quantity: z.number().int()
+  material: z.string()
 }).strict();
 
 export const InventoryEntryUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedCreateWithoutInventoryInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
-  material: z.string(),
-  quantity: z.number().int()
+  material: z.string()
 }).strict();
 
 export const InventoryEntryCreateOrConnectWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateOrConnectWithoutInventoryInput> = z.object({
@@ -3814,7 +4554,8 @@ export const ProcessStepCreateWithoutInventoryInputSchema: z.ZodType<Prisma.Proc
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutInventoryInput> = z.object({
@@ -3826,6 +4567,7 @@ export const ProcessStepUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Pr
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
@@ -3860,7 +4602,6 @@ export const InventoryEntryScalarWhereInputSchema: z.ZodType<Prisma.InventoryEnt
   id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
-  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
 }).strict();
 
@@ -3948,7 +4689,8 @@ export const ProcessStepUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.Proc
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutInventoryInput> = z.object({
@@ -3960,6 +4702,7 @@ export const ProcessStepUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Pr
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
@@ -4089,7 +4832,8 @@ export const ProcessStepCreateWithoutLocationInputSchema: z.ZodType<Prisma.Proce
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutLocationInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutLocationInput> = z.object({
@@ -4101,6 +4845,7 @@ export const ProcessStepUncheckedCreateWithoutLocationInputSchema: z.ZodType<Pri
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
@@ -4201,6 +4946,7 @@ export const ProcessStepScalarWhereInputSchema: z.ZodType<Prisma.ProcessStepScal
   outputSpeed: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   locationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const LocationCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.LocationCreateWithoutProcessStepsInput> = z.object({
@@ -4363,6 +5109,28 @@ export const SensorCreateManyProcessStepInputEnvelopeSchema: z.ZodType<Prisma.Se
   data: z.union([ z.lazy(() => SensorCreateManyProcessStepInputSchema),z.lazy(() => SensorCreateManyProcessStepInputSchema).array() ]),
 }).strict();
 
+export const RecipeCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeCreateWithoutProcessStepsInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputCreateNestedManyWithoutRecipeInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUncheckedCreateWithoutProcessStepsInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeCreateOrConnectWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeCreateOrConnectWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => RecipeWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutProcessStepsInputSchema) ]),
+}).strict();
+
 export const LocationUpsertWithoutProcessStepsInputSchema: z.ZodType<Prisma.LocationUpsertWithoutProcessStepsInput> = z.object({
   update: z.union([ z.lazy(() => LocationUpdateWithoutProcessStepsInputSchema),z.lazy(() => LocationUncheckedUpdateWithoutProcessStepsInputSchema) ]),
   create: z.union([ z.lazy(() => LocationCreateWithoutProcessStepsInputSchema),z.lazy(() => LocationUncheckedCreateWithoutProcessStepsInputSchema) ]),
@@ -4513,6 +5281,282 @@ export const SensorScalarWhereInputSchema: z.ZodType<Prisma.SensorScalarWhereInp
   processStepId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
 }).strict();
 
+export const RecipeUpsertWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUpsertWithoutProcessStepsInput> = z.object({
+  update: z.union([ z.lazy(() => RecipeUpdateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutProcessStepsInputSchema) ]),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutProcessStepsInputSchema) ]),
+  where: z.lazy(() => RecipeWhereInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateToOneWithWhereWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUpdateToOneWithWhereWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => RecipeWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => RecipeUpdateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutProcessStepsInputSchema) ]),
+}).strict();
+
+export const RecipeUpdateWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUpdateWithoutProcessStepsInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedUpdateWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUncheckedUpdateWithoutProcessStepsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  outputs: z.lazy(() => RecipeOutputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeInputCreateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputCreateWithoutRecipeInput> = z.object({
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const RecipeInputUncheckedCreateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUncheckedCreateWithoutRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const RecipeInputCreateOrConnectWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputCreateOrConnectWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeInputWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeInputCreateManyRecipeInputEnvelopeSchema: z.ZodType<Prisma.RecipeInputCreateManyRecipeInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => RecipeInputCreateManyRecipeInputSchema),z.lazy(() => RecipeInputCreateManyRecipeInputSchema).array() ]),
+}).strict();
+
+export const RecipeOutputCreateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputCreateWithoutRecipeInput> = z.object({
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const RecipeOutputUncheckedCreateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedCreateWithoutRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const RecipeOutputCreateOrConnectWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputCreateOrConnectWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeOutputWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeOutputCreateManyRecipeInputEnvelopeSchema: z.ZodType<Prisma.RecipeOutputCreateManyRecipeInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => RecipeOutputCreateManyRecipeInputSchema),z.lazy(() => RecipeOutputCreateManyRecipeInputSchema).array() ]),
+}).strict();
+
+export const ProcessStepCreateWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepCreateWithoutRecipeInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  status: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
+  resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedCreateWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  status: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  locationId: z.number().int(),
+  inventoryId: z.number().int(),
+  resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
+  sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional()
+}).strict();
+
+export const ProcessStepCreateOrConnectWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepCreateOrConnectWithoutRecipeInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const ProcessStepCreateManyRecipeInputEnvelopeSchema: z.ZodType<Prisma.ProcessStepCreateManyRecipeInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => ProcessStepCreateManyRecipeInputSchema),z.lazy(() => ProcessStepCreateManyRecipeInputSchema).array() ]),
+}).strict();
+
+export const RecipeInputUpsertWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUpsertWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeInputWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => RecipeInputUpdateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedUpdateWithoutRecipeInputSchema) ]),
+  create: z.union([ z.lazy(() => RecipeInputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeInputUpdateWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUpdateWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeInputWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => RecipeInputUpdateWithoutRecipeInputSchema),z.lazy(() => RecipeInputUncheckedUpdateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeInputUpdateManyWithWhereWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUpdateManyWithWhereWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeInputScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => RecipeInputUpdateManyMutationInputSchema),z.lazy(() => RecipeInputUncheckedUpdateManyWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeInputScalarWhereInputSchema: z.ZodType<Prisma.RecipeInputScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeInputScalarWhereInputSchema),z.lazy(() => RecipeInputScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeInputScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeInputScalarWhereInputSchema),z.lazy(() => RecipeInputScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+}).strict();
+
+export const RecipeOutputUpsertWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUpsertWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeOutputWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => RecipeOutputUpdateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedUpdateWithoutRecipeInputSchema) ]),
+  create: z.union([ z.lazy(() => RecipeOutputCreateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeOutputUpdateWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUpdateWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeOutputWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => RecipeOutputUpdateWithoutRecipeInputSchema),z.lazy(() => RecipeOutputUncheckedUpdateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeOutputUpdateManyWithWhereWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUpdateManyWithWhereWithoutRecipeInput> = z.object({
+  where: z.lazy(() => RecipeOutputScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => RecipeOutputUpdateManyMutationInputSchema),z.lazy(() => RecipeOutputUncheckedUpdateManyWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeOutputScalarWhereInputSchema: z.ZodType<Prisma.RecipeOutputScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RecipeOutputScalarWhereInputSchema),z.lazy(() => RecipeOutputScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RecipeOutputScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RecipeOutputScalarWhereInputSchema),z.lazy(() => RecipeOutputScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+}).strict();
+
+export const ProcessStepUpsertWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUpsertWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutRecipeInputSchema) ]),
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const ProcessStepUpdateWithWhereUniqueWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUpdateWithWhereUniqueWithoutRecipeInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => ProcessStepUpdateWithoutRecipeInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const ProcessStepUpdateManyWithWhereWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUpdateManyWithWhereWithoutRecipeInput> = z.object({
+  where: z.lazy(() => ProcessStepScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => ProcessStepUpdateManyMutationInputSchema),z.lazy(() => ProcessStepUncheckedUpdateManyWithoutRecipeInputSchema) ]),
+}).strict();
+
+export const RecipeCreateWithoutInputsInputSchema: z.ZodType<Prisma.RecipeCreateWithoutInputsInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  outputs: z.lazy(() => RecipeOutputCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedCreateWithoutInputsInputSchema: z.ZodType<Prisma.RecipeUncheckedCreateWithoutInputsInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  outputs: z.lazy(() => RecipeOutputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeCreateOrConnectWithoutInputsInputSchema: z.ZodType<Prisma.RecipeCreateOrConnectWithoutInputsInput> = z.object({
+  where: z.lazy(() => RecipeWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutInputsInputSchema) ]),
+}).strict();
+
+export const RecipeUpsertWithoutInputsInputSchema: z.ZodType<Prisma.RecipeUpsertWithoutInputsInput> = z.object({
+  update: z.union([ z.lazy(() => RecipeUpdateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutInputsInputSchema) ]),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutInputsInputSchema) ]),
+  where: z.lazy(() => RecipeWhereInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateToOneWithWhereWithoutInputsInputSchema: z.ZodType<Prisma.RecipeUpdateToOneWithWhereWithoutInputsInput> = z.object({
+  where: z.lazy(() => RecipeWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => RecipeUpdateWithoutInputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutInputsInputSchema) ]),
+}).strict();
+
+export const RecipeUpdateWithoutInputsInputSchema: z.ZodType<Prisma.RecipeUpdateWithoutInputsInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  outputs: z.lazy(() => RecipeOutputUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedUpdateWithoutInputsInputSchema: z.ZodType<Prisma.RecipeUncheckedUpdateWithoutInputsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  outputs: z.lazy(() => RecipeOutputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeCreateWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeCreateWithoutOutputsInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedCreateWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeUncheckedCreateWithoutOutputsInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputs: z.lazy(() => RecipeInputUncheckedCreateNestedManyWithoutRecipeInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutRecipeInputSchema).optional()
+}).strict();
+
+export const RecipeCreateOrConnectWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeCreateOrConnectWithoutOutputsInput> = z.object({
+  where: z.lazy(() => RecipeWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutOutputsInputSchema) ]),
+}).strict();
+
+export const RecipeUpsertWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeUpsertWithoutOutputsInput> = z.object({
+  update: z.union([ z.lazy(() => RecipeUpdateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutOutputsInputSchema) ]),
+  create: z.union([ z.lazy(() => RecipeCreateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutOutputsInputSchema) ]),
+  where: z.lazy(() => RecipeWhereInputSchema).optional()
+}).strict();
+
+export const RecipeUpdateToOneWithWhereWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeUpdateToOneWithWhereWithoutOutputsInput> = z.object({
+  where: z.lazy(() => RecipeWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => RecipeUpdateWithoutOutputsInputSchema),z.lazy(() => RecipeUncheckedUpdateWithoutOutputsInputSchema) ]),
+}).strict();
+
+export const RecipeUpdateWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeUpdateWithoutOutputsInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
+export const RecipeUncheckedUpdateWithoutOutputsInputSchema: z.ZodType<Prisma.RecipeUncheckedUpdateWithoutOutputsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputs: z.lazy(() => RecipeInputUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutRecipeNestedInputSchema).optional()
+}).strict();
+
 export const ProcessStepCreateWithoutSensorsInputSchema: z.ZodType<Prisma.ProcessStepCreateWithoutSensorsInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -4524,7 +5568,8 @@ export const ProcessStepCreateWithoutSensorsInputSchema: z.ZodType<Prisma.Proces
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
-  outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional()
+  outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutSensorsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutSensorsInput> = z.object({
@@ -4537,6 +5582,7 @@ export const ProcessStepUncheckedCreateWithoutSensorsInputSchema: z.ZodType<Pris
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional()
@@ -4569,7 +5615,8 @@ export const ProcessStepUpdateWithoutSensorsInputSchema: z.ZodType<Prisma.Proces
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
-  outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional()
+  outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutSensorsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutSensorsInput> = z.object({
@@ -4582,6 +5629,7 @@ export const ProcessStepUncheckedUpdateWithoutSensorsInputSchema: z.ZodType<Pris
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
@@ -4622,7 +5670,8 @@ export const ProcessStepCreateWithoutOutputsInputSchema: z.ZodType<Prisma.Proces
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutOutputsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutOutputsInput> = z.object({
@@ -4635,6 +5684,7 @@ export const ProcessStepUncheckedCreateWithoutOutputsInputSchema: z.ZodType<Pris
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional()
@@ -4656,7 +5706,8 @@ export const ProcessStepCreateWithoutInputsInputSchema: z.ZodType<Prisma.Process
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional(),
-  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional()
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedCreateWithoutInputsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutInputsInput> = z.object({
@@ -4669,6 +5720,7 @@ export const ProcessStepUncheckedCreateWithoutInputsInputSchema: z.ZodType<Prism
   outputSpeed: z.number().int(),
   locationId: z.number().int(),
   inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional()
@@ -4731,7 +5783,8 @@ export const ProcessStepUpdateWithoutOutputsInputSchema: z.ZodType<Prisma.Proces
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutOutputsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutOutputsInput> = z.object({
@@ -4744,6 +5797,7 @@ export const ProcessStepUncheckedUpdateWithoutOutputsInputSchema: z.ZodType<Pris
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional()
@@ -4771,7 +5825,8 @@ export const ProcessStepUpdateWithoutInputsInputSchema: z.ZodType<Prisma.Process
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutInputsInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutInputsInput> = z.object({
@@ -4784,6 +5839,7 @@ export const ProcessStepUncheckedUpdateWithoutInputsInputSchema: z.ZodType<Prism
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional()
@@ -4823,28 +5879,24 @@ export const WorkerUncheckedUpdateManyWithoutWorkerRolesInputSchema: z.ZodType<P
 export const InventoryEntryCreateManyInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateManyInventoryInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
-  material: z.string(),
-  quantity: z.number().int()
+  material: z.string()
 }).strict();
 
 export const InventoryEntryUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUpdateWithoutInventoryInput> = z.object({
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const InventoryEntryUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateWithoutInventoryInput> = z.object({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const InventoryEntryUncheckedUpdateManyWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateManyWithoutInventoryInput> = z.object({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const ResourceCreateManyLocationInputSchema: z.ZodType<Prisma.ResourceCreateManyLocationInput> = z.object({
@@ -4871,7 +5923,8 @@ export const ProcessStepCreateManyLocationInputSchema: z.ZodType<Prisma.ProcessS
   status: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  inventoryId: z.number().int()
+  inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable()
 }).strict();
 
 export const ResourceUpdateWithoutLocationInputSchema: z.ZodType<Prisma.ResourceUpdateWithoutLocationInput> = z.object({
@@ -4941,7 +5994,8 @@ export const ProcessStepUpdateWithoutLocationInputSchema: z.ZodType<Prisma.Proce
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
-  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUncheckedUpdateWithoutLocationInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutLocationInput> = z.object({
@@ -4953,6 +6007,7 @@ export const ProcessStepUncheckedUpdateWithoutLocationInputSchema: z.ZodType<Pri
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
@@ -4968,6 +6023,7 @@ export const ProcessStepUncheckedUpdateManyWithoutLocationInputSchema: z.ZodType
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const ResourceCreateManyProcessStepInputSchema: z.ZodType<Prisma.ResourceCreateManyProcessStepInput> = z.object({
@@ -5120,6 +6176,107 @@ export const SensorUncheckedUpdateManyWithoutProcessStepInputSchema: z.ZodType<P
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeInputCreateManyRecipeInputSchema: z.ZodType<Prisma.RecipeInputCreateManyRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const RecipeOutputCreateManyRecipeInputSchema: z.ZodType<Prisma.RecipeOutputCreateManyRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  material: z.string(),
+  quantity: z.number().int()
+}).strict();
+
+export const ProcessStepCreateManyRecipeInputSchema: z.ZodType<Prisma.ProcessStepCreateManyRecipeInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  status: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  locationId: z.number().int(),
+  inventoryId: z.number().int()
+}).strict();
+
+export const RecipeInputUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUpdateWithoutRecipeInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeInputUncheckedUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUncheckedUpdateWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeInputUncheckedUpdateManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeInputUncheckedUpdateManyWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeOutputUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUpdateWithoutRecipeInput> = z.object({
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeOutputUncheckedUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedUpdateWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RecipeOutputUncheckedUpdateManyWithoutRecipeInputSchema: z.ZodType<Prisma.RecipeOutputUncheckedUpdateManyWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const ProcessStepUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUpdateWithoutRecipeInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
+  resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional(),
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
+  sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedUpdateManyWithoutRecipeInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateManyWithoutRecipeInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 /////////////////////////////////////////
@@ -5622,6 +6779,192 @@ export const ProcessStepFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.ProcessSte
   where: ProcessStepWhereUniqueInputSchema,
 }).strict() ;
 
+export const RecipeFindFirstArgsSchema: z.ZodType<Prisma.RecipeFindFirstArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOrderByWithRelationInputSchema.array(),RecipeOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeScalarFieldEnumSchema,RecipeScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeFindFirstOrThrowArgsSchema: z.ZodType<Prisma.RecipeFindFirstOrThrowArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOrderByWithRelationInputSchema.array(),RecipeOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeScalarFieldEnumSchema,RecipeScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeFindManyArgsSchema: z.ZodType<Prisma.RecipeFindManyArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOrderByWithRelationInputSchema.array(),RecipeOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeScalarFieldEnumSchema,RecipeScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeAggregateArgsSchema: z.ZodType<Prisma.RecipeAggregateArgs> = z.object({
+  where: RecipeWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOrderByWithRelationInputSchema.array(),RecipeOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeGroupByArgsSchema: z.ZodType<Prisma.RecipeGroupByArgs> = z.object({
+  where: RecipeWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOrderByWithAggregationInputSchema.array(),RecipeOrderByWithAggregationInputSchema ]).optional(),
+  by: RecipeScalarFieldEnumSchema.array(),
+  having: RecipeScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeFindUniqueArgsSchema: z.ZodType<Prisma.RecipeFindUniqueArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.RecipeFindUniqueOrThrowArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeInputFindFirstArgsSchema: z.ZodType<Prisma.RecipeInputFindFirstArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeInputOrderByWithRelationInputSchema.array(),RecipeInputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeInputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeInputScalarFieldEnumSchema,RecipeInputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeInputFindFirstOrThrowArgsSchema: z.ZodType<Prisma.RecipeInputFindFirstOrThrowArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeInputOrderByWithRelationInputSchema.array(),RecipeInputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeInputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeInputScalarFieldEnumSchema,RecipeInputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeInputFindManyArgsSchema: z.ZodType<Prisma.RecipeInputFindManyArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeInputOrderByWithRelationInputSchema.array(),RecipeInputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeInputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeInputScalarFieldEnumSchema,RecipeInputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeInputAggregateArgsSchema: z.ZodType<Prisma.RecipeInputAggregateArgs> = z.object({
+  where: RecipeInputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeInputOrderByWithRelationInputSchema.array(),RecipeInputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeInputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeInputGroupByArgsSchema: z.ZodType<Prisma.RecipeInputGroupByArgs> = z.object({
+  where: RecipeInputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeInputOrderByWithAggregationInputSchema.array(),RecipeInputOrderByWithAggregationInputSchema ]).optional(),
+  by: RecipeInputScalarFieldEnumSchema.array(),
+  having: RecipeInputScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeInputFindUniqueArgsSchema: z.ZodType<Prisma.RecipeInputFindUniqueArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeInputFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.RecipeInputFindUniqueOrThrowArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeOutputFindFirstArgsSchema: z.ZodType<Prisma.RecipeOutputFindFirstArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOutputOrderByWithRelationInputSchema.array(),RecipeOutputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeOutputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeOutputScalarFieldEnumSchema,RecipeOutputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeOutputFindFirstOrThrowArgsSchema: z.ZodType<Prisma.RecipeOutputFindFirstOrThrowArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOutputOrderByWithRelationInputSchema.array(),RecipeOutputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeOutputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeOutputScalarFieldEnumSchema,RecipeOutputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeOutputFindManyArgsSchema: z.ZodType<Prisma.RecipeOutputFindManyArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOutputOrderByWithRelationInputSchema.array(),RecipeOutputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeOutputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RecipeOutputScalarFieldEnumSchema,RecipeOutputScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RecipeOutputAggregateArgsSchema: z.ZodType<Prisma.RecipeOutputAggregateArgs> = z.object({
+  where: RecipeOutputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOutputOrderByWithRelationInputSchema.array(),RecipeOutputOrderByWithRelationInputSchema ]).optional(),
+  cursor: RecipeOutputWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeOutputGroupByArgsSchema: z.ZodType<Prisma.RecipeOutputGroupByArgs> = z.object({
+  where: RecipeOutputWhereInputSchema.optional(),
+  orderBy: z.union([ RecipeOutputOrderByWithAggregationInputSchema.array(),RecipeOutputOrderByWithAggregationInputSchema ]).optional(),
+  by: RecipeOutputScalarFieldEnumSchema.array(),
+  having: RecipeOutputScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RecipeOutputFindUniqueArgsSchema: z.ZodType<Prisma.RecipeOutputFindUniqueArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeOutputFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.RecipeOutputFindUniqueOrThrowArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereUniqueInputSchema,
+}).strict() ;
+
 export const SensorFindFirstArgsSchema: z.ZodType<Prisma.SensorFindFirstArgs> = z.object({
   select: SensorSelectSchema.optional(),
   include: SensorIncludeSchema.optional(),
@@ -6096,6 +7439,138 @@ export const ProcessStepUpdateManyArgsSchema: z.ZodType<Prisma.ProcessStepUpdate
 
 export const ProcessStepDeleteManyArgsSchema: z.ZodType<Prisma.ProcessStepDeleteManyArgs> = z.object({
   where: ProcessStepWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeCreateArgsSchema: z.ZodType<Prisma.RecipeCreateArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  data: z.union([ RecipeCreateInputSchema,RecipeUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const RecipeUpsertArgsSchema: z.ZodType<Prisma.RecipeUpsertArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereUniqueInputSchema,
+  create: z.union([ RecipeCreateInputSchema,RecipeUncheckedCreateInputSchema ]),
+  update: z.union([ RecipeUpdateInputSchema,RecipeUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const RecipeCreateManyArgsSchema: z.ZodType<Prisma.RecipeCreateManyArgs> = z.object({
+  data: z.union([ RecipeCreateManyInputSchema,RecipeCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeCreateManyAndReturnArgsSchema: z.ZodType<Prisma.RecipeCreateManyAndReturnArgs> = z.object({
+  data: z.union([ RecipeCreateManyInputSchema,RecipeCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeDeleteArgsSchema: z.ZodType<Prisma.RecipeDeleteArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  where: RecipeWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeUpdateArgsSchema: z.ZodType<Prisma.RecipeUpdateArgs> = z.object({
+  select: RecipeSelectSchema.optional(),
+  include: RecipeIncludeSchema.optional(),
+  data: z.union([ RecipeUpdateInputSchema,RecipeUncheckedUpdateInputSchema ]),
+  where: RecipeWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeUpdateManyArgsSchema: z.ZodType<Prisma.RecipeUpdateManyArgs> = z.object({
+  data: z.union([ RecipeUpdateManyMutationInputSchema,RecipeUncheckedUpdateManyInputSchema ]),
+  where: RecipeWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeDeleteManyArgsSchema: z.ZodType<Prisma.RecipeDeleteManyArgs> = z.object({
+  where: RecipeWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeInputCreateArgsSchema: z.ZodType<Prisma.RecipeInputCreateArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  data: z.union([ RecipeInputCreateInputSchema,RecipeInputUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const RecipeInputUpsertArgsSchema: z.ZodType<Prisma.RecipeInputUpsertArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereUniqueInputSchema,
+  create: z.union([ RecipeInputCreateInputSchema,RecipeInputUncheckedCreateInputSchema ]),
+  update: z.union([ RecipeInputUpdateInputSchema,RecipeInputUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const RecipeInputCreateManyArgsSchema: z.ZodType<Prisma.RecipeInputCreateManyArgs> = z.object({
+  data: z.union([ RecipeInputCreateManyInputSchema,RecipeInputCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeInputCreateManyAndReturnArgsSchema: z.ZodType<Prisma.RecipeInputCreateManyAndReturnArgs> = z.object({
+  data: z.union([ RecipeInputCreateManyInputSchema,RecipeInputCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeInputDeleteArgsSchema: z.ZodType<Prisma.RecipeInputDeleteArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  where: RecipeInputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeInputUpdateArgsSchema: z.ZodType<Prisma.RecipeInputUpdateArgs> = z.object({
+  select: RecipeInputSelectSchema.optional(),
+  include: RecipeInputIncludeSchema.optional(),
+  data: z.union([ RecipeInputUpdateInputSchema,RecipeInputUncheckedUpdateInputSchema ]),
+  where: RecipeInputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeInputUpdateManyArgsSchema: z.ZodType<Prisma.RecipeInputUpdateManyArgs> = z.object({
+  data: z.union([ RecipeInputUpdateManyMutationInputSchema,RecipeInputUncheckedUpdateManyInputSchema ]),
+  where: RecipeInputWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeInputDeleteManyArgsSchema: z.ZodType<Prisma.RecipeInputDeleteManyArgs> = z.object({
+  where: RecipeInputWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeOutputCreateArgsSchema: z.ZodType<Prisma.RecipeOutputCreateArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  data: z.union([ RecipeOutputCreateInputSchema,RecipeOutputUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const RecipeOutputUpsertArgsSchema: z.ZodType<Prisma.RecipeOutputUpsertArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereUniqueInputSchema,
+  create: z.union([ RecipeOutputCreateInputSchema,RecipeOutputUncheckedCreateInputSchema ]),
+  update: z.union([ RecipeOutputUpdateInputSchema,RecipeOutputUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const RecipeOutputCreateManyArgsSchema: z.ZodType<Prisma.RecipeOutputCreateManyArgs> = z.object({
+  data: z.union([ RecipeOutputCreateManyInputSchema,RecipeOutputCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeOutputCreateManyAndReturnArgsSchema: z.ZodType<Prisma.RecipeOutputCreateManyAndReturnArgs> = z.object({
+  data: z.union([ RecipeOutputCreateManyInputSchema,RecipeOutputCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const RecipeOutputDeleteArgsSchema: z.ZodType<Prisma.RecipeOutputDeleteArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  where: RecipeOutputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeOutputUpdateArgsSchema: z.ZodType<Prisma.RecipeOutputUpdateArgs> = z.object({
+  select: RecipeOutputSelectSchema.optional(),
+  include: RecipeOutputIncludeSchema.optional(),
+  data: z.union([ RecipeOutputUpdateInputSchema,RecipeOutputUncheckedUpdateInputSchema ]),
+  where: RecipeOutputWhereUniqueInputSchema,
+}).strict() ;
+
+export const RecipeOutputUpdateManyArgsSchema: z.ZodType<Prisma.RecipeOutputUpdateManyArgs> = z.object({
+  data: z.union([ RecipeOutputUpdateManyMutationInputSchema,RecipeOutputUncheckedUpdateManyInputSchema ]),
+  where: RecipeOutputWhereInputSchema.optional(),
+}).strict() ;
+
+export const RecipeOutputDeleteManyArgsSchema: z.ZodType<Prisma.RecipeOutputDeleteManyArgs> = z.object({
+  where: RecipeOutputWhereInputSchema.optional(),
 }).strict() ;
 
 export const SensorCreateArgsSchema: z.ZodType<Prisma.SensorCreateArgs> = z.object({

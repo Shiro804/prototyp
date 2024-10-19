@@ -1,5 +1,6 @@
-import { InventoryEntry, Prisma, TransportSystem } from "@prisma/client";
+import { InventoryEntry, Prisma } from "@prisma/client";
 import { Event } from "./events";
+import { distributeRoundRobin } from "./round-robin";
 
 export type LocationFull = Prisma.LocationGetPayload<{
   include: {
@@ -54,6 +55,12 @@ export type LocationFull = Prisma.LocationGetPayload<{
             entries: true;
           };
         };
+        recipe: {
+          include: {
+            inputs: true;
+            outputs: true;
+          };
+        };
       };
     };
   };
@@ -66,6 +73,12 @@ export interface SimulationEntityState {
 export interface SimulationRun {
   frames: SimulationEntityState[];
   events: Event[];
+}
+
+interface InventoryModification {
+  inventoryId: number;
+  entriesToAdd?: InventoryEntry[];
+  entriesToRemove?: number[];
 }
 
 export class Simulation {
@@ -96,6 +109,7 @@ export class Simulation {
   }
 
   private static objectsToReferences(state: SimulationEntityState) {
+    // Transform transport systems to references
     const transportSystems = Object.fromEntries(
       state.locations
         .flatMap((l) => l.processSteps)
@@ -122,7 +136,53 @@ export class Simulation {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    // Phase 1: Inventory intake
+    const inventoryModifications: InventoryModification[] = [];
+
+    // Phase 1: Outlet
+
+    for (const location of newState.locations) {
+      for (const processStep of location.processSteps) {
+        const outputIds = processStep.outputs.map((o) => o.id);
+        const outputSpeeds = processStep.outputs.map((o) =>
+          Math.min(processStep.outputSpeed, o.inputSpeed)
+        );
+
+        const itemsPerOutput = distributeRoundRobin(
+          processStep.inventory.entries
+            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
+            .map((e) => e.id),
+          outputSpeeds
+        );
+
+        for (let output = 0; output < itemsPerOutput.length; output++) {
+          inventoryModifications.push({
+            inventoryId: processStep.inventory.id,
+            entriesToRemove: itemsPerOutput[output],
+          });
+        }
+
+        // for (let total = 0; total < itemsLeft; total++) {
+        //   for (let item = 0; item < processStep.inventory.entries.length; item++) {
+
+        //   }
+        // }
+
+        for (const output of processStep.outputs) {
+          let outputSpeed = Math.min(
+            processStep.outputSpeed,
+            output.outputSpeed
+          );
+          let outputItems = input.inventory.entries
+            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
+            .splice(0, inputSpeed)
+            .map((e) => ({ ...e, addedAt: new Date() }));
+
+          processStep.inventory.entries.push(...inputItems);
+        }
+      }
+    }
+
+    // Phase 2: Production
 
     for (const location of newState.locations) {
       for (const processSteps of location.processSteps) {
@@ -138,8 +198,20 @@ export class Simulation {
       }
     }
 
-    // Phase 2: Production
+    // Phase 3: Intake
 
-    // Phase 3: Outlet
+    for (const location of newState.locations) {
+      for (const processStep of location.processSteps) {
+        for (const input of processStep.inputs) {
+          let inputSpeed = Math.min(processStep.inputSpeed, input.outputSpeed);
+          let inputItems = input.inventory.entries
+            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
+            .splice(0, inputSpeed)
+            .map((e) => ({ ...e, addedAt: new Date() }));
+
+          processStep.inventory.entries.push(...inputItems);
+        }
+      }
+    }
   }
 }
