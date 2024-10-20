@@ -87,7 +87,10 @@ export class Simulation {
   }
 
   public run(ticks: number): SimulationRun {
-    for (let i = 0; i < ticks; i++) {
+    let firstFrame = Simulation.cloneState(this.initialState);
+    this.frames.push(firstFrame);
+
+    for (let i = 1; i < ticks; i++) {
       this.tick();
     }
 
@@ -127,7 +130,11 @@ export class Simulation {
   }
 
   private tick() {
-    let oldState = this.frames.at(-1) ?? this.initialState;
+    let oldState = this.frames.at(-1);
+    if (oldState === undefined) {
+      throw new Error("No initial frame present.");
+    }
+
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
