@@ -33,13 +33,13 @@ export function CreateLocationModal({
             placeholder="Name"
           />
           <Center>
-            <Button type="submit" mt="md" color="green" disabled={pending}>
+            <Button type="submit" mt="md" color="indigo" disabled={pending}>
               {pending ? <Loader color="white" size="1.5em" /> : <IconCheck />}
             </Button>
           </Center>
         </form>
       </Modal>
-      <Button color="green" onClick={open} mt="md">
+      <Button color="indigo" onClick={open} mt="md">
         <IconPlus />
       </Button>
     </>

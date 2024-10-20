@@ -16,13 +16,16 @@ import {
   IconAddressBook,
   IconBell,
   IconBellFilled,
+  IconBrandSteam,
   IconBuildingFactory2,
+  IconCarCrane,
   IconChartInfographic,
   IconHome,
   IconReportAnalytics,
   IconReportSearch,
   IconSettings,
-  IconUserCog
+  IconUserCog,
+  IconWashMachine
 
 } from "@tabler/icons-react";
 import { ExoticComponent, ReactNode } from "react";
@@ -30,6 +33,7 @@ import { ExoticComponent, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
+import SimulationControlOverlay from "./SimulationControlOverlay";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -41,18 +45,20 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
+  { icon: IconCarCrane, label: "Machines", href: "/machines" },
+  { icon: IconBrandSteam, label: "Process Steps", href: "/processSteps" },
 ];
 
 const entityLinks: LinkDescription[] = [
-  { icon: IconChartInfographic, label: "Operational Efficiency Reports", href: "/placeholder" },
-  { icon: IconReportSearch, label: "Inventory and Stock Reports", href: "/placeholder" },
-  { icon: IconReportAnalytics, label: "Quality Control & Compliance Reports", href: "/placeholder" },
+  { icon: IconChartInfographic, label: "Operational Efficiency Reports", href: "/placeholder1" },
+  { icon: IconReportSearch, label: "Inventory and Stock Reports", href: "/placeholder2" },
+  { icon: IconReportAnalytics, label: "Quality Control & Compliance Reports", href: "/placeholder3" },
 ];
 
 const settingsLinks: LinkDescription[] = [
-  { icon: IconUserCog, label: "User Management", href: "/placeholder" },
-  { icon: IconSettings, label: "Simulation Configuration", href: "/placeholder" },
-  { icon: IconBell, label: "Notification", href: "/placeholder" },
+  { icon: IconUserCog, label: "User Management", href: "/placeholder4" },
+  { icon: IconSettings, label: "Simulation Configuration", href: "/placeholder5" },
+  { icon: IconBell, label: "Notification", href: "/placeholder6" },
 ];
 
 function MenuLink({ link }: { link: LinkDescription }) {
@@ -84,10 +90,13 @@ export default function MainContainer({
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          <Logo />
-        </Group>
+        <Flex h="100%" px="md" gap="md" justify="space-between" align="center" direction="row" wrap="nowrap">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Logo />
+          </Group>
+          <SimulationControlOverlay />
+        </Flex>
       </AppShell.Header>
       <AppShell.Navbar p="md">
         <AppShell.Section my="md" component={ScrollArea}>
