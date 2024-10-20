@@ -18,19 +18,19 @@ export default async function Dashboard() {
     <Container __size="xl" ml={0}>
       <Title>Dashboard</Title>
       <Flex w="1300px" h="1000px" gap="md" direction="column">
-        <Tabs>
+        <Tabs defaultValue="view1">
           <TabsList>
-            <TabsTab value="gallery" leftSection={<IconDice1 style={iconStyle} />}>
+            <TabsTab value="view1" leftSection={<IconDice1 style={iconStyle} />}>
               View 1
             </TabsTab>
-            <TabsTab value="messages" leftSection={<IconDice2 style={iconStyle} />}>
+            <TabsTab value="view2" leftSection={<IconDice2 style={iconStyle} />}>
               View 2
             </TabsTab>
-            <TabsTab value="settings" leftSection={<IconDice3 style={iconStyle} />}>
+            <TabsTab value="view3" leftSection={<IconDice3 style={iconStyle} />}>
               View 3
             </TabsTab>
           </TabsList>
-          <TabsPanel w="100%" h="100%" value="gallery">
+          <TabsPanel w="100%" h="100%" value="view1">
             <SimpleGrid pt="20px" cols={{ base: 1, md: 3 }}>
               <StatCard title="Locations" value={locations} />
               <StatCard title="Resources" value={resources} />
@@ -41,7 +41,7 @@ export default async function Dashboard() {
             </SimpleGrid>
           </TabsPanel>
 
-          <TabsPanel value="messages">
+          <TabsPanel value="view2">
             <SimpleGrid pt="20px" cols={{ base: 1, md: 3 }}>
               <StatCard title="Locations" value={locations} height="500px" />
               <StatCard title="Resources" value={resources} height="500px" />
@@ -52,7 +52,7 @@ export default async function Dashboard() {
             </SimpleGrid>
           </TabsPanel>
 
-          <TabsPanel value="settings">
+          <TabsPanel value="view3">
             <SimpleGrid pt="20px" cols={{ base: 1, md: 1 }}>
               <StatCard title="Locations" value={locations} height="500px" />
               <StatCard title="Resources" value={resources} height="500px" />
