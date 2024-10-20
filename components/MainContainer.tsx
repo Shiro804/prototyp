@@ -104,7 +104,7 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContext = useSimulationContext(1);
+  const simulationContext = useSimulationContext(0.5);
 
   return (
     <AppShell

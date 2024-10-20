@@ -231,6 +231,7 @@ export class Simulation {
       for (const processStep of location.processSteps) {
         for (const input of processStep.inputs) {
           let inputSpeed = Math.min(processStep.inputSpeed, input.outputSpeed);
+
           let inputItems = input.inventory.entries
             .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
             .splice(0, inputSpeed)
@@ -240,13 +241,9 @@ export class Simulation {
               inventoryId: processStep.inventory.id,
             }));
 
-          console.log(inputItems);
-          console.log(processStep.inventory);
-          console.log(input.inventory);
-
           processStep.inventory.entries.push(...inputItems);
-          input.inventory.entries = input.inventory.entries.filter((e) =>
-            inputItems.some((ie) => ie.id === e.id)
+          input.inventory.entries = input.inventory.entries.filter(
+            (e) => !inputItems.some((ie) => ie.id === e.id)
           );
         }
       }
