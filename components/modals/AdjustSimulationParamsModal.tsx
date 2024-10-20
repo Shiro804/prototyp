@@ -1,10 +1,10 @@
+
 import { FunctionComponent } from "react";
 import { Button, Card, Center, Loader, Modal, TextInput, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconAdjustmentsAlt as IconAdjustment } from "@tabler/icons-react";
+import { FunctionComponent } from "react";
 import ToBeDoneCard from "../custom/ToBeDoneCard";
-
-
 
 interface AdjustSimulationParamsProps {
 }

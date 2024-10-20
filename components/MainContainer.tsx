@@ -4,7 +4,6 @@ import {
   AppShell,
   Avatar,
   Burger,
-  Container,
   Flex,
   Group,
   NavLink,
@@ -15,25 +14,24 @@ import { Notifications } from "@mantine/notifications";
 import {
   IconAddressBook,
   IconBell,
-  IconBellFilled,
   IconBrandSteam,
   IconBuildingFactory2,
   IconCarCrane,
   IconChartInfographic,
   IconHome,
+  IconPackages,
   IconReportAnalytics,
   IconReportSearch,
   IconSettings,
   IconUserCog,
-  IconWashMachine,
 } from "@tabler/icons-react";
 import { ExoticComponent, ReactNode } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
-import SimulationControlOverlay from "./SimulationControlOverlay";
 import { SimulationContext, useSimulationContext } from "./SimulationContext";
+import SimulationControlOverlay from "./SimulationControlOverlay";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -52,8 +50,13 @@ const overviewLinks: LinkDescription[] = [
 const entityLinks: LinkDescription[] = [
   {
     icon: IconBuildingFactory2,
-    label: "Incoming Goods",
+    label: "Incoming Commodities",
     href: "/incoming-goods",
+  },
+  {
+    icon: IconPackages,
+    label: "Commodity Monitoring",
+    href: "/commodities-monitoring",
   },
   {
     icon: IconChartInfographic,
@@ -104,7 +107,7 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContext = useSimulationContext(1);
+  const simulationContext = useSimulationContext(0.5);
 
   return (
     <AppShell
