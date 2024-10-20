@@ -1,7 +1,7 @@
-import { InventoryEntry, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Event } from "./events";
-import { distributeRoundRobin } from "./round-robin";
 import { nextFreeInventoryEntryId } from "./inventories";
+import { distributeRoundRobin } from "./round-robin";
 
 export type LocationFull = Prisma.LocationGetPayload<{
   include: {
@@ -69,12 +69,6 @@ export interface SimulationEntityState {
 export interface SimulationRun {
   frames: SimulationEntityState[];
   events: Event[];
-}
-
-interface InventoryModification {
-  inventoryId: number;
-  entriesToAdd?: InventoryEntry[];
-  entriesToRemove?: number[];
 }
 
 export class Simulation {
