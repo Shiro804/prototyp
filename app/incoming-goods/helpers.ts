@@ -5,6 +5,7 @@ export function getIncomingCommodities(location: LocationFull): number {
     .flatMap((ps) => ps.inputs)
     .filter((i) => i.startStepId === null)
     .map((i) => i.inventory.entries.length)
+    .map((i) => (console.log(i), i))
     .reduce((acc, cur) => acc + cur, 0);
 }
 

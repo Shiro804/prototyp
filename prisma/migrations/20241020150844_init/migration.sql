@@ -121,11 +121,11 @@ CREATE TABLE "TransportSystem" (
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
     "inventoryId" INTEGER NOT NULL,
-    "startStepId" INTEGER NOT NULL,
-    "endStepId" INTEGER NOT NULL,
+    "startStepId" INTEGER,
+    "endStepId" INTEGER,
     CONSTRAINT "TransportSystem_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "TransportSystem_startStepId_fkey" FOREIGN KEY ("startStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "TransportSystem_endStepId_fkey" FOREIGN KEY ("endStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "TransportSystem_startStepId_fkey" FOREIGN KEY ("startStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "TransportSystem_endStepId_fkey" FOREIGN KEY ("endStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable

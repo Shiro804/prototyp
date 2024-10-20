@@ -3,6 +3,11 @@ import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
 import { distributeRoundRobin } from "./round-robin";
 
+export function convertDates(key: string, value: any) {
+  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(value)) return value;
+  return new Date(value);
+}
+
 export type LocationFull = Prisma.LocationGetPayload<{
   include: {
     resources: {
@@ -95,7 +100,7 @@ export class Simulation {
   private static cloneState(
     state: SimulationEntityState
   ): SimulationEntityState {
-    return JSON.parse(JSON.stringify(state));
+    return JSON.parse(JSON.stringify(state), convertDates);
   }
 
   private static objectsToReferences(state: SimulationEntityState) {
@@ -229,7 +234,15 @@ export class Simulation {
           let inputItems = input.inventory.entries
             .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
             .splice(0, inputSpeed)
-            .map((e) => ({ ...e, addedAt: new Date() }));
+            .map((e) => ({
+              ...e,
+              addedAt: new Date(),
+              inventoryId: processStep.inventory.id,
+            }));
+
+          console.log(inputItems);
+          console.log(processStep.inventory);
+          console.log(input.inventory);
 
           processStep.inventory.entries.push(...inputItems);
           input.inventory.entries = input.inventory.entries.filter((e) =>

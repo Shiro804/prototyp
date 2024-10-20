@@ -2,6 +2,10 @@ export function distributeRoundRobin<T>(
   items: T[],
   outputSpeeds: number[]
 ): T[][] {
+  if (outputSpeeds.length === 0) {
+    return [];
+  }
+
   let result: T[][] = outputSpeeds.map((_) => []);
 
   let keys = outputSpeeds.length;
