@@ -3,6 +3,11 @@ import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
 import { distributeRoundRobin } from "./round-robin";
 
+export function convertDates(key: string, value: any) {
+  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(value)) return value;
+  return new Date(value);
+}
+
 export type LocationFull = Prisma.LocationGetPayload<{
   include: {
     resources: {
@@ -82,7 +87,10 @@ export class Simulation {
   }
 
   public run(ticks: number): SimulationRun {
-    for (let i = 0; i < ticks; i++) {
+    let firstFrame = Simulation.cloneState(this.initialState);
+    this.frames.push(firstFrame);
+
+    for (let i = 1; i < ticks; i++) {
       this.tick();
     }
 
@@ -95,7 +103,7 @@ export class Simulation {
   private static cloneState(
     state: SimulationEntityState
   ): SimulationEntityState {
-    return JSON.parse(JSON.stringify(state));
+    return JSON.parse(JSON.stringify(state), convertDates);
   }
 
   private static objectsToReferences(state: SimulationEntityState) {
@@ -122,7 +130,11 @@ export class Simulation {
   }
 
   private tick() {
-    let oldState = this.frames.at(-1) ?? this.initialState;
+    let oldState = this.frames.at(-1);
+    if (oldState === undefined) {
+      throw new Error("No initial frame present.");
+    }
+
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
@@ -226,14 +238,19 @@ export class Simulation {
       for (const processStep of location.processSteps) {
         for (const input of processStep.inputs) {
           let inputSpeed = Math.min(processStep.inputSpeed, input.outputSpeed);
+
           let inputItems = input.inventory.entries
             .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
             .splice(0, inputSpeed)
-            .map((e) => ({ ...e, addedAt: new Date() }));
+            .map((e) => ({
+              ...e,
+              addedAt: new Date(),
+              inventoryId: processStep.inventory.id,
+            }));
 
           processStep.inventory.entries.push(...inputItems);
-          input.inventory.entries = input.inventory.entries.filter((e) =>
-            inputItems.some((ie) => ie.id === e.id)
+          input.inventory.entries = input.inventory.entries.filter(
+            (e) => !inputItems.some((ie) => ie.id === e.id)
           );
         }
       }

@@ -33,7 +33,7 @@ export default function IncomingGoods() {
 
   return (
     <>
-      <Title>Incoming Goods</Title>
+      <Title>Incoming Commodities</Title>
       <SimpleGrid cols={{ base: 2, md: 3 }}>
         {simulation?.frames[frame].locations.map((l) => (
           <LocationCard

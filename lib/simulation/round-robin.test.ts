@@ -23,4 +23,22 @@ describe("distributeRoundRobin", () => {
       [6, 7, 8],
     ]);
   });
+
+  test("handles empty inputs", () => {
+    let items: number[] = [];
+    let outputSpeeds = [1, 1, 5];
+
+    expect(distributeRoundRobin(items, outputSpeeds)).toStrictEqual([
+      [],
+      [],
+      [],
+    ]);
+  });
+
+  test("handles empty outputs", () => {
+    let items: number[] = [1, 2, 3, 4];
+    let outputSpeeds: number[] = [];
+
+    expect(distributeRoundRobin(items, outputSpeeds)).toStrictEqual([]);
+  });
 });
