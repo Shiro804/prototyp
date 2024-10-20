@@ -1,4 +1,4 @@
-import { Button, Container, Flex, Text } from "@mantine/core";
+import { Button, Container, Flex, Text, Tooltip } from "@mantine/core";
 import {
   IconPlayerPause as IconPause,
   IconPlayerPlay as IconPlay,
@@ -9,7 +9,7 @@ import { FunctionComponent } from "react";
 import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
 import { useSimulation } from "./SimulationContext";
 
-interface SimulationControlOverlayProps {}
+interface SimulationControlOverlayProps { }
 
 const SimulationControlOverlay: FunctionComponent<
   SimulationControlOverlayProps
@@ -36,22 +36,38 @@ const SimulationControlOverlay: FunctionComponent<
             direction="row"
             wrap="nowrap"
           >
-            <Button color="indigo" onClick={() => load(1000)} loading={loading}>
-              <IconRotateDot />
-            </Button>
-            <Button
+            <Tooltip label="Calculate Simulation"
+              position="bottom"
               color="indigo"
-              disabled={simulation === undefined}
-              onClick={toggle}
-              loading={loading}
-            >
-              {playing ? <IconPause /> : <IconPlay />}
-            </Button>
+              radius="md"
+              offset={10}
+              withArrow>
+              <Button color="indigo" onClick={() => load(1000)} loading={loading}>
+                <IconRotateDot />
+              </Button>
+            </Tooltip>
+            <Tooltip label="Play and Stop Simulation"
+              position="bottom"
+              color="indigo"
+              radius="md"
+              offset={10}
+              withArrow>
+              <Button
+                color="indigo"
+                disabled={simulation === undefined}
+                onClick={toggle}
+                loading={loading}
+              >
+                {playing ? <IconPause /> : <IconPlay />}
+              </Button>
+
+            </Tooltip>
+            
             <AdjustSimulationParams />
           </Flex>
         </Flex>
-      </Container>
-    </Flex>
+      </Container >
+    </Flex >
   );
 };
 
