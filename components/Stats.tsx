@@ -6,6 +6,8 @@ export interface StatCardProps<T extends ReactNode> {
   skeletonOnUndefinedValue?: boolean;
   value?: T;
   icon?: ReactNode;
+  height?: string;
+  width?: string;
 }
 
 export function StatCard<T extends ReactNode>({
@@ -13,17 +15,19 @@ export function StatCard<T extends ReactNode>({
   skeletonOnUndefinedValue = true,
   icon,
   value,
+  height,
+  width
 }: Readonly<StatCardProps<T>>) {
   return (
-    <Paper withBorder p="md" radius="md" key={title}>
+    <Paper bg="#D9D9D9" withBorder h={height ? height : "200px"} w={width ? width : "100%"} p="md" radius="md" key={title}>
       <Group justify="space-between">
-        <Text c="dimmed">{title}</Text>
+        <Text c="black">{title}</Text>
         {icon}
       </Group>
       {skeletonOnUndefinedValue && value === undefined ? (
         <Skeleton />
       ) : (
-        <Text>{value}</Text>
+        <Text c="#757575">{value}</Text>
       )}
     </Paper>
   );
