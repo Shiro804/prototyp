@@ -46,7 +46,7 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
   { icon: IconCarCrane, label: "Machines", href: "/machines" },
-  { icon: IconBrandSteam, label: "Process Steps", href: "/processSteps" },
+  { icon: IconBrandSteam, label: "Process Steps", href: "/process-steps" },
 ];
 
 const entityLinks: LinkDescription[] = [

@@ -10,7 +10,7 @@ export async function create(processStep: Prisma.ProcessStepCreateInput) {
   });
 
   revalidatePath("/");
-  revalidatePath("/processSteps");
+  revalidatePath("/process-steps");
 }
 
 export async function del(id: number) {
@@ -21,7 +21,7 @@ export async function del(id: number) {
   });
 
   revalidatePath("/");
-  revalidatePath("/processSteps");
+  revalidatePath("/process-steps");
 }
 
 export async function update(id: number, processStep: Prisma.ProcessStepUpdateInput) {
@@ -32,5 +32,5 @@ export async function update(id: number, processStep: Prisma.ProcessStepUpdateIn
     data: processStep,
   });
 
-  revalidatePath("/processSteps");
+  revalidatePath("/process-steps");
 }
