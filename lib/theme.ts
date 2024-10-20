@@ -1,6 +1,6 @@
 "use client";
 
-import { createTheme, Title } from "@mantine/core";
+import { createTheme, darken, Paper, Title } from "@mantine/core";
 
 export const theme = createTheme({
   components: {
@@ -10,6 +10,13 @@ export const theme = createTheme({
           marginBottom: "1em",
         },
       },
+    }),
+    Paper: Paper.extend({
+      styles: (prev) => ({
+        root: {
+          backgroundColor: darken(prev.white, 0.1),
+        },
+      }),
     }),
   },
 });

@@ -41,7 +41,12 @@ export function useSimulationContext(speed: number): SimulationState {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (playing) {
-        setFrame((prev) => prev + 1);
+        setFrame((prev) => {
+          if (simulation && prev + 1 >= simulation.frames.length) {
+            clearInterval(intervalId);
+          }
+          return prev + 1;
+        });
       }
     }, 1000 * speed);
 

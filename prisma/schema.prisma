@@ -234,12 +234,12 @@ model TransportSystem {
     inputSpeed  Int
     outputSpeed Int
 
-    inventory   Inventory   @relation(fields: [inventoryId], references: [id])
-    inventoryId Int         @unique
-    startStep   ProcessStep @relation("stepOutputs", fields: [startStepId], references: [id])
-    startStepId Int
-    endStep     ProcessStep @relation("stepInputs", fields: [endStepId], references: [id])
-    endStepId   Int
+    inventory   Inventory    @relation(fields: [inventoryId], references: [id])
+    inventoryId Int          @unique
+    startStep   ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
+    startStepId Int?
+    endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
+    endStepId   Int?
 
     // events TransportEvent[]
 }
