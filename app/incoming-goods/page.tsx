@@ -1,32 +1,21 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button, SimpleGrid, Title } from "@mantine/core";
 
-import { useSimulation, useSimulationPlayer } from "@/lib/simulation/hook";
-import { useEffect } from "react";
+import { useSimulation } from "@/components/SimulationContext";
 
 export default function IncomingGoods() {
-  const { load, result } = useSimulation();
-  const { toggle, frame } = useSimulationPlayer(1);
-
-  const loadSimulation = () => {
-    load(1000);
-  };
-
-  const startSimulation = () => {
-    toggle();
-  };
+  const { toggle, load, simulation, frame } = useSimulation();
 
   useEffect(() => {
-    console.log(result);
-  }, [result]);
+    console.log(simulation);
+  }, [simulation]);
 
   return (
     <>
       <Title>Incoming Goods</Title>
-      {result && <SimpleGrid cols={{ base: 2, md: 3 }}>{frame}</SimpleGrid>}
-      <Button onClick={loadSimulation}>Load</Button>
-      {result && <Button onClick={startSimulation}>Start</Button>}
+      {simulation && <SimpleGrid cols={{ base: 2, md: 3 }}>{frame}</SimpleGrid>}
     </>
   );
 }
