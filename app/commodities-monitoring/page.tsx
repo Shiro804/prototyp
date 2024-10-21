@@ -1,6 +1,6 @@
 "use client";
 
-import { Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
 import { useSimulation } from "@/components/SimulationContext";
@@ -25,16 +25,20 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
         <Table withTableBorder>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Material</Table.Th>
-              <Table.Th>Count</Table.Th>
+              <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
+                <Table.Th>Material</Table.Th>
+                <Table.Th>Count</Table.Th>
+              </Flex>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {Object.entries(groupInventory(ps.inventory)).map(
               ([material, count]) => (
                 <Table.Tr key={material}>
-                  <Table.Td>{material}</Table.Td>
-                  <Table.Td>{count}</Table.Td>
+                  <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
+                    <Table.Td>{material}</Table.Td>
+                    <Table.Td>{count}</Table.Td>
+                  </Flex>
                 </Table.Tr>
               )
             )}

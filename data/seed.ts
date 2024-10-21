@@ -9,11 +9,14 @@ function randomBetween(min: number, max: number) {
 }
 
 async function main() {
-  for (let h = 0; h < 4; h++) {
+  for (let h = 0; h < 2; h++) {
     const stocks: Omit<Prisma.ProcessStepCreateInput, "location">[] = [];
     const stockCount = randomBetween(1, 4);
+    const randomOffset = randomBetween(0, 1);
 
-    for (let s = 0; s < stockCount; s++) {
+    for (let s = 0; s < (h == 0 ? 3 : stockCount); s++) {
+      const materialArray =
+        h == 0 ? ["Seat Structures", "Seat Foam", "Headrest"] : ["Seat Case"]; //Halle 1 hat Strukturen, Schäume und Kopfstützen
       stocks.push({
         name: "Lager " + (s + 1),
         inputSpeed: randomBetween(1, 4),
@@ -31,7 +34,10 @@ async function main() {
                   type: "transportSystem",
                   entries: {
                     create: Array(randomBetween(1, 100)).fill({
-                      material: "Wood",
+                      material:
+                        materialArray[
+                          h == 0 ? s : 0 //randomBetween(0, materialArray.length - 1)
+                        ],
                     }),
                   },
                 },
