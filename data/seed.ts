@@ -14,6 +14,8 @@ async function main() {
     const stockCount = randomBetween(1, 4);
     const randomOffset = randomBetween(0, 1);
 
+    const hallArray = ["Halle 1", "Halle 5"];
+
     for (let s = 0; s < (h == 0 ? 3 : stockCount); s++) {
       const materialArray =
         h == 0 ? ["Seat Structures", "Seat Foam", "Headrest"] : ["Seat Case"]; //Halle 1 hat Strukturen, Schäume und Kopfstützen
@@ -50,7 +52,7 @@ async function main() {
 
     const hall = await prisma.location.create({
       data: {
-        name: "Halle " + (h + 1),
+        name: hallArray[h],
         processSteps: {
           create: stocks,
         },

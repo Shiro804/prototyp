@@ -62,7 +62,7 @@ const SimulationControlOverlay: FunctionComponent<
               </Button>
 
             </Tooltip>
-            
+
             <AdjustSimulationParams />
           </Flex>
         </Flex>

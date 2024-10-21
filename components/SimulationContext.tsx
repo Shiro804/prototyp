@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 
 import { Simulation, SimulationRun } from "@/lib/simulation/simulation";
 
@@ -7,6 +7,8 @@ export interface SimulationState {
   frame: number;
   playing: boolean;
   loading: boolean;
+  // speed: number;
+  // setSpeed: Dispatch<SetStateAction<number>>;
   load: (ticks: number) => void;
   toggle: () => void;
 }
@@ -16,8 +18,10 @@ export const SimulationContext = createContext<SimulationState>({
   frame: 0,
   playing: false,
   loading: false,
-  load: () => {},
-  toggle: () => {},
+  // speed: 1,
+  // setSpeed: () => { },
+  load: () => { },
+  toggle: () => { },
 });
 
 export function useSimulationContext(speed: number): SimulationState {
@@ -25,6 +29,7 @@ export function useSimulationContext(speed: number): SimulationState {
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useState(0);
   const [loading, setLoading] = useState(false);
+  // const [speed, setSpeed] = useState(0.8);
 
   const load = (ticks: number) => {
     setLoading(true);

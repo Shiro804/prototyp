@@ -13,6 +13,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { Notifications } from "@mantine/notifications";
 import {
   IconAddressBook,
+  IconArrowBadgeRight,
   IconBell,
   IconBrandSteam,
   IconBuildingFactory2,
@@ -23,6 +24,7 @@ import {
   IconReportAnalytics,
   IconReportSearch,
   IconSettings,
+  IconTruck,
   IconUserCog,
 } from "@tabler/icons-react";
 import { ExoticComponent, ReactNode } from "react";
@@ -43,8 +45,9 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
-  { icon: IconCarCrane, label: "Machines", href: "/machines" },
-  { icon: IconBrandSteam, label: "Process Steps", href: "/process-steps" },
+  { icon: IconBrandSteam, label: "Machines", href: "/machines" },
+  { icon: IconArrowBadgeRight, label: "Process Steps", href: "/process-steps" },
+  { icon: IconTruck, label: "Transportsystems", href: "/transport-systems" },
 ];
 
 const entityLinks: LinkDescription[] = [
@@ -107,7 +110,7 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContext = useSimulationContext(0.5);
+  const simulationContext = useSimulationContext(0.8);
 
   return (
     <AppShell

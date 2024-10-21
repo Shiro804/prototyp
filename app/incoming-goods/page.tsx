@@ -4,11 +4,12 @@ import { Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
 import { useSimulation } from "@/components/SimulationContext";
-import { getIncomingCommodities, getTotalCommodities } from "./helpers";
+import { getIncomingCommodities, getTotalCommodities, groupInventory } from "./helpers";
+import { InventoryEntry } from "@prisma/client";
 
 interface LocationCardProps {
   name: ReactNode;
-  incoming: ReactNode;
+  incoming: InventoryEntry[][];
   total: ReactNode;
 }
 
@@ -17,9 +18,22 @@ const LocationCard: FC<LocationCardProps> = ({ name, incoming, total }) => (
     <Text fw="bold" size="lg" mb="md">
       {name}
     </Text>
-    <Text fw="bold">Incoming Commodities</Text>
-    <Text mb="sm">{incoming}</Text>
-    <Text fw="bold">Current Commodities</Text>
+    <Text fw="600">Incoming Commodities</Text>
+    <Text mb="sm">{incoming.flatMap(i => i).length}</Text>
+    {
+      incoming.flatMap(i => {
+        if (i.length === 0 || i[0] === undefined) {
+          return null; // Skip this iteration if the array is empty or the first element is undefined
+        }
+        return (
+          <>
+            <Text fw="600">{i[0].material}</Text>
+            <Text fw={500} mb="sm">{i.length}</Text>
+          </>
+        );
+      })
+    }
+    <Text fw="600">Current Commodities</Text>
     <Text>{total}</Text>
   </Paper>
 );
