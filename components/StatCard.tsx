@@ -21,13 +21,13 @@ export function StatCard<T extends ReactNode>({
   return (
     <Paper bg="#D9D9D9" withBorder h={height ? height : "200px"} w={width ? width : "100%"} p="md" radius="md" key={title}>
       <Group justify="space-between">
-        <Text c="black">{title}</Text>
+        <Text fw={600} c="black">{title}</Text>
         {icon}
       </Group>
       {skeletonOnUndefinedValue && value === undefined ? (
         <Skeleton />
       ) : (
-        <Text c="#757575">{value}</Text>
+        <Text fw={600} c="#757575">{value}</Text>
       )}
     </Paper>
   );

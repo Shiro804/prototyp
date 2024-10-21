@@ -1,13 +1,20 @@
 import { LocationFull } from "@/lib/simulation/simulation";
-import { Inventory, Prisma } from "@prisma/client";
+import { Inventory, InventoryEntry, Prisma } from "@prisma/client";
 
-export function getIncomingCommodities(location: LocationFull): number {
-  return location.processSteps
+export function getIncomingCommodities(
+  location: LocationFull
+): InventoryEntry[][] {
+  let incomingCommodities = location.processSteps
     .flatMap((ps) => ps.inputs)
     .filter((i) => i.startStepId === null)
-    .map((i) => i.inventory.entries.length)
-    .map((i) => (console.log(i), i))
-    .reduce((acc, cur) => acc + cur, 0);
+    .map((i) => i.inventory.entries);
+
+  console.log(incomingCommodities);
+
+  return incomingCommodities;
+  // .map((i) => i.inventory.entries.length)
+  // .map((i) => (console.log(i), i))
+  // .reduce((acc, cur) => acc + cur, 0);
 }
 
 /**
@@ -16,9 +23,13 @@ export function getIncomingCommodities(location: LocationFull): number {
  * @returns The number of commodities across all process steps.
  */
 export function getTotalCommodities(location: LocationFull): number {
-  return location.processSteps
+  let totalIncomingCommodities = location.processSteps
     .map((ps) => ps.inventory.entries.length)
     .reduce((acc, cur) => acc + cur, 0);
+
+  console.log(location.processSteps.map((ps) => ps.inventory.entries));
+
+  return totalIncomingCommodities;
 }
 
 export type InventoryGroups = {

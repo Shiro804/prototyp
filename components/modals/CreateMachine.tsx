@@ -9,7 +9,7 @@ import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { CreateModalProps } from "./CreateModal";
 import { useSubmit } from "./SubmitHook";
 
-export function CreateResourceModal({
+export function CreateMachineModal({
     onSubmit,
 }: Readonly<CreateModalProps<Machine>>) {
     const [opened, { open, close }] = useDisclosure(false);

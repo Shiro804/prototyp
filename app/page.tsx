@@ -1,6 +1,6 @@
 import { Flex, rem, SimpleGrid, Tabs, Title, TabsList, TabsPanel, TabsTab, Container } from "@mantine/core";
 
-import { StatCard } from "@/components/Stats";
+import { StatCard } from "@/components/StatCard";
 import prisma from "@/data/db";
 import { IconDice1, IconDice2, IconDice3 } from "@tabler/icons-react";
 
@@ -11,6 +11,7 @@ export default async function Dashboard() {
   const transportSystems = await prisma.transportSystem.count();
   const sensors = await prisma.sensor.count();
   const workers = await prisma.worker.count();
+  const pSteps = await prisma.processStep.count();
 
   const iconStyle = { width: rem(12), height: rem(12) };
 
@@ -38,6 +39,7 @@ export default async function Dashboard() {
               <StatCard title="Machines" value={machines} />
               <StatCard title="Sensors" value={sensors} />
               <StatCard title="Workers" value={workers} />
+              <StatCard title="Process Steps" value={pSteps} />
             </SimpleGrid>
           </TabsPanel>
 
@@ -49,6 +51,7 @@ export default async function Dashboard() {
               <StatCard title="Machines" value={machines} height="500px" />
               <StatCard title="Sensors" value={sensors} height="500px" />
               <StatCard title="Workers" value={workers} height="500px" />
+              <StatCard title="Process Steps" value={pSteps} height="500px" />
             </SimpleGrid>
           </TabsPanel>
 
@@ -60,6 +63,7 @@ export default async function Dashboard() {
               <StatCard title="Machines" value={machines} height="500px" />
               <StatCard title="Sensors" value={sensors} height="500px" />
               <StatCard title="Workers" value={workers} height="500px" />
+              <StatCard title="Process Steps" value={pSteps} height="500px" />
             </SimpleGrid>
           </TabsPanel>
         </Tabs>

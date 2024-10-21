@@ -19,15 +19,15 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
     <Text fw="bold" size="lg" mb="md">
       {name}
     </Text>
-    {processSteps.map((ps) => (
+    {processSteps.reverse().map((ps) => (
       <>
-        <Text fw="bold">{ps.name}</Text>
+        <Text fw="600">{ps.name}</Text>
         <Table withTableBorder>
           <Table.Thead>
             <Table.Tr>
               <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
-                <Table.Th>Material</Table.Th>
-                <Table.Th>Count</Table.Th>
+                <Table.Th fw={600}>Material</Table.Th>
+                <Table.Th fw={600}>Count</Table.Th>
               </Flex>
             </Table.Tr>
           </Table.Thead>
@@ -36,8 +36,8 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
               ([material, count]) => (
                 <Table.Tr key={material}>
                   <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
-                    <Table.Td>{material}</Table.Td>
-                    <Table.Td>{count}</Table.Td>
+                    <Table.Td fw={600}>{material}</Table.Td>
+                    <Table.Td fw={600}>{count}</Table.Td>
                   </Flex>
                 </Table.Tr>
               )
