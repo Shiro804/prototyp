@@ -19,6 +19,7 @@ import {
   IconBuildingFactory2,
   IconCarCrane,
   IconChartInfographic,
+  IconDeviceDesktopAnalytics,
   IconHome,
   IconPackages,
   IconReportAnalytics,
@@ -43,6 +44,7 @@ interface LinkDescription {
 
 const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
+  { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
   { icon: IconBrandSteam, label: "Machines", href: "/machines" },
@@ -110,7 +112,7 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContext = useSimulationContext(0.8);
+  const simulationContext = useSimulationContext(0.5);
 
   return (
     <AppShell

@@ -1,6 +1,6 @@
 "use client";
 
-import { Paper, SimpleGrid, Text, Title } from "@mantine/core";
+import { Divider, Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
 import { useSimulation } from "@/components/SimulationContext";
@@ -20,6 +20,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, incoming, total }) => (
     </Text>
     <Text fw="600">Incoming Commodities</Text>
     <Text mb="sm">{incoming.flatMap(i => i).length}</Text>
+    <Divider color="grey" mt="10px" mb="10px" style={{borderRadius: "10px"}}/>
     {
       incoming.flatMap(i => {
         if (i.length === 0 || i[0] === undefined) {
@@ -33,6 +34,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, incoming, total }) => (
         );
       })
     }
+    <Divider color="grey" mt="10px" mb="10px" style={{borderRadius: "10px"}}/>
     <Text fw="600">Current Commodities</Text>
     <Text>{total}</Text>
   </Paper>

@@ -9,7 +9,7 @@ export function getIncomingCommodities(
     .filter((i) => i.startStepId === null)
     .map((i) => i.inventory.entries);
 
-  console.log(incomingCommodities);
+  // console.log(incomingCommodities);
 
   return incomingCommodities;
   // .map((i) => i.inventory.entries.length)
@@ -27,7 +27,7 @@ export function getTotalCommodities(location: LocationFull): number {
     .map((ps) => ps.inventory.entries.length)
     .reduce((acc, cur) => acc + cur, 0);
 
-  console.log(location.processSteps.map((ps) => ps.inventory.entries));
+  // console.log(location.processSteps.map((ps) => ps.inventory.entries));
 
   return totalIncomingCommodities;
 }

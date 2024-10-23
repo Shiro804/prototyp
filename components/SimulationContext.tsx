@@ -7,8 +7,8 @@ export interface SimulationState {
   frame: number;
   playing: boolean;
   loading: boolean;
-  // speed: number;
-  // setSpeed: Dispatch<SetStateAction<number>>;
+  speed: number;
+  setSpeed: Dispatch<SetStateAction<number>>;
   load: (ticks: number) => void;
   toggle: () => void;
 }
@@ -18,18 +18,22 @@ export const SimulationContext = createContext<SimulationState>({
   frame: 0,
   playing: false,
   loading: false,
-  // speed: 1,
-  // setSpeed: () => { },
+  speed: 1,
+  setSpeed: () => { },
   load: () => { },
   toggle: () => { },
 });
 
-export function useSimulationContext(speed: number): SimulationState {
+export function useSimulationContext(speedInput: number): SimulationState {
   const [simulation, setSimulation] = useState<SimulationRun>();
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useState(0);
   const [loading, setLoading] = useState(false);
-  // const [speed, setSpeed] = useState(0.8);
+  const [speed, setSpeed] = useState(speedInput || 1);
+
+  useEffect(() => {
+    console.log(speed)
+  }, [speed])
 
   const load = (ticks: number) => {
     setLoading(true);
@@ -59,10 +63,11 @@ export function useSimulationContext(speed: number): SimulationState {
   }, [playing]);
 
   const toggle = () => {
+    console.log("toggle triggered")
     setPlaying((prev) => !prev);
   };
 
-  return { simulation, frame, playing, loading, load, toggle };
+  return { simulation, frame, playing, loading, speed, setSpeed, load, toggle };
 }
 
 export function useSimulation(): SimulationState {

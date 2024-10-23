@@ -7,14 +7,14 @@ import { useSimulation } from "@/components/SimulationContext";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
-interface LocationCardProps {
+interface MonitoringCardProps {
   name: ReactNode;
   processSteps: Prisma.ProcessStepGetPayload<{
     include: { inventory: { include: { entries: true } } };
   }>[];
 }
 
-const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
+const MonitoringCard: FC<MonitoringCardProps> = ({ name, processSteps }) => (
   <Paper shadow="sm" p="lg">
     <Text fw="bold" size="lg" mb="md">
       {name}
@@ -49,24 +49,25 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
   </Paper>
 );
 
-export default function CommoditiesMonitoring() {
+export default function Monitoring() {
   const { simulation, frame, speed, setSpeed, toggle } = useSimulation();
 
   useEffect(() => {
-    console.log("commodities set speed")
-    setSpeed(1)
+    console.log("monitoring set speed")
+    setSpeed(10)
   }, []);
 
   useEffect(() => {
     console.log(simulation);
+    setSpeed(10)
   }, [simulation]);
 
   return (
     <>
-      <Title>Commodities</Title>
+      <Title>Monitoring</Title>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         {simulation?.frames[frame].locations.map((l) => (
-          <LocationCard
+          <MonitoringCard
             key={l.id}
             name={l.name}
             processSteps={l.processSteps}
