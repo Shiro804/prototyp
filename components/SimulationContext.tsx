@@ -60,7 +60,7 @@ export function useSimulationContext(speedInput: number): SimulationState {
     }, 1000 * speed);
 
     return () => clearInterval(intervalId);
-  }, [playing]);
+  }, [playing, speed]);
 
   const toggle = () => {
     console.log("toggle triggered")
