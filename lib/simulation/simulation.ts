@@ -129,7 +129,7 @@ export class Simulation {
     }
   }
 
-  private tick() {
+  public tick() {
     let oldState = this.frames.at(-1);
     if (oldState === undefined) {
       throw new Error("No initial frame present.");
@@ -143,7 +143,17 @@ export class Simulation {
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         if (processStep.recipe) {
-          for (let r = 0; r < processStep.recipeRate; r++) {
+          const itemsProducedPerRun = processStep.recipe.outputs
+            .map((o) => o.quantity)
+            .reduce((acc, cur) => acc + cur, 0);
+
+          for (
+            let r = 0;
+            r < processStep.recipeRate &&
+            processStep.inventory.entries.length + itemsProducedPerRun <=
+              processStep.inventory.limit;
+            r++
+          ) {
             let inputsFulfilled = true;
             let inputEntries = [];
 

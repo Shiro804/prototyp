@@ -106,6 +106,7 @@ model Inventory {
 
     type    String
     entries InventoryEntry[]
+    limit   Int
 
     // If type == "transportSystem"
     transportSystem TransportSystem?
