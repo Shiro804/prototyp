@@ -104,6 +104,7 @@ model Inventory {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
+    // TODO: Remove unnecessary field "type"? Can be inferred from "transportSystem" and "processStep"
     type    String
     entries InventoryEntry[]
     limit   Int
