@@ -4,14 +4,14 @@ import { Button, Card, Center, Flex, Loader, Modal, NumberInput, Text, TextInput
 import { useDisclosure } from "@mantine/hooks";
 import { IconAdjustmentsAlt as IconAdjustment } from "@tabler/icons-react";
 import ToBeDoneCard from "../custom/ToBeDoneCard";
-import { useSimulation } from "../SimulationContext";
+import { useSimulation1 } from "../SimulationContext";
 
 interface AdjustSimulationParamsProps {
 }
 
 const AdjustSimulationParamsModal: FunctionComponent<AdjustSimulationParamsProps> = () => {
     const [opened, { open, close }] = useDisclosure(false);
-    // const { speed, setSpeed } = useSimulation();
+    // const { speed, setSpeed } = useSimulation1();
 
     return (
         <>

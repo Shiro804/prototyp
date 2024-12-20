@@ -24,7 +24,7 @@ async function main() {
         inputSpeed: randomBetween(1, 4),
         outputSpeed: randomBetween(1, 4),
         status: "PROCEEDING",
-        inventory: { create: { type: "processStep" } },
+        inventory: { create: { limit: 100, type: "processStep" } },
         inputs: {
           create: [
             {
@@ -33,6 +33,7 @@ async function main() {
               outputSpeed: randomBetween(1, 4),
               inventory: {
                 create: {
+                  limit: 100,
                   type: "transportSystem",
                   entries: {
                     create: Array(randomBetween(1, 100)).fill({

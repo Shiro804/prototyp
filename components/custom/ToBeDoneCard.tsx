@@ -1,11 +1,11 @@
 import { Card, Group, Badge, Button, Text, Image } from "@mantine/core";
 import { FunctionComponent } from "react";
-import { useSimulation } from "../SimulationContext";
+import { useSimulation1 } from "../SimulationContext";
 
 interface ToBeDoneCardProps {}
 
 const ToBeDoneCard: FunctionComponent<ToBeDoneCardProps> = () => {
-  const { frame } = useSimulation();
+  const { frame } = useSimulation1();
 
   return (
     <Card shadow="xs" padding="md" radius="lg" withBorder>

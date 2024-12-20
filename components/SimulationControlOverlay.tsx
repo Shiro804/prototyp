@@ -7,14 +7,14 @@ import {
 import { FunctionComponent } from "react";
 
 import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
-import { useSimulation } from "./SimulationContext";
+import { useSimulation1 } from "./SimulationContext";
 
 interface SimulationControlOverlayProps { }
 
 const SimulationControlOverlay: FunctionComponent<
   SimulationControlOverlayProps
 > = () => {
-  const { load, toggle, playing, loading, simulation } = useSimulation();
+  const { load, toggle, playing, loading, simulation } = useSimulation1();
 
   return (
     <Flex>
