@@ -33,7 +33,7 @@ import { ExoticComponent, ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
-import { SimulationContext1, SimulationContext2, useSimulationContext1, useSimulationContext2 } from "./SimulationContext";
+import { SimulationContextMock, SimulationContextLive, useSimulationContextMock, useSimulationContextLive } from "./SimulationContext";
 import SimulationControlOverlay from "./SimulationControlOverlay";
 
 interface LinkDescription {
@@ -130,11 +130,11 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContext1 = useSimulationContext1(0.5);
-  const simulationContext2 = useSimulationContext2(10);
+  const simulationContextMock = useSimulationContextMock(0.5);
+  const simulationContextLive = useSimulationContextLive(10);
 
   useEffect(() => {
-    simulationContext2.load(1000)
+    simulationContextLive.load(1000)
   }, [])
 
   return (
@@ -143,8 +143,8 @@ export default function MainContainer({
       navbar={{ width: 300, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
     >
-      <SimulationContext1.Provider value={simulationContext1}>
-        <SimulationContext2.Provider value={simulationContext2}>
+      <SimulationContextMock.Provider value={simulationContextMock}>
+        <SimulationContextLive.Provider value={simulationContextLive}>
           <AppShell.Header>
             <Flex
               h="100%"
@@ -206,8 +206,8 @@ export default function MainContainer({
           </AppShell.Navbar>
           <AppShell.Main m="lg">{children}</AppShell.Main>
           <Notifications />
-        </SimulationContext2.Provider>
-      </SimulationContext1.Provider>
+        </SimulationContextLive.Provider>
+      </SimulationContextMock.Provider>
     </AppShell >
   );
 }

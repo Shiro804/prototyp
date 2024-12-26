@@ -3,7 +3,7 @@
 import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulation1 } from "@/components/SimulationContext";
+import { useSimulationMock } from "@/components/SimulationContext";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
@@ -50,7 +50,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
 );
 
 export default function CommoditiesMonitoring() {
-  const { simulation, frame, speed, setSpeed, toggle } = useSimulation1();
+  const { simulation, frame, speed, setSpeed, toggle } = useSimulationMock();
 
   useEffect(() => {
     console.log("commodities set speed")

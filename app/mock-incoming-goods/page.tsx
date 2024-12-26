@@ -3,7 +3,7 @@
 import { Divider, Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulation1, useSimulation2 } from "@/components/SimulationContext";
+import { useSimulationMock, useSimulationLive } from "@/components/SimulationContext";
 import { getIncomingCommodities, getTotalCommodities, groupInventory } from "./helpers";
 import { InventoryEntry } from "@prisma/client";
 
@@ -41,7 +41,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, incoming, total }) => (
 );
 
 export default function IncomingGoods() {
-  const { simulation, frame } = useSimulation1();
+  const { simulation, frame } = useSimulationMock();
 
   useEffect(() => {
     console.log(simulation);

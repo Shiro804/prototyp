@@ -3,7 +3,7 @@
 import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulation1, useSimulation2 } from "@/components/SimulationContext";
+import { useSimulationLive } from "@/components/SimulationContext";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
@@ -50,7 +50,7 @@ const MonitoringCard: FC<MonitoringCardProps> = ({ name, processSteps }) => (
 );
 
 export default function Monitoring() {
-  const { simulation, frame, speed, setSpeed, toggle } = useSimulation2();
+  const { simulation, frame, speed, setSpeed, toggle } = useSimulationLive();
 
   useEffect(() => {
     // console.log("monitoring set speed")

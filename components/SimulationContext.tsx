@@ -21,7 +21,7 @@ export interface SimulationState {
 }
 
 // First Simulation Context
-export const SimulationContext1 = createContext<SimulationState>({
+export const SimulationContextMock = createContext<SimulationState>({
   simulation: undefined,
   frame: 0,
   playing: false,
@@ -33,7 +33,7 @@ export const SimulationContext1 = createContext<SimulationState>({
 });
 
 // Second Simulation Context
-export const SimulationContext2 = createContext<SimulationState>({
+export const SimulationContextLive = createContext<SimulationState>({
   simulation: undefined,
   frame: 0,
   playing: true,
@@ -94,20 +94,20 @@ function useSimulationCore(speedInput: number): SimulationState {
 }
 
 // Hook for Simulation 1
-export function useSimulationContext1(speedInput: number): SimulationState {
+export function useSimulationContextMock(speedInput: number): SimulationState {
   return useSimulationCore(speedInput);
 }
 
 // Hook for Simulation 2
-export function useSimulationContext2(speedInput: number): SimulationState {
+export function useSimulationContextLive(speedInput: number): SimulationState {
   return useSimulationCore(speedInput);
 }
 
 // Helper hooks to use the contexts
-export function useSimulation1(): SimulationState {
-  return useContext(SimulationContext1);
+export function useSimulationMock(): SimulationState {
+  return useContext(SimulationContextMock);
 }
 
-export function useSimulation2(): SimulationState {
-  return useContext(SimulationContext2);
+export function useSimulationLive(): SimulationState {
+  return useContext(SimulationContextLive);
 }
