@@ -8,7 +8,7 @@ function randomBetween(min: number, max: number) {
 }
 
 async function main() {
-  // Hall 1
+  // Updated Hall 1 Mock Data
   const hall1 = await prisma.location.create({
     data: {
       name: "Hall 1",
@@ -17,15 +17,37 @@ async function main() {
           {
             name: "Rack 1",
             inputSpeed: randomBetween(1, 3),
-            outputSpeed: randomBetween(2, 5),
+            outputSpeed: randomBetween(2, 5), // Increased for flow
             status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: {
+              create: {
+                type: "processStep",
+                limit: 1000, // Increased for 100 seats
+                entries: {
+                  create: Array(10)
+                    .fill(0)
+                    .flatMap(() => [
+                      { material: "Seat Structures" },
+                      { material: "Seat Foam" },
+                      { material: "Headrest" },
+                    ]),
+                },
+              },
+            },
           },
         ],
       },
     },
     include: {
-      processSteps: true,
+      processSteps: {
+        include: {
+          inventory: {
+            include: {
+              entries: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -88,7 +110,7 @@ async function main() {
   let createTransportSystem = (
     name: string,
     from: { id: number },
-    to: { id: number },
+    to: { id: number }
   ) =>
     prisma.transportSystem.create({
       data: {
@@ -104,56 +126,21 @@ async function main() {
   await createTransportSystem(
     "Forklift 1",
     hall1.processSteps.find((ps) => ps.name === "Rack 1")!,
-    supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!,
+    supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!
   );
 
   await createTransportSystem(
     "Trolley 1",
     supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!,
-    supermarket.processSteps.find((ps) => ps.name === "Rack 2")!,
-  );
-
-  await createTransportSystem(
-    "Trolley 2",
-    supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!,
-    supermarket.processSteps.find((ps) => ps.name === "Rack 3")!,
-  );
-
-  await createTransportSystem(
-    "Trolley 3",
-    supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!,
-    supermarket.processSteps.find((ps) => ps.name === "Rack 4")!,
-  );
-
-  await createTransportSystem(
-    "Trolley 4",
-    supermarket.processSteps.find((ps) => ps.name === "Input Router 1")!,
-    supermarket.processSteps.find((ps) => ps.name === "Rack 5")!,
+    supermarket.processSteps.find((ps) => ps.name === "Rack 2")!
   );
 
   await createTransportSystem(
     "Trolley 5",
     supermarket.processSteps.find((ps) => ps.name === "Rack 2")!,
-    supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!,
+    supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!
   );
 
-  await createTransportSystem(
-    "Trolley 6",
-    supermarket.processSteps.find((ps) => ps.name === "Rack 3")!,
-    supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!,
-  );
-
-  await createTransportSystem(
-    "Trolley 7",
-    supermarket.processSteps.find((ps) => ps.name === "Rack 4")!,
-    supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!,
-  );
-
-  await createTransportSystem(
-    "Trolley 8",
-    supermarket.processSteps.find((ps) => ps.name === "Rack 5")!,
-    supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!,
-  );
 
   // Hall 3
   const hall3 = await prisma.location.create({
@@ -188,6 +175,74 @@ async function main() {
     include: { processSteps: true },
   });
 
+  // Hall 4
+  const hall4 = await prisma.location.create({
+    data: {
+      name: "Hall 4",
+      processSteps: {
+        create: [
+          {
+            name: "Quality Check",
+            inputSpeed: randomBetween(3, 5),
+            outputSpeed: randomBetween(4, 6),
+            status: "PROCEEDING",
+            inventory: { create: { type: "processStep", limit: 500 } },
+          },
+        ],
+      },
+    },
+    include: {
+      processSteps: true,
+    },
+  });
+
+  // Hall 5
+  const hall5 = await prisma.location.create({
+    data: {
+      name: "Hall 5",
+      processSteps: {
+        create: [
+          {
+            name: "Incoming Crates",
+            inputSpeed: randomBetween(3, 5),
+            outputSpeed: randomBetween(4, 6),
+            status: "PROCEEDING",
+            inventory: {
+              create: {
+                type: "processStep",
+                limit: 500,
+                entries: {
+                  create: [
+                    { material: "Seat Cases" },
+                    { material: "Metal Frames" },
+                  ],
+                },
+              },
+            },
+          },
+          {
+            name: "Shipping",
+            inputSpeed: randomBetween(3, 5),
+            outputSpeed: randomBetween(4, 6),
+            status: "PROCEEDING",
+            inventory: { create: { type: "processStep", limit: 500 } },
+          },
+        ],
+      },
+    },
+    include: {
+      processSteps: {
+        include: {
+          inventory: {
+            include: {
+              entries: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
   await prisma.resource.create({
     data: {
       name: "Unpacking Machine 1",
@@ -208,98 +263,34 @@ async function main() {
   await createTransportSystem(
     "Trolley 9",
     supermarket.processSteps.find((ps) => ps.name === "Output Router 1")!,
-    hall3.processSteps.find((ps) => ps.name === "Unpacking 1")!,
+    hall3.processSteps.find((ps) => ps.name === "Unpacking 1")!
   );
 
   await createTransportSystem(
     "Trolley 10",
     hall3.processSteps.find((ps) => ps.name === "Unpacking 1")!,
-    hall3.processSteps.find((ps) => ps.name === "Workbenching 1")!,
+    hall3.processSteps.find((ps) => ps.name === "Workbenching 1")!
   );
 
   await createTransportSystem(
     "Trolley 11",
     hall3.processSteps.find((ps) => ps.name === "Workbenching 1")!,
-    hall3.processSteps.find((ps) => ps.name === "Assembling 1")!,
+    hall3.processSteps.find((ps) => ps.name === "Assembling 1")!
   );
 
-  // Hall 5
-  // const hall5 = await prisma.location.create({
-  //   data: {
-  //     name: "Hall 5",
-  //     processSteps: {
-  //       create: [
-  //         {
-  //           name: "Incoming Crates",
-  //           inputSpeed: randomBetween(1, 3),
-  //           outputSpeed: randomBetween(2, 5),
-  //           status: "PROCEEDING",
-  //           inventory: { create: { type: "processStep", limit: 500 } },
-  //         },
-  //       ],
-  //     },
-  //   },
-  // });
+  // Transport System from Hall 3 to Hall 4
+  await createTransportSystem(
+    "Trolley 12",
+    hall3.processSteps.find((ps) => ps.name === "Assembling 1")!,
+    hall4.processSteps.find((ps) => ps.name === "Quality Check")!
+  );
 
-  // Hall 4
-  // const hall4 = await prisma.location.create({
-  //   data: {
-  //     name: "Hall 4",
-  //     processSteps: {
-  //       create: [
-  //         {
-  //           name: "Quality Check",
-  //           inputSpeed: randomBetween(3, 5),
-  //           outputSpeed: randomBetween(4, 6),
-  //           status: "PROCEEDING",
-  //           inventory: { create: { type: "processStep", limit: 500 } },
-  //           inputs: {
-  //             create: [
-  //               {
-  //                 name: "Transport from Hall 3",
-  //                 inputSpeed: randomBetween(3, 5),
-  //                 outputSpeed: randomBetween(4, 6),
-  //                 inventory: {
-  //                   create: { type: "transportSystem", limit: 500 },
-  //                 },
-  //               },
-  //             ],
-  //           },
-  //         },
-  //       ],
-  //     },
-  //   },
-  // });
-
-  // Hall 5 (Outgoing Shipment)
-  // const hall5Shipping = await prisma.location.update({
-  //   where: { id: hall5.id },
-  //   data: {
-  //     processSteps: {
-  //       create: [
-  //         {
-  //           name: "Shipping",
-  //           inputSpeed: randomBetween(3, 5),
-  //           outputSpeed: randomBetween(4, 6),
-  //           status: "PROCEEDING",
-  //           inventory: { create: { type: "processStep", limit: 500 } },
-  //           inputs: {
-  //             create: [
-  //               {
-  //                 name: "Transport from Hall 4",
-  //                 inputSpeed: randomBetween(3, 5),
-  //                 outputSpeed: randomBetween(4, 6),
-  //                 inventory: {
-  //                   create: { type: "transportSystem", limit: 500 },
-  //                 },
-  //               },
-  //             ],
-  //           },
-  //         },
-  //       ],
-  //     },
-  //   },
-  // });
+  // Transport System from Hall 4 to Hall 5
+  await createTransportSystem(
+    "Trolley 13",
+    hall4.processSteps.find((ps) => ps.name === "Quality Check")!,
+    hall5.processSteps.find((ps) => ps.name === "Shipping")!
+  );
 
   console.dir(
     {
@@ -308,7 +299,7 @@ async function main() {
       }),
       transportSystems: await prisma.transportSystem.findMany(),
     },
-    { depth: 10 },
+    { depth: 10 }
   );
 }
 

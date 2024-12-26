@@ -1,5 +1,5 @@
 import prisma from "@/data/db";
-import { SimulationEntityState } from "@/lib/simulation/simulation";
+import { SimulationEntityState } from "@/lib/simulation/simulationNew";
 
 export async function GET() {
   let state: SimulationEntityState = {

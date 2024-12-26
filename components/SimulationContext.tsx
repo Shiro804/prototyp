@@ -7,7 +7,7 @@ import {
   useState
 } from "react";
 
-import { Simulation, SimulationRun } from "@/lib/simulation/simulation";
+import { Simulation, SimulationRun } from "@/lib/simulation/simulationNew";
 
 export interface SimulationState {
   simulation?: SimulationRun;

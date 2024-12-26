@@ -41,7 +41,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, incoming, total }) => (
 );
 
 export default function IncomingGoods() {
-  const { simulation, frame } = useSimulation2();
+  const { simulation, frame } = useSimulation1();
 
   useEffect(() => {
     console.log(simulation);
