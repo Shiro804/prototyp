@@ -3,18 +3,18 @@
 import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulationMock } from "@/components/SimulationContextOld";
+import { useSimulationMock } from "@/components/SimulationContextMock";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
-interface LocationCardProps {
+interface MonitoringCardProps {
   name: ReactNode;
   processSteps: Prisma.ProcessStepGetPayload<{
     include: { inventory: { include: { entries: true } } };
   }>[];
 }
 
-const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
+const MonitoringCard: FC<MonitoringCardProps> = ({ name, processSteps }) => (
   <Paper shadow="sm" p="lg">
     <Text fw="bold" size="lg" mb="md">
       {name}
@@ -32,7 +32,7 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {Object.entries(groupInventory(ps.inventory)).map(
+            {Object.entries(groupInventory([ps.inventory])).map(
               ([material, count]) => (
                 <Table.Tr key={material}>
                   <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
@@ -49,24 +49,25 @@ const LocationCard: FC<LocationCardProps> = ({ name, processSteps }) => (
   </Paper>
 );
 
-export default function CommoditiesMonitoring() {
+export default function Monitoring() {
   const { simulation, frame, speed, setSpeed, toggle } = useSimulationMock();
 
   useEffect(() => {
-    console.log("commodities set speed")
-    setSpeed(1)
+    // console.log("monitoring set speed")
+    // setSpeed(10)
   }, []);
 
   useEffect(() => {
     console.log(simulation);
+    // setSpeed(10)
   }, [simulation]);
 
   return (
     <>
-      <Title>Commodities</Title>
+      <Title>Monitoring</Title>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
-        {simulation?.frames[frame].locations.map((l) => (
-          <LocationCard
+        {simulation?.frames[frame]?.state.locations.map((l) => (
+          <MonitoringCard
             key={l.id}
             name={l.name}
             processSteps={l.processSteps}

@@ -37,7 +37,8 @@ CREATE TABLE "Inventory" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    "type" TEXT NOT NULL
+    "type" TEXT NOT NULL,
+    "limit" INTEGER NOT NULL
 );
 
 -- CreateTable
