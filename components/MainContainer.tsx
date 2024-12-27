@@ -33,8 +33,9 @@ import { ExoticComponent, ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
-import { SimulationContextMock, SimulationContextLive, useSimulationContextMock, useSimulationContextLive } from "./SimulationContext";
 import SimulationControlOverlay from "./SimulationControlOverlay";
+import { SimulationContextLive, useProvideSimulationLive } from "./SimulationContextLive";
+import { SimulationContextMock, useProvideSimulationMock } from "./SimulationContextMock";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -60,11 +61,11 @@ const overviewLinks: LinkDescription[] = [
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
-  {
-    icon: IconBuildingFactory2,
-    label: "Incoming Commodities",
-    href: "/mock-incoming-goods",
-  },
+  // {
+  //   icon: IconBuildingFactory2,
+  //   label: "Incoming Commodities",
+  //   href: "/mock-incoming-goods",
+  // },
   // {
   //   icon: IconPackages,
   //   label: "Commodity Monitoring",
@@ -130,8 +131,8 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContextMock = useSimulationContextMock(0.5);
-  const simulationContextLive = useSimulationContextLive(10);
+  const simulationContextMock = useProvideSimulationMock(1);
+  const simulationContextLive = useProvideSimulationLive(3);
 
   useEffect(() => {
     simulationContextLive.load(1000)

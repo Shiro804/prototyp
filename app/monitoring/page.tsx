@@ -3,7 +3,7 @@
 import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulationLive } from "@/components/SimulationContext";
+import { useSimulationLive } from "@/components/SimulationContextLive";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
@@ -32,7 +32,7 @@ const MonitoringCard: FC<MonitoringCardProps> = ({ name, processSteps }) => (
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {Object.entries(groupInventory(ps.inventory)).map(
+            {Object.entries(groupInventory([ps.inventory])).map(
               ([material, count]) => (
                 <Table.Tr key={material}>
                   <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">

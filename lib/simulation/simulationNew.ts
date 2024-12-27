@@ -82,26 +82,26 @@ export class Simulation {
   private readonly events: Event[] = [];
   private readonly frames: SimulationEntityState[] = [];
 
-  private transportSystemMap = new Map<number, any>();
-  private processStepMap = new Map<number, any>();
+  // private transportSystemMap = new Map<number, any>();
+  // private processStepMap = new Map<number, any>();
 
   constructor(initialState: SimulationEntityState) {
     this.initialState = Simulation.cloneState(initialState);
-    this.buildLookupMaps(this.initialState);
+    // this.buildLookupMaps(this.initialState);
   }
 
-  private buildLookupMaps(state: SimulationEntityState) {
-    this.transportSystemMap = new Map(
-      state.locations
-        .flatMap((l) => l.processSteps)
-        .flatMap((ps) => ps.inputs.concat(ps.outputs))
-        .map((ts) => [ts.id, ts])
-    );
+  // private buildLookupMaps(state: SimulationEntityState) {
+  //   this.transportSystemMap = new Map(
+  //     state.locations
+  //       .flatMap((l) => l.processSteps)
+  //       .flatMap((ps) => ps.inputs.concat(ps.outputs))
+  //       .map((ts) => [ts.id, ts])
+  //   );
 
-    this.processStepMap = new Map(
-      state.locations.flatMap((l) => l.processSteps).map((ps) => [ps.id, ps])
-    );
-  }
+  //   this.processStepMap = new Map(
+  //     state.locations.flatMap((l) => l.processSteps).map((ps) => [ps.id, ps])
+  //   );
+  // }
 
   public run(ticks: number): SimulationRun {
     let firstFrame = Simulation.cloneState(this.initialState);
@@ -154,7 +154,7 @@ export class Simulation {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    // Phase 1: Production
+    //Phase 1: Production
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         if (processStep.recipe) {
@@ -198,6 +198,11 @@ export class Simulation {
                   inputEntries.some((ie) => ie.id === e.id)
                 );
 
+              // processStep.inventory.entries =
+              //   processStep.inventory.entries.filter(
+              //     (e) => !inputEntries.some((ie) => ie.id === e.id)
+              //   );
+
               for (const output of processStep.recipe.outputs) {
                 for (
                   let outputStep = 0;
@@ -217,6 +222,65 @@ export class Simulation {
         }
       }
     }
+
+    // for (const location of newState.locations) {
+    //   for (const processStep of location.processSteps) {
+    //     if (processStep.recipe) {
+    //       const itemsProducedPerRun = processStep.recipe.outputs
+    //         .map((o) => o.quantity)
+    //         .reduce((acc, cur) => acc + cur, 0);
+
+    //       // Process the recipe for the step
+    //       for (
+    //         let r = 0;
+    //         r < processStep.recipeRate &&
+    //         processStep.inventory.entries.length + itemsProducedPerRun <=
+    //           processStep.inventory.limit;
+    //         r++
+    //       ) {
+    //         let inputsFulfilled = true;
+    //         let inputEntries: InventoryEntry[] = [];
+
+    //         // Gather required inputs for the recipe
+    //         for (let recipeInput of processStep.recipe.inputs) {
+    //           const possibleInputEntries = processStep.inventory.entries.filter(
+    //             (entry) => entry.material === recipeInput.material
+    //           );
+
+    //           if (possibleInputEntries.length >= recipeInput.quantity) {
+    //             inputEntries.push(
+    //               ...possibleInputEntries.slice(0, recipeInput.quantity)
+    //             );
+    //           } else {
+    //             inputsFulfilled = false; // Missing required inputs
+    //             break;
+    //           }
+    //         }
+
+    //         // If all inputs are satisfied, process the recipe
+    //         if (inputsFulfilled) {
+    //           // Remove consumed inputs from the inventory
+    //           processStep.inventory.entries =
+    //             processStep.inventory.entries.filter(
+    //               (entry) => !inputEntries.includes(entry)
+    //             );
+
+    //           // Add outputs to the inventory
+    //           for (const output of processStep.recipe.outputs) {
+    //             for (let i = 0; i < output.quantity; i++) {
+    //               processStep.inventory.entries.push({
+    //                 id: nextFreeInventoryEntryId(newState),
+    //                 addedAt: new Date(),
+    //                 inventoryId: processStep.inventory.id,
+    //                 material: output.material,
+    //               });
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     // Phase 2: Outlet
 

@@ -160,7 +160,7 @@ model ProcessStep {
     status      String
     inputSpeed  Int
     outputSpeed Int
-    recipeRate  Int      @default(1)
+    recipeRate  Int      @default(10)
     duration    Int      @default(1) // Dauer des Schritts in Ticks 
     location    Location @relation(fields: [locationId], references: [id])
     locationId  Int

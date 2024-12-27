@@ -10,7 +10,8 @@
     "test": "jest",
     "seed": "tsx data/seed.ts",
     "seed2": "tsx data/seed2.ts",
-    "resetandseed": "npx prisma migrate dev --name init && npx prisma generate && npm run seed2 && npm run dev"
+    "resetandseed": "npx prisma db push --force-reset && npx prisma migrate dev --name init && npx prisma generate && npm run seed2 && npm run dev",
+    "migrate": "npx prisma migrate dev --name init"
   },
   "dependencies": {
     "@mantine/charts": "^7.12.2",

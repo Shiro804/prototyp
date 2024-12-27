@@ -1,51 +1,34 @@
+import prisma from "@/data/db";
 import { LocationFull } from "@/lib/simulation/simulationNew";
-import { Inventory, InventoryEntry, Prisma } from "@prisma/client";
+import { InventoryEntry, Prisma } from "@prisma/client";
 
 export function getIncomingCommodities(
   location: LocationFull
 ): InventoryEntry[][] {
-  let incomingCommodities = location.processSteps
-    .flatMap((ps) => ps.inputs)
-    .filter((i) => i.startStepId === null)
-    .map((i) => i.inventory.entries);
-
-  // console.log(incomingCommodities);
-
-  return incomingCommodities;
-  // .map((i) => i.inventory.entries.length)
-  // .map((i) => (console.log(i), i))
-  // .reduce((acc, cur) => acc + cur, 0);
+  return location.processSteps.flatMap((ps) =>
+    ps.inputs
+      .filter((input) => input.startStepId === null)
+      .map((i) => i.inventory.entries)
+  );
 }
 
-/**
- * Calculates the total number of commodities in the location.
- * @param location Location to calculate the total commodities of.
- * @returns The number of commodities across all process steps.
- */
 export function getTotalCommodities(location: LocationFull): number {
-  let totalIncomingCommodities = location.processSteps
-    .map((ps) => ps.inventory.entries.length)
-    .reduce((acc, cur) => acc + cur, 0);
-
-  // console.log(location.processSteps.map((ps) => ps.inventory.entries));
-
-  return totalIncomingCommodities;
+  return location.processSteps
+    .flatMap((ps) => ps.inventory.entries)
+    .reduce((acc, cur) => acc + 1, 0); // Total number of inventory entries
 }
-
-export type InventoryGroups = {
-  [material: string]: number;
-};
 
 export function groupInventory(
-  inventory: Prisma.InventoryGetPayload<{ include: { entries: true } }>
-): InventoryGroups {
-  return inventory.entries.reduce<InventoryGroups>((acc, cur) => {
-    if (!acc[cur.material]) {
-      acc[cur.material] = 1;
-    } else {
-      acc[cur.material] += 1;
-    }
+  inventories: { entries: { material: string }[] }[]
+): { [material: string]: number } {
+  const grouped: { [material: string]: number } = {};
 
-    return acc;
-  }, {});
+  for (const inventory of inventories) {
+    for (const entry of inventory.entries) {
+      grouped[entry.material] = (grouped[entry.material] || 0) + 1;
+    }
+  }
+
+  return grouped;
 }
+

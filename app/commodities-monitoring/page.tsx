@@ -3,7 +3,7 @@
 import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useEffect } from "react";
 
-import { useSimulationMock } from "@/components/SimulationContext";
+import { useSimulationMock } from "@/components/SimulationContextOld";
 import { Prisma } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 
