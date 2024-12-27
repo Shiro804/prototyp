@@ -23,6 +23,7 @@
     "@next/bundle-analyzer": "^14.2.14",
     "@prisma/client": "^5.19.1",
     "@tabler/icons-react": "^3.17.0",
+    "@xyflow/react": "^12.3.6",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "mantine-react-table": "^2.0.0-beta.6",
