@@ -7,50 +7,50 @@ function randomBetween(min: number, max: number) {
 }
 
 async function main() {
-  // Create Recipes
-  const supermarketDTSSeatRecipe = await prisma.recipe.create({
-    data: {
-      name: "Supermarket DTS Seat Recipe",
-      inputs: {
-        create: [
-          { material: "Seat Foam", quantity: 1 },
-          { material: "Seat Structures", quantity: 1 },
-          { material: "Airbags", quantity: 1 },
-          { material: "Small Parts", quantity: 1 },
-          { material: "Seat Covers", quantity: 1 },
-        ],
-      },
-      outputs: {
-        create: [
-          { material: "Seat Foam", quantity: 1 },
-          { material: "Seat Structures", quantity: 1 },
-          { material: "Airbags", quantity: 1 },
-          { material: "Small Parts", quantity: 1 },
-          { material: "Seat Covers", quantity: 1 },
-        ],
-      },
-    },
-  });
+  // // Create Recipes
+  // const supermarketDTSSeatRecipe = await prisma.recipe.create({
+  //   data: {
+  //     name: "Supermarket DTS Seat Recipe",
+  //     inputs: {
+  //       create: [
+  //         { material: "Seat Foam", quantity: 1 },
+  //         { material: "Seat Structures", quantity: 1 },
+  //         { material: "Airbags", quantity: 1 },
+  //         { material: "Small Parts", quantity: 1 },
+  //         { material: "Seat Covers", quantity: 1 },
+  //       ],
+  //     },
+  //     outputs: {
+  //       create: [
+  //         { material: "Seat Foam", quantity: 1 },
+  //         { material: "Seat Structures", quantity: 1 },
+  //         { material: "Airbags", quantity: 1 },
+  //         { material: "Small Parts", quantity: 1 },
+  //         { material: "Seat Covers", quantity: 1 },
+  //       ],
+  //     },
+  //   },
+  // });
 
-  const supermarketDTSBackrestRecipe = await prisma.recipe.create({
-    data: {
-      name: "Supermarket DTS Backrest Recipe",
-      inputs: {
-        create: [
-          { material: "Headrest", quantity: 1 },
-          { material: "Backrest Structures", quantity: 1 },
-          { material: "Backrest Covers", quantity: 1 },
-        ],
-      },
-      outputs: {
-        create: [
-          { material: "Headrest", quantity: 1 },
-          { material: "Backrest Structures", quantity: 1 },
-          { material: "Backrest Covers", quantity: 1 },
-        ],
-      },
-    },
-  });
+  // const supermarketDTSBackrestRecipe = await prisma.recipe.create({
+  //   data: {
+  //     name: "Supermarket DTS Backrest Recipe",
+  //     inputs: {
+  //       create: [
+  //         { material: "Headrest", quantity: 1 },
+  //         { material: "Backrest Structures", quantity: 1 },
+  //         { material: "Backrest Covers", quantity: 1 },
+  //       ],
+  //     },
+  //     outputs: {
+  //       create: [
+  //         { material: "Headrest", quantity: 1 },
+  //         { material: "Backrest Structures", quantity: 1 },
+  //         { material: "Backrest Covers", quantity: 1 },
+  //       ],
+  //     },
+  //   },
+  // });
 
   const preAssemblyRecipeSeat = await prisma.recipe.create({
     data: {
@@ -61,13 +61,13 @@ async function main() {
           { material: "Seat Structures", quantity: 1 },
           { material: "Airbags", quantity: 1 },
           { material: "Small Parts", quantity: 1 },
-          { material: "Seat Covers", quantity: 1 },
+          // { material: "Seat Covers", quantity: 1 },
         ],
       },
       outputs: {
         create: [
           { material: "Pre-Assembled Seat", quantity: 1 },
-          { material: "Seat Covers", quantity: 1 },
+          // { material: "Seat Covers", quantity: 1 },
         ],
       },
     },
@@ -80,13 +80,13 @@ async function main() {
         create: [
           { material: "Headrest", quantity: 1 },
           { material: "Backrest Structures", quantity: 1 },
-          { material: "Backrest Covers", quantity: 1 },
+          // { material: "Backrest Covers", quantity: 1 },
         ],
       },
       outputs: {
         create: [
           { material: "Pre-Assembled Backrest", quantity: 1 },
-          { material: "Backrest Covers", quantity: 1 },
+          // { material: "Backrest Covers", quantity: 1 },
         ],
       },
     },
@@ -277,22 +277,22 @@ async function main() {
             status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 500 } },
           },
-          {
-            name: "Supermarket DTS Seat",
-            inputSpeed: 100,
-            outputSpeed: 100,
-            status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
-            recipe: { connect: { id: supermarketDTSSeatRecipe.id } },
-          },
-          {
-            name: "Supermarket DTS Backrest",
-            inputSpeed: 100,
-            outputSpeed: 100,
-            status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
-            recipe: { connect: { id: supermarketDTSBackrestRecipe.id } },
-          },
+          // {
+          //   name: "Supermarket DTS Seat",
+          //   inputSpeed: 100,
+          //   outputSpeed: 100,
+          //   status: "PROCEEDING",
+          //   inventory: { create: { type: "processStep", limit: 500 } },
+          //   recipe: { connect: { id: supermarketDTSSeatRecipe.id } },
+          // },
+          // {
+          //   name: "Supermarket DTS Backrest",
+          //   inputSpeed: 100,
+          //   outputSpeed: 100,
+          //   status: "PROCEEDING",
+          //   inventory: { create: { type: "processStep", limit: 500 } },
+          //   recipe: { connect: { id: supermarketDTSBackrestRecipe.id } },
+          // },
         ],
       },
     },
@@ -387,7 +387,7 @@ async function main() {
   let createTransportSystem = async (
     name: string,
     from: { id: number },
-    to: { id: number }
+    to: { id: number },
   ) =>
     prisma.transportSystem.create({
       data: {
@@ -404,74 +404,74 @@ async function main() {
   await createTransportSystem(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
     hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
   );
 
   await createTransportSystem(
     "Forklift - Hall 5 to Hall 2 (Covers)",
     hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
   );
 
   await createTransportSystem(
     "Worker puts Materials for Seat Pre-Assembly on DTS",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Seat")!
+    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Seat")!,
   );
 
   await createTransportSystem(
     "Worker puts Materials for Backrest Pre-Assembly on DTS",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Backrest")!
+    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Backrest")!,
   );
 
   await createTransportSystem(
     "DTS Seat for Pre-Assembly",
     hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Seat")!,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!,
   );
 
   await createTransportSystem(
     "Roller - Rack 1 to Pre-Assembly (Backrest)",
     hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Backrest")!,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!,
   );
 
   await createTransportSystem(
     "Roller - Pre-Assembly (Seat) to Upholstery Seeat",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!,
   );
 
   await createTransportSystem(
     "Roller - Rack 2 to Upholstery (Backrest Covers)",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!,
   );
 
   await createTransportSystem(
     "Conveyor - Upholstery (Seat) to Assembly",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!,
   );
 
   await createTransportSystem(
     "Conveyor - Upholstered Backrest to Assembly Line",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!,
   );
 
   await createTransportSystem(
     "Conveyor - Assembling to End of Line Check",
     hall4.processSteps.find((ps) => ps.name === "Assembling")!,
-    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!
+    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!,
   );
 
   // From End of Line Check to Shipping
   await createTransportSystem(
     "Forklift - Hall 4 to Hall 5",
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!,
-    hall5.processSteps.find((ps) => ps.name === "Shipping")!
+    hall5.processSteps.find((ps) => ps.name === "Shipping")!,
   );
 
   console.dir(
@@ -481,7 +481,7 @@ async function main() {
       }),
       transportSystems: await prisma.transportSystem.findMany(),
     },
-    { depth: 10 }
+    { depth: 10 },
   );
 }
 
