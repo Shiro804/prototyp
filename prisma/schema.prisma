@@ -226,6 +226,29 @@ model Sensor {
     // metrics Metric[]
 }
 
+model FilterEntry {
+    id Int @id @default(autoincrement())
+
+    addedAt DateTime @default(now())
+
+    material String
+
+    filter   Filter @relation(fields: [filterId], references: [id])
+    filterId Int
+}
+
+model Filter {
+    id Int @id @default(autoincrement())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    entries FilterEntry[]
+
+    transportSystem TransportSystem @relation(fields: [transportSystemId], references: [id])
+    transportSystemId Int           @unique
+}
+
 model TransportSystem {
     id Int @id @default(autoincrement())
 
@@ -242,6 +265,8 @@ model TransportSystem {
     startStepId Int?
     endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
     endStepId   Int?
+
+    filter Filter?
 
     // events TransportEvent[]
 }

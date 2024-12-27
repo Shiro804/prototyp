@@ -36,6 +36,10 @@ export const RecipeOutputScalarFieldEnumSchema = z.enum(['id','material','quanti
 
 export const SensorScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','processStepId']);
 
+export const FilterEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','filterId']);
+
+export const FilterScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','transportSystemId']);
+
 export const TransportSystemScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','inputSpeed','outputSpeed','inventoryId','startStepId','endStepId']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
@@ -209,6 +213,32 @@ export const SensorSchema = z.object({
 })
 
 export type Sensor = z.infer<typeof SensorSchema>
+
+/////////////////////////////////////////
+// FILTER ENTRY SCHEMA
+/////////////////////////////////////////
+
+export const FilterEntrySchema = z.object({
+  id: z.number().int(),
+  addedAt: z.coerce.date(),
+  material: z.string(),
+  filterId: z.number().int(),
+})
+
+export type FilterEntry = z.infer<typeof FilterEntrySchema>
+
+/////////////////////////////////////////
+// FILTER SCHEMA
+/////////////////////////////////////////
+
+export const FilterSchema = z.object({
+  id: z.number().int(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  transportSystemId: z.number().int(),
+})
+
+export type Filter = z.infer<typeof FilterSchema>
 
 /////////////////////////////////////////
 // TRANSPORT SYSTEM SCHEMA
@@ -577,6 +607,58 @@ export const SensorSelectSchema: z.ZodType<Prisma.SensorSelect> = z.object({
   processStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
 }).strict()
 
+// FILTER ENTRY
+//------------------------------------------------------
+
+export const FilterEntryIncludeSchema: z.ZodType<Prisma.FilterEntryInclude> = z.object({
+  filter: z.union([z.boolean(),z.lazy(() => FilterArgsSchema)]).optional(),
+}).strict()
+
+export const FilterEntryArgsSchema: z.ZodType<Prisma.FilterEntryDefaultArgs> = z.object({
+  select: z.lazy(() => FilterEntrySelectSchema).optional(),
+  include: z.lazy(() => FilterEntryIncludeSchema).optional(),
+}).strict();
+
+export const FilterEntrySelectSchema: z.ZodType<Prisma.FilterEntrySelect> = z.object({
+  id: z.boolean().optional(),
+  addedAt: z.boolean().optional(),
+  material: z.boolean().optional(),
+  filterId: z.boolean().optional(),
+  filter: z.union([z.boolean(),z.lazy(() => FilterArgsSchema)]).optional(),
+}).strict()
+
+// FILTER
+//------------------------------------------------------
+
+export const FilterIncludeSchema: z.ZodType<Prisma.FilterInclude> = z.object({
+  entries: z.union([z.boolean(),z.lazy(() => FilterEntryFindManyArgsSchema)]).optional(),
+  transportSystem: z.union([z.boolean(),z.lazy(() => TransportSystemArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => FilterCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+export const FilterArgsSchema: z.ZodType<Prisma.FilterDefaultArgs> = z.object({
+  select: z.lazy(() => FilterSelectSchema).optional(),
+  include: z.lazy(() => FilterIncludeSchema).optional(),
+}).strict();
+
+export const FilterCountOutputTypeArgsSchema: z.ZodType<Prisma.FilterCountOutputTypeDefaultArgs> = z.object({
+  select: z.lazy(() => FilterCountOutputTypeSelectSchema).nullish(),
+}).strict();
+
+export const FilterCountOutputTypeSelectSchema: z.ZodType<Prisma.FilterCountOutputTypeSelect> = z.object({
+  entries: z.boolean().optional(),
+}).strict();
+
+export const FilterSelectSchema: z.ZodType<Prisma.FilterSelect> = z.object({
+  id: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  transportSystemId: z.boolean().optional(),
+  entries: z.union([z.boolean(),z.lazy(() => FilterEntryFindManyArgsSchema)]).optional(),
+  transportSystem: z.union([z.boolean(),z.lazy(() => TransportSystemArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => FilterCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
 // TRANSPORT SYSTEM
 //------------------------------------------------------
 
@@ -584,6 +666,7 @@ export const TransportSystemIncludeSchema: z.ZodType<Prisma.TransportSystemInclu
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
   startStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   endStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
+  filter: z.union([z.boolean(),z.lazy(() => FilterArgsSchema)]).optional(),
 }).strict()
 
 export const TransportSystemArgsSchema: z.ZodType<Prisma.TransportSystemDefaultArgs> = z.object({
@@ -604,6 +687,7 @@ export const TransportSystemSelectSchema: z.ZodType<Prisma.TransportSystemSelect
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
   startStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   endStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
+  filter: z.union([z.boolean(),z.lazy(() => FilterArgsSchema)]).optional(),
 }).strict()
 
 
@@ -1407,6 +1491,128 @@ export const SensorScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Sensor
   processStepId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
+export const FilterEntryWhereInputSchema: z.ZodType<Prisma.FilterEntryWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => FilterEntryWhereInputSchema),z.lazy(() => FilterEntryWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterEntryWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterEntryWhereInputSchema),z.lazy(() => FilterEntryWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  filterId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  filter: z.union([ z.lazy(() => FilterRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryOrderByWithRelationInputSchema: z.ZodType<Prisma.FilterEntryOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  addedAt: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional(),
+  filter: z.lazy(() => FilterOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const FilterEntryWhereUniqueInputSchema: z.ZodType<Prisma.FilterEntryWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => FilterEntryWhereInputSchema),z.lazy(() => FilterEntryWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterEntryWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterEntryWhereInputSchema),z.lazy(() => FilterEntryWhereInputSchema).array() ]).optional(),
+  addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  filterId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  filter: z.union([ z.lazy(() => FilterRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+}).strict());
+
+export const FilterEntryOrderByWithAggregationInputSchema: z.ZodType<Prisma.FilterEntryOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  addedAt: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => FilterEntryCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => FilterEntryAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => FilterEntryMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => FilterEntryMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => FilterEntrySumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const FilterEntryScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.FilterEntryScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => FilterEntryScalarWhereWithAggregatesInputSchema),z.lazy(() => FilterEntryScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterEntryScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterEntryScalarWhereWithAggregatesInputSchema),z.lazy(() => FilterEntryScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  addedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  material: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  filterId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+}).strict();
+
+export const FilterWhereInputSchema: z.ZodType<Prisma.FilterWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => FilterWhereInputSchema),z.lazy(() => FilterWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterWhereInputSchema),z.lazy(() => FilterWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  transportSystemId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  entries: z.lazy(() => FilterEntryListRelationFilterSchema).optional(),
+  transportSystem: z.union([ z.lazy(() => TransportSystemRelationFilterSchema),z.lazy(() => TransportSystemWhereInputSchema) ]).optional(),
+}).strict();
+
+export const FilterOrderByWithRelationInputSchema: z.ZodType<Prisma.FilterOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  entries: z.lazy(() => FilterEntryOrderByRelationAggregateInputSchema).optional(),
+  transportSystem: z.lazy(() => TransportSystemOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const FilterWhereUniqueInputSchema: z.ZodType<Prisma.FilterWhereUniqueInput> = z.union([
+  z.object({
+    id: z.number().int(),
+    transportSystemId: z.number().int()
+  }),
+  z.object({
+    id: z.number().int(),
+  }),
+  z.object({
+    transportSystemId: z.number().int(),
+  }),
+])
+.and(z.object({
+  id: z.number().int().optional(),
+  transportSystemId: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => FilterWhereInputSchema),z.lazy(() => FilterWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterWhereInputSchema),z.lazy(() => FilterWhereInputSchema).array() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  entries: z.lazy(() => FilterEntryListRelationFilterSchema).optional(),
+  transportSystem: z.union([ z.lazy(() => TransportSystemRelationFilterSchema),z.lazy(() => TransportSystemWhereInputSchema) ]).optional(),
+}).strict());
+
+export const FilterOrderByWithAggregationInputSchema: z.ZodType<Prisma.FilterOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => FilterCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => FilterAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => FilterMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => FilterMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => FilterSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const FilterScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.FilterScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => FilterScalarWhereWithAggregatesInputSchema),z.lazy(() => FilterScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterScalarWhereWithAggregatesInputSchema),z.lazy(() => FilterScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  transportSystemId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+}).strict();
+
 export const TransportSystemWhereInputSchema: z.ZodType<Prisma.TransportSystemWhereInput> = z.object({
   AND: z.union([ z.lazy(() => TransportSystemWhereInputSchema),z.lazy(() => TransportSystemWhereInputSchema).array() ]).optional(),
   OR: z.lazy(() => TransportSystemWhereInputSchema).array().optional(),
@@ -1423,6 +1629,7 @@ export const TransportSystemWhereInputSchema: z.ZodType<Prisma.TransportSystemWh
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
+  filter: z.union([ z.lazy(() => FilterNullableRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemOrderByWithRelationInputSchema: z.ZodType<Prisma.TransportSystemOrderByWithRelationInput> = z.object({
@@ -1437,7 +1644,8 @@ export const TransportSystemOrderByWithRelationInputSchema: z.ZodType<Prisma.Tra
   endStepId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
+  filter: z.lazy(() => FilterOrderByWithRelationInputSchema).optional()
 }).strict();
 
 export const TransportSystemWhereUniqueInputSchema: z.ZodType<Prisma.TransportSystemWhereUniqueInput> = z.union([
@@ -1468,6 +1676,7 @@ export const TransportSystemWhereUniqueInputSchema: z.ZodType<Prisma.TransportSy
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
+  filter: z.union([ z.lazy(() => FilterNullableRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional().nullable(),
 }).strict());
 
 export const TransportSystemOrderByWithAggregationInputSchema: z.ZodType<Prisma.TransportSystemOrderByWithAggregationInput> = z.object({
@@ -2170,6 +2379,100 @@ export const SensorUncheckedUpdateManyInputSchema: z.ZodType<Prisma.SensorUnchec
   processStepId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
+export const FilterEntryCreateInputSchema: z.ZodType<Prisma.FilterEntryCreateInput> = z.object({
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutEntriesInputSchema)
+}).strict();
+
+export const FilterEntryUncheckedCreateInputSchema: z.ZodType<Prisma.FilterEntryUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  filterId: z.number().int()
+}).strict();
+
+export const FilterEntryUpdateInputSchema: z.ZodType<Prisma.FilterEntryUpdateInput> = z.object({
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  filter: z.lazy(() => FilterUpdateOneRequiredWithoutEntriesNestedInputSchema).optional()
+}).strict();
+
+export const FilterEntryUncheckedUpdateInputSchema: z.ZodType<Prisma.FilterEntryUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  filterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryCreateManyInputSchema: z.ZodType<Prisma.FilterEntryCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  filterId: z.number().int()
+}).strict();
+
+export const FilterEntryUpdateManyMutationInputSchema: z.ZodType<Prisma.FilterEntryUpdateManyMutationInput> = z.object({
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FilterEntryUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  filterId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterCreateInputSchema: z.ZodType<Prisma.FilterCreateInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  entries: z.lazy(() => FilterEntryCreateNestedManyWithoutFilterInputSchema).optional(),
+  transportSystem: z.lazy(() => TransportSystemCreateNestedOneWithoutFilterInputSchema)
+}).strict();
+
+export const FilterUncheckedCreateInputSchema: z.ZodType<Prisma.FilterUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  transportSystemId: z.number().int(),
+  entries: z.lazy(() => FilterEntryUncheckedCreateNestedManyWithoutFilterInputSchema).optional()
+}).strict();
+
+export const FilterUpdateInputSchema: z.ZodType<Prisma.FilterUpdateInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  entries: z.lazy(() => FilterEntryUpdateManyWithoutFilterNestedInputSchema).optional(),
+  transportSystem: z.lazy(() => TransportSystemUpdateOneRequiredWithoutFilterNestedInputSchema).optional()
+}).strict();
+
+export const FilterUncheckedUpdateInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  entries: z.lazy(() => FilterEntryUncheckedUpdateManyWithoutFilterNestedInputSchema).optional()
+}).strict();
+
+export const FilterCreateManyInputSchema: z.ZodType<Prisma.FilterCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  transportSystemId: z.number().int()
+}).strict();
+
+export const FilterUpdateManyMutationInputSchema: z.ZodType<Prisma.FilterUpdateManyMutationInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
 export const TransportSystemCreateInputSchema: z.ZodType<Prisma.TransportSystemCreateInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -2178,7 +2481,8 @@ export const TransportSystemCreateInputSchema: z.ZodType<Prisma.TransportSystemC
   outputSpeed: z.number().int(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateInput> = z.object({
@@ -2190,7 +2494,8 @@ export const TransportSystemUncheckedCreateInputSchema: z.ZodType<Prisma.Transpo
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  endStepId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemUpdateInputSchema: z.ZodType<Prisma.TransportSystemUpdateInput> = z.object({
@@ -2201,7 +2506,8 @@ export const TransportSystemUpdateInputSchema: z.ZodType<Prisma.TransportSystemU
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
+  filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateInput> = z.object({
@@ -2214,6 +2520,7 @@ export const TransportSystemUncheckedUpdateInputSchema: z.ZodType<Prisma.Transpo
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateManyInputSchema: z.ZodType<Prisma.TransportSystemCreateManyInput> = z.object({
@@ -2956,6 +3263,93 @@ export const SensorMinOrderByAggregateInputSchema: z.ZodType<Prisma.SensorMinOrd
 export const SensorSumOrderByAggregateInputSchema: z.ZodType<Prisma.SensorSumOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   processStepId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterRelationFilterSchema: z.ZodType<Prisma.FilterRelationFilter> = z.object({
+  is: z.lazy(() => FilterWhereInputSchema).optional(),
+  isNot: z.lazy(() => FilterWhereInputSchema).optional()
+}).strict();
+
+export const FilterEntryCountOrderByAggregateInputSchema: z.ZodType<Prisma.FilterEntryCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  addedAt: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterEntryAvgOrderByAggregateInputSchema: z.ZodType<Prisma.FilterEntryAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterEntryMaxOrderByAggregateInputSchema: z.ZodType<Prisma.FilterEntryMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  addedAt: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterEntryMinOrderByAggregateInputSchema: z.ZodType<Prisma.FilterEntryMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  addedAt: z.lazy(() => SortOrderSchema).optional(),
+  material: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterEntrySumOrderByAggregateInputSchema: z.ZodType<Prisma.FilterEntrySumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  filterId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterEntryListRelationFilterSchema: z.ZodType<Prisma.FilterEntryListRelationFilter> = z.object({
+  every: z.lazy(() => FilterEntryWhereInputSchema).optional(),
+  some: z.lazy(() => FilterEntryWhereInputSchema).optional(),
+  none: z.lazy(() => FilterEntryWhereInputSchema).optional()
+}).strict();
+
+export const TransportSystemRelationFilterSchema: z.ZodType<Prisma.TransportSystemRelationFilter> = z.object({
+  is: z.lazy(() => TransportSystemWhereInputSchema).optional(),
+  isNot: z.lazy(() => TransportSystemWhereInputSchema).optional()
+}).strict();
+
+export const FilterEntryOrderByRelationAggregateInputSchema: z.ZodType<Prisma.FilterEntryOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterCountOrderByAggregateInputSchema: z.ZodType<Prisma.FilterCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterAvgOrderByAggregateInputSchema: z.ZodType<Prisma.FilterAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterMaxOrderByAggregateInputSchema: z.ZodType<Prisma.FilterMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterMinOrderByAggregateInputSchema: z.ZodType<Prisma.FilterMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterSumOrderByAggregateInputSchema: z.ZodType<Prisma.FilterSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const FilterNullableRelationFilterSchema: z.ZodType<Prisma.FilterNullableRelationFilter> = z.object({
+  is: z.lazy(() => FilterWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => FilterWhereInputSchema).optional().nullable()
 }).strict();
 
 export const TransportSystemCountOrderByAggregateInputSchema: z.ZodType<Prisma.TransportSystemCountOrderByAggregateInput> = z.object({
@@ -3830,6 +4224,76 @@ export const ProcessStepUpdateOneRequiredWithoutSensorsNestedInputSchema: z.ZodT
   update: z.union([ z.lazy(() => ProcessStepUpdateToOneWithWhereWithoutSensorsInputSchema),z.lazy(() => ProcessStepUpdateWithoutSensorsInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutSensorsInputSchema) ]).optional(),
 }).strict();
 
+export const FilterCreateNestedOneWithoutEntriesInputSchema: z.ZodType<Prisma.FilterCreateNestedOneWithoutEntriesInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedCreateWithoutEntriesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutEntriesInputSchema).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional()
+}).strict();
+
+export const FilterUpdateOneRequiredWithoutEntriesNestedInputSchema: z.ZodType<Prisma.FilterUpdateOneRequiredWithoutEntriesNestedInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedCreateWithoutEntriesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutEntriesInputSchema).optional(),
+  upsert: z.lazy(() => FilterUpsertWithoutEntriesInputSchema).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => FilterUpdateToOneWithWhereWithoutEntriesInputSchema),z.lazy(() => FilterUpdateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutEntriesInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryCreateNestedManyWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryCreateNestedManyWithoutFilterInput> = z.object({
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateWithoutFilterInputSchema).array(),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => FilterEntryCreateManyFilterInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemCreateNestedOneWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateNestedOneWithoutFilterInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutFilterInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => TransportSystemCreateOrConnectWithoutFilterInputSchema).optional(),
+  connect: z.lazy(() => TransportSystemWhereUniqueInputSchema).optional()
+}).strict();
+
+export const FilterEntryUncheckedCreateNestedManyWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUncheckedCreateNestedManyWithoutFilterInput> = z.object({
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateWithoutFilterInputSchema).array(),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => FilterEntryCreateManyFilterInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const FilterEntryUpdateManyWithoutFilterNestedInputSchema: z.ZodType<Prisma.FilterEntryUpdateManyWithoutFilterNestedInput> = z.object({
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateWithoutFilterInputSchema).array(),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema),z.lazy(() => FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => FilterEntryCreateManyFilterInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => FilterEntryUpdateWithWhereUniqueWithoutFilterInputSchema),z.lazy(() => FilterEntryUpdateWithWhereUniqueWithoutFilterInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => FilterEntryUpdateManyWithWhereWithoutFilterInputSchema),z.lazy(() => FilterEntryUpdateManyWithWhereWithoutFilterInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => FilterEntryScalarWhereInputSchema),z.lazy(() => FilterEntryScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemUpdateOneRequiredWithoutFilterNestedInputSchema: z.ZodType<Prisma.TransportSystemUpdateOneRequiredWithoutFilterNestedInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutFilterInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => TransportSystemCreateOrConnectWithoutFilterInputSchema).optional(),
+  upsert: z.lazy(() => TransportSystemUpsertWithoutFilterInputSchema).optional(),
+  connect: z.lazy(() => TransportSystemWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => TransportSystemUpdateToOneWithWhereWithoutFilterInputSchema),z.lazy(() => TransportSystemUpdateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedUpdateWithoutFilterInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryUncheckedUpdateManyWithoutFilterNestedInputSchema: z.ZodType<Prisma.FilterEntryUncheckedUpdateManyWithoutFilterNestedInput> = z.object({
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateWithoutFilterInputSchema).array(),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema),z.lazy(() => FilterEntryCreateOrConnectWithoutFilterInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema),z.lazy(() => FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => FilterEntryCreateManyFilterInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => FilterEntryWhereUniqueInputSchema),z.lazy(() => FilterEntryWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => FilterEntryUpdateWithWhereUniqueWithoutFilterInputSchema),z.lazy(() => FilterEntryUpdateWithWhereUniqueWithoutFilterInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => FilterEntryUpdateManyWithWhereWithoutFilterInputSchema),z.lazy(() => FilterEntryUpdateManyWithWhereWithoutFilterInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => FilterEntryScalarWhereInputSchema),z.lazy(() => FilterEntryScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
 export const InventoryCreateNestedOneWithoutTransportSystemInputSchema: z.ZodType<Prisma.InventoryCreateNestedOneWithoutTransportSystemInput> = z.object({
   create: z.union([ z.lazy(() => InventoryCreateWithoutTransportSystemInputSchema),z.lazy(() => InventoryUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => InventoryCreateOrConnectWithoutTransportSystemInputSchema).optional(),
@@ -3846,6 +4310,18 @@ export const ProcessStepCreateNestedOneWithoutInputsInputSchema: z.ZodType<Prism
   create: z.union([ z.lazy(() => ProcessStepCreateWithoutInputsInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutInputsInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => ProcessStepCreateOrConnectWithoutInputsInputSchema).optional(),
   connect: z.lazy(() => ProcessStepWhereUniqueInputSchema).optional()
+}).strict();
+
+export const FilterCreateNestedOneWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterCreateNestedOneWithoutTransportSystemInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional()
+}).strict();
+
+export const FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUncheckedCreateNestedOneWithoutTransportSystemInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional()
 }).strict();
 
 export const InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema: z.ZodType<Prisma.InventoryUpdateOneRequiredWithoutTransportSystemNestedInput> = z.object({
@@ -3874,6 +4350,26 @@ export const ProcessStepUpdateOneWithoutInputsNestedInputSchema: z.ZodType<Prism
   delete: z.union([ z.boolean(),z.lazy(() => ProcessStepWhereInputSchema) ]).optional(),
   connect: z.lazy(() => ProcessStepWhereUniqueInputSchema).optional(),
   update: z.union([ z.lazy(() => ProcessStepUpdateToOneWithWhereWithoutInputsInputSchema),z.lazy(() => ProcessStepUpdateWithoutInputsInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutInputsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterUpdateOneWithoutTransportSystemNestedInputSchema: z.ZodType<Prisma.FilterUpdateOneWithoutTransportSystemNestedInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
+  upsert: z.lazy(() => FilterUpsertWithoutTransportSystemInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => FilterUpdateToOneWithWhereWithoutTransportSystemInputSchema),z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]).optional(),
+}).strict();
+
+export const FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateOneWithoutTransportSystemNestedInput> = z.object({
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
+  upsert: z.lazy(() => FilterUpsertWithoutTransportSystemInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => FilterWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => FilterWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => FilterUpdateToOneWithWhereWithoutTransportSystemInputSchema),z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]).optional(),
 }).strict();
 
 export const NestedIntFilterSchema: z.ZodType<Prisma.NestedIntFilter> = z.object({
@@ -4474,7 +4970,8 @@ export const TransportSystemCreateWithoutInventoryInputSchema: z.ZodType<Prisma.
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutInventoryInput> = z.object({
@@ -4485,7 +4982,8 @@ export const TransportSystemUncheckedCreateWithoutInventoryInputSchema: z.ZodTyp
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  endStepId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutInventoryInput> = z.object({
@@ -4577,7 +5075,8 @@ export const TransportSystemUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
+  filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutInventoryInput> = z.object({
@@ -4589,6 +5088,7 @@ export const TransportSystemUncheckedUpdateWithoutInventoryInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const ProcessStepUpsertWithoutInventoryInputSchema: z.ZodType<Prisma.ProcessStepUpsertWithoutInventoryInput> = z.object({
@@ -4911,7 +5411,8 @@ export const TransportSystemCreateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
-  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional()
+  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutEndStepInput> = z.object({
@@ -4922,7 +5423,8 @@ export const TransportSystemUncheckedCreateWithoutEndStepInputSchema: z.ZodType<
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
-  startStepId: z.number().int().optional().nullable()
+  startStepId: z.number().int().optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutEndStepInput> = z.object({
@@ -4941,7 +5443,8 @@ export const TransportSystemCreateWithoutStartStepInputSchema: z.ZodType<Prisma.
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
-  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutStartStepInput> = z.object({
@@ -4952,7 +5455,8 @@ export const TransportSystemUncheckedCreateWithoutStartStepInputSchema: z.ZodTyp
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
-  endStepId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutStartStepInput> = z.object({
@@ -5522,6 +6026,156 @@ export const ProcessStepUncheckedUpdateWithoutSensorsInputSchema: z.ZodType<Pris
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
 }).strict();
 
+export const FilterCreateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterCreateWithoutEntriesInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  transportSystem: z.lazy(() => TransportSystemCreateNestedOneWithoutFilterInputSchema)
+}).strict();
+
+export const FilterUncheckedCreateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUncheckedCreateWithoutEntriesInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  transportSystemId: z.number().int()
+}).strict();
+
+export const FilterCreateOrConnectWithoutEntriesInputSchema: z.ZodType<Prisma.FilterCreateOrConnectWithoutEntriesInput> = z.object({
+  where: z.lazy(() => FilterWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => FilterCreateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedCreateWithoutEntriesInputSchema) ]),
+}).strict();
+
+export const FilterUpsertWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUpsertWithoutEntriesInput> = z.object({
+  update: z.union([ z.lazy(() => FilterUpdateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutEntriesInputSchema) ]),
+  create: z.union([ z.lazy(() => FilterCreateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedCreateWithoutEntriesInputSchema) ]),
+  where: z.lazy(() => FilterWhereInputSchema).optional()
+}).strict();
+
+export const FilterUpdateToOneWithWhereWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUpdateToOneWithWhereWithoutEntriesInput> = z.object({
+  where: z.lazy(() => FilterWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => FilterUpdateWithoutEntriesInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutEntriesInputSchema) ]),
+}).strict();
+
+export const FilterUpdateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUpdateWithoutEntriesInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  transportSystem: z.lazy(() => TransportSystemUpdateOneRequiredWithoutFilterNestedInputSchema).optional()
+}).strict();
+
+export const FilterUncheckedUpdateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateWithoutEntriesInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryCreateWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryCreateWithoutFilterInput> = z.object({
+  addedAt: z.coerce.date().optional(),
+  material: z.string()
+}).strict();
+
+export const FilterEntryUncheckedCreateWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUncheckedCreateWithoutFilterInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string()
+}).strict();
+
+export const FilterEntryCreateOrConnectWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryCreateOrConnectWithoutFilterInput> = z.object({
+  where: z.lazy(() => FilterEntryWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema) ]),
+}).strict();
+
+export const FilterEntryCreateManyFilterInputEnvelopeSchema: z.ZodType<Prisma.FilterEntryCreateManyFilterInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => FilterEntryCreateManyFilterInputSchema),z.lazy(() => FilterEntryCreateManyFilterInputSchema).array() ]),
+}).strict();
+
+export const TransportSystemCreateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateWithoutFilterInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
+  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
+  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional()
+}).strict();
+
+export const TransportSystemUncheckedCreateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutFilterInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  inventoryId: z.number().int(),
+  startStepId: z.number().int().optional().nullable(),
+  endStepId: z.number().int().optional().nullable()
+}).strict();
+
+export const TransportSystemCreateOrConnectWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutFilterInput> = z.object({
+  where: z.lazy(() => TransportSystemWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutFilterInputSchema) ]),
+}).strict();
+
+export const FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpsertWithWhereUniqueWithoutFilterInput> = z.object({
+  where: z.lazy(() => FilterEntryWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => FilterEntryUpdateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedUpdateWithoutFilterInputSchema) ]),
+  create: z.union([ z.lazy(() => FilterEntryCreateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedCreateWithoutFilterInputSchema) ]),
+}).strict();
+
+export const FilterEntryUpdateWithWhereUniqueWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpdateWithWhereUniqueWithoutFilterInput> = z.object({
+  where: z.lazy(() => FilterEntryWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => FilterEntryUpdateWithoutFilterInputSchema),z.lazy(() => FilterEntryUncheckedUpdateWithoutFilterInputSchema) ]),
+}).strict();
+
+export const FilterEntryUpdateManyWithWhereWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpdateManyWithWhereWithoutFilterInput> = z.object({
+  where: z.lazy(() => FilterEntryScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => FilterEntryUpdateManyMutationInputSchema),z.lazy(() => FilterEntryUncheckedUpdateManyWithoutFilterInputSchema) ]),
+}).strict();
+
+export const FilterEntryScalarWhereInputSchema: z.ZodType<Prisma.FilterEntryScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => FilterEntryScalarWhereInputSchema),z.lazy(() => FilterEntryScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => FilterEntryScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => FilterEntryScalarWhereInputSchema),z.lazy(() => FilterEntryScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  filterId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+}).strict();
+
+export const TransportSystemUpsertWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUpsertWithoutFilterInput> = z.object({
+  update: z.union([ z.lazy(() => TransportSystemUpdateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedUpdateWithoutFilterInputSchema) ]),
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutFilterInputSchema) ]),
+  where: z.lazy(() => TransportSystemWhereInputSchema).optional()
+}).strict();
+
+export const TransportSystemUpdateToOneWithWhereWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUpdateToOneWithWhereWithoutFilterInput> = z.object({
+  where: z.lazy(() => TransportSystemWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => TransportSystemUpdateWithoutFilterInputSchema),z.lazy(() => TransportSystemUncheckedUpdateWithoutFilterInputSchema) ]),
+}).strict();
+
+export const TransportSystemUpdateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUpdateWithoutFilterInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
+  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
+  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional()
+}).strict();
+
+export const TransportSystemUncheckedUpdateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutFilterInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
 export const InventoryCreateWithoutTransportSystemInputSchema: z.ZodType<Prisma.InventoryCreateWithoutTransportSystemInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5624,6 +6278,24 @@ export const ProcessStepUncheckedCreateWithoutInputsInputSchema: z.ZodType<Prism
 export const ProcessStepCreateOrConnectWithoutInputsInputSchema: z.ZodType<Prisma.ProcessStepCreateOrConnectWithoutInputsInput> = z.object({
   where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
   create: z.union([ z.lazy(() => ProcessStepCreateWithoutInputsInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutInputsInputSchema) ]),
+}).strict();
+
+export const FilterCreateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterCreateWithoutTransportSystemInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  entries: z.lazy(() => FilterEntryCreateNestedManyWithoutFilterInputSchema).optional()
+}).strict();
+
+export const FilterUncheckedCreateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUncheckedCreateWithoutTransportSystemInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  entries: z.lazy(() => FilterEntryUncheckedCreateNestedManyWithoutFilterInputSchema).optional()
+}).strict();
+
+export const FilterCreateOrConnectWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterCreateOrConnectWithoutTransportSystemInput> = z.object({
+  where: z.lazy(() => FilterWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]),
 }).strict();
 
 export const InventoryUpsertWithoutTransportSystemInputSchema: z.ZodType<Prisma.InventoryUpsertWithoutTransportSystemInput> = z.object({
@@ -5746,6 +6418,30 @@ export const ProcessStepUncheckedUpdateWithoutInputsInputSchema: z.ZodType<Prism
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional()
+}).strict();
+
+export const FilterUpsertWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUpsertWithoutTransportSystemInput> = z.object({
+  update: z.union([ z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]),
+  create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]),
+  where: z.lazy(() => FilterWhereInputSchema).optional()
+}).strict();
+
+export const FilterUpdateToOneWithWhereWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUpdateToOneWithWhereWithoutTransportSystemInput> = z.object({
+  where: z.lazy(() => FilterWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]),
+}).strict();
+
+export const FilterUpdateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUpdateWithoutTransportSystemInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  entries: z.lazy(() => FilterEntryUpdateManyWithoutFilterNestedInputSchema).optional()
+}).strict();
+
+export const FilterUncheckedUpdateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateWithoutTransportSystemInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  entries: z.lazy(() => FilterEntryUncheckedUpdateManyWithoutFilterNestedInputSchema).optional()
 }).strict();
 
 export const WorkerRoleUpdateWithoutWorkersInputSchema: z.ZodType<Prisma.WorkerRoleUpdateWithoutWorkersInput> = z.object({
@@ -5979,7 +6675,8 @@ export const TransportSystemUpdateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
-  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional()
+  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
+  filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutEndStepInput> = z.object({
@@ -5991,6 +6688,7 @@ export const TransportSystemUncheckedUpdateWithoutEndStepInputSchema: z.ZodType<
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateManyWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutEndStepInput> = z.object({
@@ -6011,7 +6709,8 @@ export const TransportSystemUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
-  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional()
+  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
+  filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutStartStepInput> = z.object({
@@ -6023,6 +6722,7 @@ export const TransportSystemUncheckedUpdateWithoutStartStepInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateManyWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutStartStepInput> = z.object({
@@ -6163,6 +6863,29 @@ export const ProcessStepUncheckedUpdateManyWithoutRecipeInputSchema: z.ZodType<P
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryCreateManyFilterInputSchema: z.ZodType<Prisma.FilterEntryCreateManyFilterInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string()
+}).strict();
+
+export const FilterEntryUpdateWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpdateWithoutFilterInput> = z.object({
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryUncheckedUpdateWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUncheckedUpdateWithoutFilterInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const FilterEntryUncheckedUpdateManyWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUncheckedUpdateManyWithoutFilterInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 /////////////////////////////////////////
@@ -6913,6 +7636,130 @@ export const SensorFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.SensorFindUniqu
   where: SensorWhereUniqueInputSchema,
 }).strict() ;
 
+export const FilterEntryFindFirstArgsSchema: z.ZodType<Prisma.FilterEntryFindFirstArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereInputSchema.optional(),
+  orderBy: z.union([ FilterEntryOrderByWithRelationInputSchema.array(),FilterEntryOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterEntryWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterEntryScalarFieldEnumSchema,FilterEntryScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterEntryFindFirstOrThrowArgsSchema: z.ZodType<Prisma.FilterEntryFindFirstOrThrowArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereInputSchema.optional(),
+  orderBy: z.union([ FilterEntryOrderByWithRelationInputSchema.array(),FilterEntryOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterEntryWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterEntryScalarFieldEnumSchema,FilterEntryScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterEntryFindManyArgsSchema: z.ZodType<Prisma.FilterEntryFindManyArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereInputSchema.optional(),
+  orderBy: z.union([ FilterEntryOrderByWithRelationInputSchema.array(),FilterEntryOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterEntryWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterEntryScalarFieldEnumSchema,FilterEntryScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterEntryAggregateArgsSchema: z.ZodType<Prisma.FilterEntryAggregateArgs> = z.object({
+  where: FilterEntryWhereInputSchema.optional(),
+  orderBy: z.union([ FilterEntryOrderByWithRelationInputSchema.array(),FilterEntryOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterEntryWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const FilterEntryGroupByArgsSchema: z.ZodType<Prisma.FilterEntryGroupByArgs> = z.object({
+  where: FilterEntryWhereInputSchema.optional(),
+  orderBy: z.union([ FilterEntryOrderByWithAggregationInputSchema.array(),FilterEntryOrderByWithAggregationInputSchema ]).optional(),
+  by: FilterEntryScalarFieldEnumSchema.array(),
+  having: FilterEntryScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const FilterEntryFindUniqueArgsSchema: z.ZodType<Prisma.FilterEntryFindUniqueArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterEntryFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.FilterEntryFindUniqueOrThrowArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterFindFirstArgsSchema: z.ZodType<Prisma.FilterFindFirstArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereInputSchema.optional(),
+  orderBy: z.union([ FilterOrderByWithRelationInputSchema.array(),FilterOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterScalarFieldEnumSchema,FilterScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterFindFirstOrThrowArgsSchema: z.ZodType<Prisma.FilterFindFirstOrThrowArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereInputSchema.optional(),
+  orderBy: z.union([ FilterOrderByWithRelationInputSchema.array(),FilterOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterScalarFieldEnumSchema,FilterScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterFindManyArgsSchema: z.ZodType<Prisma.FilterFindManyArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereInputSchema.optional(),
+  orderBy: z.union([ FilterOrderByWithRelationInputSchema.array(),FilterOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ FilterScalarFieldEnumSchema,FilterScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const FilterAggregateArgsSchema: z.ZodType<Prisma.FilterAggregateArgs> = z.object({
+  where: FilterWhereInputSchema.optional(),
+  orderBy: z.union([ FilterOrderByWithRelationInputSchema.array(),FilterOrderByWithRelationInputSchema ]).optional(),
+  cursor: FilterWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const FilterGroupByArgsSchema: z.ZodType<Prisma.FilterGroupByArgs> = z.object({
+  where: FilterWhereInputSchema.optional(),
+  orderBy: z.union([ FilterOrderByWithAggregationInputSchema.array(),FilterOrderByWithAggregationInputSchema ]).optional(),
+  by: FilterScalarFieldEnumSchema.array(),
+  having: FilterScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const FilterFindUniqueArgsSchema: z.ZodType<Prisma.FilterFindUniqueArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.FilterFindUniqueOrThrowArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereUniqueInputSchema,
+}).strict() ;
+
 export const TransportSystemFindFirstArgsSchema: z.ZodType<Prisma.TransportSystemFindFirstArgs> = z.object({
   select: TransportSystemSelectSchema.optional(),
   include: TransportSystemIncludeSchema.optional(),
@@ -7501,6 +8348,94 @@ export const SensorUpdateManyArgsSchema: z.ZodType<Prisma.SensorUpdateManyArgs> 
 
 export const SensorDeleteManyArgsSchema: z.ZodType<Prisma.SensorDeleteManyArgs> = z.object({
   where: SensorWhereInputSchema.optional(),
+}).strict() ;
+
+export const FilterEntryCreateArgsSchema: z.ZodType<Prisma.FilterEntryCreateArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  data: z.union([ FilterEntryCreateInputSchema,FilterEntryUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const FilterEntryUpsertArgsSchema: z.ZodType<Prisma.FilterEntryUpsertArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereUniqueInputSchema,
+  create: z.union([ FilterEntryCreateInputSchema,FilterEntryUncheckedCreateInputSchema ]),
+  update: z.union([ FilterEntryUpdateInputSchema,FilterEntryUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const FilterEntryCreateManyArgsSchema: z.ZodType<Prisma.FilterEntryCreateManyArgs> = z.object({
+  data: z.union([ FilterEntryCreateManyInputSchema,FilterEntryCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const FilterEntryCreateManyAndReturnArgsSchema: z.ZodType<Prisma.FilterEntryCreateManyAndReturnArgs> = z.object({
+  data: z.union([ FilterEntryCreateManyInputSchema,FilterEntryCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const FilterEntryDeleteArgsSchema: z.ZodType<Prisma.FilterEntryDeleteArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  where: FilterEntryWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterEntryUpdateArgsSchema: z.ZodType<Prisma.FilterEntryUpdateArgs> = z.object({
+  select: FilterEntrySelectSchema.optional(),
+  include: FilterEntryIncludeSchema.optional(),
+  data: z.union([ FilterEntryUpdateInputSchema,FilterEntryUncheckedUpdateInputSchema ]),
+  where: FilterEntryWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterEntryUpdateManyArgsSchema: z.ZodType<Prisma.FilterEntryUpdateManyArgs> = z.object({
+  data: z.union([ FilterEntryUpdateManyMutationInputSchema,FilterEntryUncheckedUpdateManyInputSchema ]),
+  where: FilterEntryWhereInputSchema.optional(),
+}).strict() ;
+
+export const FilterEntryDeleteManyArgsSchema: z.ZodType<Prisma.FilterEntryDeleteManyArgs> = z.object({
+  where: FilterEntryWhereInputSchema.optional(),
+}).strict() ;
+
+export const FilterCreateArgsSchema: z.ZodType<Prisma.FilterCreateArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  data: z.union([ FilterCreateInputSchema,FilterUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const FilterUpsertArgsSchema: z.ZodType<Prisma.FilterUpsertArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereUniqueInputSchema,
+  create: z.union([ FilterCreateInputSchema,FilterUncheckedCreateInputSchema ]),
+  update: z.union([ FilterUpdateInputSchema,FilterUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const FilterCreateManyArgsSchema: z.ZodType<Prisma.FilterCreateManyArgs> = z.object({
+  data: z.union([ FilterCreateManyInputSchema,FilterCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const FilterCreateManyAndReturnArgsSchema: z.ZodType<Prisma.FilterCreateManyAndReturnArgs> = z.object({
+  data: z.union([ FilterCreateManyInputSchema,FilterCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const FilterDeleteArgsSchema: z.ZodType<Prisma.FilterDeleteArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  where: FilterWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterUpdateArgsSchema: z.ZodType<Prisma.FilterUpdateArgs> = z.object({
+  select: FilterSelectSchema.optional(),
+  include: FilterIncludeSchema.optional(),
+  data: z.union([ FilterUpdateInputSchema,FilterUncheckedUpdateInputSchema ]),
+  where: FilterWhereUniqueInputSchema,
+}).strict() ;
+
+export const FilterUpdateManyArgsSchema: z.ZodType<Prisma.FilterUpdateManyArgs> = z.object({
+  data: z.union([ FilterUpdateManyMutationInputSchema,FilterUncheckedUpdateManyInputSchema ]),
+  where: FilterWhereInputSchema.optional(),
+}).strict() ;
+
+export const FilterDeleteManyArgsSchema: z.ZodType<Prisma.FilterDeleteManyArgs> = z.object({
+  where: FilterWhereInputSchema.optional(),
 }).strict() ;
 
 export const TransportSystemCreateArgsSchema: z.ZodType<Prisma.TransportSystemCreateArgs> = z.object({
