@@ -1,11 +1,11 @@
-import { SimulationEntityState } from "@/lib/simulation/simulation";
+import { SimulationEntityState } from "@/lib/simulation/simulationNew";
 import { Background, Controls, Edge, ReactFlow } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { NodeTypes, ProcessStepNode, TransportSystemNode } from "./Nodes";
 
-export interface SimulationGraphProps {}
+export interface SimulationGraphProps { }
 
-export function SimulationGraph({}: Readonly<SimulationGraphProps>) {
+export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
   const [entities, setEntities] = useState<SimulationEntityState>();
 
   useEffect(() => {

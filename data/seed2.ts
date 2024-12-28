@@ -2,56 +2,70 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Hilfsfunktion für zufällige Zahlen, wird aber hier nicht weiter genutzt.
+ */
 function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/**
+ * Erstellt ein TransportSystem zwischen zwei ProcessSteps
+ * und legt (falls das "to"-ProcessStep ein Rezept hat) direkt einen Filter an,
+ * der genau jene Materialien akzeptiert, die im Rezept des Ziel-Schritts
+ * als Input definiert sind.
+ */
+async function createTransportSystemWithFilter(
+  name: string,
+  fromStepId: number,
+  toStepId: number
+) {
+  // 1) TransportSystem anlegen
+  const transportSystem = await prisma.transportSystem.create({
+    data: {
+      name,
+      inputSpeed: 100,
+      outputSpeed: 100,
+      inventory: { create: { type: "transportSystem", limit: 1000 } },
+      startStep: { connect: { id: fromStepId } },
+      endStep: { connect: { id: toStepId } },
+    },
+  });
+
+  // 2) Prüfen, ob das Ziel ("to") ein Recipe hat
+  const targetStep = await prisma.processStep.findUnique({
+    where: { id: toStepId },
+    include: {
+      recipe: {
+        include: { inputs: true },
+      },
+    },
+  });
+
+  // 3) Falls das Rezept existiert, Filter erstellen
+  if (targetStep?.recipe) {
+    // Alle Materials der Input-Rezepte
+    const inputMaterials = targetStep.recipe.inputs.map((ri) => ri.material);
+    console.log("inputMaterials", inputMaterials);
+
+    // Filter in DB anlegen
+    await prisma.filter.create({
+      data: {
+        transportSystem: { connect: { id: transportSystem.id } },
+        entries: {
+          // Dubletten entfernen, falls Material doppelt in recipe.inputs
+          create: Array.from(new Set(inputMaterials)).map((material) => ({
+            material,
+          })),
+        },
+      },
+    });
+  }
+  return transportSystem;
+}
+
 async function main() {
-  // // Create Recipes
-  // const supermarketDTSSeatRecipe = await prisma.recipe.create({
-  //   data: {
-  //     name: "Supermarket DTS Seat Recipe",
-  //     inputs: {
-  //       create: [
-  //         { material: "Seat Foam", quantity: 1 },
-  //         { material: "Seat Structures", quantity: 1 },
-  //         { material: "Airbags", quantity: 1 },
-  //         { material: "Small Parts", quantity: 1 },
-  //         { material: "Seat Covers", quantity: 1 },
-  //       ],
-  //     },
-  //     outputs: {
-  //       create: [
-  //         { material: "Seat Foam", quantity: 1 },
-  //         { material: "Seat Structures", quantity: 1 },
-  //         { material: "Airbags", quantity: 1 },
-  //         { material: "Small Parts", quantity: 1 },
-  //         { material: "Seat Covers", quantity: 1 },
-  //       ],
-  //     },
-  //   },
-  // });
-
-  // const supermarketDTSBackrestRecipe = await prisma.recipe.create({
-  //   data: {
-  //     name: "Supermarket DTS Backrest Recipe",
-  //     inputs: {
-  //       create: [
-  //         { material: "Headrest", quantity: 1 },
-  //         { material: "Backrest Structures", quantity: 1 },
-  //         { material: "Backrest Covers", quantity: 1 },
-  //       ],
-  //     },
-  //     outputs: {
-  //       create: [
-  //         { material: "Headrest", quantity: 1 },
-  //         { material: "Backrest Structures", quantity: 1 },
-  //         { material: "Backrest Covers", quantity: 1 },
-  //       ],
-  //     },
-  //   },
-  // });
-
+  // --- Recipes anlegen ---
   const preAssemblyRecipeSeat = await prisma.recipe.create({
     data: {
       name: "Pre-Assembly - Seat Recipe",
@@ -61,14 +75,10 @@ async function main() {
           { material: "Seat Structures", quantity: 1 },
           { material: "Airbags", quantity: 1 },
           { material: "Small Parts", quantity: 1 },
-          // { material: "Seat Covers", quantity: 1 },
         ],
       },
       outputs: {
-        create: [
-          { material: "Pre-Assembled Seat", quantity: 1 },
-          // { material: "Seat Covers", quantity: 1 },
-        ],
+        create: [{ material: "Pre-Assembled Seat", quantity: 1 }],
       },
     },
   });
@@ -80,14 +90,10 @@ async function main() {
         create: [
           { material: "Headrest", quantity: 1 },
           { material: "Backrest Structures", quantity: 1 },
-          // { material: "Backrest Covers", quantity: 1 },
         ],
       },
       outputs: {
-        create: [
-          { material: "Pre-Assembled Backrest", quantity: 1 },
-          // { material: "Backrest Covers", quantity: 1 },
-        ],
+        create: [{ material: "Pre-Assembled Backrest", quantity: 1 }],
       },
     },
   });
@@ -121,24 +127,6 @@ async function main() {
       },
     },
   });
-
-  // const assemblyLineRecipe = await prisma.recipe.create({
-  //   data: {
-  //     name: "Assembly Line Recipe",
-  //     // inputs: {
-  //     //   create: [
-  //     //     { material: "Upholstered Seat", quantity: 1 },
-  //     //     { material: "Upholstered Backrest", quantity: 1 },
-  //     //   ],
-  //     // },
-  //     outputs: {
-  //       create: [
-  //         { material: "Upholstered Seat", quantity: 1 },
-  //         { material: "Upholstered Backrest", quantity: 1 },
-  //       ],
-  //     },
-  //   },
-  // });
 
   const assemblingRecipe = await prisma.recipe.create({
     data: {
@@ -179,7 +167,7 @@ async function main() {
     },
   });
 
-  // Hall 1 - Goods Receipt
+  // --- Locations & ProcessSteps ---
   const hall1 = await prisma.location.create({
     data: {
       name: "Hall 1 - Goods Receipt",
@@ -217,7 +205,6 @@ async function main() {
     },
   });
 
-  // Hall 5 - Covers Receipt
   const hall5 = await prisma.location.create({
     data: {
       name: "Hall 5 - Covers Receipt",
@@ -264,7 +251,6 @@ async function main() {
     },
   });
 
-  // Supermarket (Hall 2 - Intermediate Storage)
   const hall2 = await prisma.location.create({
     data: {
       name: "Hall 2 - Intermediate Storage (Supermarket)",
@@ -275,24 +261,14 @@ async function main() {
             inputSpeed: 100,
             outputSpeed: 100,
             status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: {
+              create: {
+                type: "processStep",
+                limit: 500,
+              },
+            },
           },
-          // {
-          //   name: "Supermarket DTS Seat",
-          //   inputSpeed: 100,
-          //   outputSpeed: 100,
-          //   status: "PROCEEDING",
-          //   inventory: { create: { type: "processStep", limit: 500 } },
-          //   recipe: { connect: { id: supermarketDTSSeatRecipe.id } },
-          // },
-          // {
-          //   name: "Supermarket DTS Backrest",
-          //   inputSpeed: 100,
-          //   outputSpeed: 100,
-          //   status: "PROCEEDING",
-          //   inventory: { create: { type: "processStep", limit: 500 } },
-          //   recipe: { connect: { id: supermarketDTSBackrestRecipe.id } },
-          // },
+          // ggf. weitere Steps auskommentiert
         ],
       },
     },
@@ -301,7 +277,6 @@ async function main() {
     },
   });
 
-  // Hall 3 - Pre-Assembly and Upholstery
   const hall3 = await prisma.location.create({
     data: {
       name: "Hall 3 - Pre-Assembly and Upholstery",
@@ -345,20 +320,11 @@ async function main() {
     include: { processSteps: true },
   });
 
-  // Hall 4 - Assembly and Quality Check
   const hall4 = await prisma.location.create({
     data: {
       name: "Hall 4 - Assembly and Quality Check",
       processSteps: {
         create: [
-          // {
-          //   name: "Assembly Line",
-          //   inputSpeed: 100,
-          //   outputSpeed: 100,
-          //   status: "PROCEEDING",
-          //   inventory: { create: { type: "processStep", limit: 500 } },
-          //   recipe: { connect: { id: assemblyLineRecipe.id } },
-          // },
           {
             name: "Assembling",
             inputSpeed: 100,
@@ -383,105 +349,92 @@ async function main() {
     },
   });
 
-  // Transport System Creation Function
-  let createTransportSystem = async (
-    name: string,
-    from: { id: number },
-    to: { id: number },
-  ) =>
-    prisma.transportSystem.create({
-      data: {
-        name,
-        inputSpeed: 100,
-        outputSpeed: 100,
-        inventory: { create: { type: "transportSystem", limit: 1000 } },
-        startStep: { connect: { id: from.id } },
-        endStep: { connect: { id: to.id } },
-      },
-    });
+  // --- Transport-Systeme erstellen ---
+  //
+  // ACHTUNG: Wir holen uns jeweils den ProcessStep, um an seine ID zu kommen
+  // und rufen `createTransportSystemWithFilter(...)` auf.
 
-  // Creating Transport Systems
-  await createTransportSystem(
+  await createTransportSystemWithFilter(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
-    hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
+    hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!.id,
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
   );
 
-  await createTransportSystem(
+  await createTransportSystemWithFilter(
     "Forklift - Hall 5 to Hall 2 (Covers)",
-    hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
+    hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!.id,
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
   );
 
-  await createTransportSystem(
-    "Worker puts Materials for Seat Pre-Assembly on DTS",
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Seat")!,
+  await createTransportSystemWithFilter(
+    "DTS - Hall 2 (Storage Rack) to Pre-Assembly (Seat)",
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id
   );
 
-  await createTransportSystem(
-    "Worker puts Materials for Backrest Pre-Assembly on DTS",
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!,
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Backrest")!,
+  await createTransportSystemWithFilter(
+    "Roller - Hall 2 (Storage Rack) to Pre-Assembly (Backrest)",
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id
   );
 
-  await createTransportSystem(
-    "DTS Seat for Pre-Assembly",
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Seat")!,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!,
+  await createTransportSystemWithFilter(
+    "Roller - Pre-Assembly (Seat) to Upholstery (Seat)",
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id
   );
 
-  await createTransportSystem(
-    "Roller - Rack 1 to Pre-Assembly (Backrest)",
-    hall2.processSteps.find((ps) => ps.name === "Supermarket DTS Backrest")!,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!,
+  await createTransportSystemWithFilter(
+    "Roller - Pre-Assembly (Backrest) to Upholstery (Backrest)",
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
   );
 
-  await createTransportSystem(
-    "Roller - Pre-Assembly (Seat) to Upholstery Seeat",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!,
+  await createTransportSystemWithFilter(
+    "Roller - Storage Rack to Upholstery (Backrest)",
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
   );
 
-  await createTransportSystem(
-    "Roller - Rack 2 to Upholstery (Backrest Covers)",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!,
+  await createTransportSystemWithFilter(
+    "Conveyor - Upholstery (Seat) to Assembling",
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
   );
 
-  await createTransportSystem(
-    "Conveyor - Upholstery (Seat) to Assembly",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!,
+  await createTransportSystemWithFilter(
+    "Conveyor - Upholstery (Backrest) to Assembling",
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
   );
 
-  await createTransportSystem(
-    "Conveyor - Upholstered Backrest to Assembly Line",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!,
-  );
-
-  await createTransportSystem(
+  await createTransportSystemWithFilter(
     "Conveyor - Assembling to End of Line Check",
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!,
-    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!,
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
+    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id
   );
 
-  // From End of Line Check to Shipping
-  await createTransportSystem(
-    "Forklift - Hall 4 to Hall 5",
-    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!,
-    hall5.processSteps.find((ps) => ps.name === "Shipping")!,
+  await createTransportSystemWithFilter(
+    "Forklift - Hall 4 (EOL) to Hall 5 (Shipping)",
+    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
+    hall5.processSteps.find((ps) => ps.name === "Shipping")!.id
   );
 
+  // Prüfe, was wir haben:
   console.dir(
     {
       locations: await prisma.location.findMany({
         include: { processSteps: true },
       }),
-      transportSystems: await prisma.transportSystem.findMany(),
+      transportSystems: await prisma.transportSystem.findMany({
+        include: {
+          filter: {
+            include: { entries: true },
+          },
+        },
+      }),
     },
-    { depth: 10 },
+    { depth: 10 }
   );
 }
 

@@ -20,6 +20,7 @@ import {
   IconCarCrane,
   IconChartInfographic,
   IconDeviceDesktopAnalytics,
+  IconGraph,
   IconHome,
   IconPackages,
   IconReportAnalytics,
@@ -82,6 +83,11 @@ const crudLinks: LinkDescription[] = [
 ];
 
 const reportsAndAnalytics: LinkDescription[] = [
+  {
+    icon: IconGraph,
+    label: "Simulation Graph Overview",
+    href: "/simulation-overview",
+  },
   {
     icon: IconChartInfographic,
     label: "Operational Efficiency Reports",

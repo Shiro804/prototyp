@@ -11,262 +11,158 @@ datasource db {
     url      = "file:./dev.db"
 }
 
-// model Event {
-//     id        Int      @id @default(autoincrement())
-//     timestamp DateTime @default(now())
-//     details   String?
-
-//     ExceptionEvent    ExceptionEvent?
-//     ProcessStepEvent  ProcessStepEvent?
-//     QualityCheckEvent QualityCheckEvent?
-//     TransportEvent    TransportEvent?
-// }
-
-// model ExceptionEvent {
-//     id      Int   @id @default(autoincrement())
-//     event   Event @relation(fields: [eventId], references: [id])
-//     eventId Int   @unique
-// }
-
-// model ProcessStepEvent {
-//     id      Int   @id @default(autoincrement())
-//     event   Event @relation(fields: [eventId], references: [id])
-//     eventId Int   @unique
-
-//     processStep   ProcessStep @relation(fields: [processStepId], references: [id])
-//     processStepId Int
-// }
-
-// model QualityCheckEvent {
-//     id      Int   @id @default(autoincrement())
-//     event   Event @relation(fields: [eventId], references: [id])
-//     eventId Int   @unique
-
-//     result     Boolean
-//     resource   Resource @relation(fields: [resourceId], references: [id])
-//     resourceId Int
-// }
-
-// model TransportEvent {
-//     id      Int   @id @default(autoincrement())
-//     event   Event @relation(fields: [eventId], references: [id])
-//     eventId Int   @unique
-
-//     transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
-//     transportSystemId Int
-// }
-
 model Resource {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    name   String?
-    active Boolean @default(true)
-
-    location      Location     @relation(fields: [locationId], references: [id])
+    id            Int         @id @default(autoincrement())
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    name          String?
+    active        Boolean     @default(true)
     locationId    Int
-    processStep   ProcessStep? @relation(fields: [processStepId], references: [id])
     processStepId Int
-
-    Machine Machine?
-    Worker  Worker?
-
-    // qualityChecks QualityCheckEvent[]
+    Machine       Machine?
+    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+    location      Location    @relation(fields: [locationId], references: [id])
+    Worker        Worker?
 }
 
 model Machine {
     id         Int      @id @default(autoincrement())
-    resource   Resource @relation(fields: [resourceId], references: [id])
     resourceId Int      @unique
+    resource   Resource @relation(fields: [resourceId], references: [id])
 }
 
 model Worker {
-    id         Int      @id @default(autoincrement())
-    resource   Resource @relation(fields: [resourceId], references: [id])
-    resourceId Int      @unique
-
-    workerRoles WorkerRole[]
+    id          Int          @id @default(autoincrement())
+    resourceId  Int          @unique
+    resource    Resource     @relation(fields: [resourceId], references: [id])
+    workerRoles WorkerRole[] @relation("WorkerToWorkerRole")
 }
 
 model WorkerRole {
-    id          Int     @id @default(autoincrement())
-    name        String  @unique
+    id          Int      @id @default(autoincrement())
+    name        String   @unique
     description String?
-
-    workers Worker[]
+    workers     Worker[] @relation("WorkerToWorkerRole")
 }
 
 model Inventory {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    // TODO: Remove unnecessary field "type"? Can be inferred from "transportSystem" and "processStep"
-    type    String
-    entries InventoryEntry[]
-    limit   Int
-
-    // If type == "transportSystem"
-    transportSystem TransportSystem?
-    // If type == "processStep"
+    id              Int              @id @default(autoincrement())
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    type            String
+    limit           Int
+    entries         InventoryEntry[]
     processStep     ProcessStep?
+    transportSystem TransportSystem?
 }
 
 model InventoryEntry {
-    id Int @id @default(autoincrement())
-
-    addedAt DateTime @default(now())
-
-    material String
-
-    inventory   Inventory @relation(fields: [inventoryId], references: [id])
+    id          Int       @id @default(autoincrement())
+    addedAt     DateTime  @default(now())
+    material    String
     inventoryId Int
+    inventory   Inventory @relation(fields: [inventoryId], references: [id])
 }
 
 model Location {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    name        String
-    description String?
-
-    resources    Resource[]
+    id           Int           @id @default(autoincrement())
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    name         String
+    description  String?
     processSteps ProcessStep[]
+    resources    Resource[]
 }
 
-// model Metric {
-//     id Int @id @default(autoincrement())
-
-//     timestamp DateTime @default(now())
-//     type      String
-//     data      String
-
-//     sensor   Sensor @relation(fields: [sensorId], references: [id])
-//     sensorId Int
-// }
-
 model ProcessStep {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
+    id          Int               @id @default(autoincrement())
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
     name        String
     status      String
     inputSpeed  Int
     outputSpeed Int
-    recipeRate  Int      @default(10)
-    duration    Int      @default(1) // Dauer des Schritts in Ticks 
-    location    Location @relation(fields: [locationId], references: [id])
+    recipeRate  Int               @default(10)
+    duration    Int               @default(1)
     locationId  Int
-
-    inventory   Inventory @relation(fields: [inventoryId], references: [id])
-    inventoryId Int       @unique
-
-    resources Resource[]
-    inputs    TransportSystem[] @relation("stepInputs")
-    outputs   TransportSystem[] @relation("stepOutputs")
-    sensors   Sensor[]
-    recipe    Recipe?           @relation(fields: [recipeId], references: [id])
-    recipeId  Int?
-
-    // processStepEvents ProcessStepEvent[]
+    inventoryId Int               @unique
+    recipeId    Int?
+    recipe      Recipe?           @relation(fields: [recipeId], references: [id])
+    inventory   Inventory         @relation(fields: [inventoryId], references: [id])
+    location    Location          @relation(fields: [locationId], references: [id])
+    resources   Resource[]
+    sensors     Sensor[]
+    inputs      TransportSystem[] @relation("stepInputs")
+    outputs     TransportSystem[] @relation("stepOutputs")
 }
 
 model Recipe {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    name String
-
-    inputs  RecipeInput[]
-    outputs RecipeOutput[]
-
+    id           Int            @id @default(autoincrement())
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+    name         String
     processSteps ProcessStep[]
+    inputs       RecipeInput[]
+    outputs      RecipeOutput[]
 }
 
 model RecipeInput {
-    id Int @id @default(autoincrement())
-
+    id       Int     @id @default(autoincrement())
     material String
     quantity Int
-    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
     recipeId Int?
+    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
 
     @@unique([material, recipeId])
 }
 
 model RecipeOutput {
-    id Int @id @default(autoincrement())
-
+    id       Int     @id @default(autoincrement())
     material String
     quantity Int
-    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
     recipeId Int?
+    Recipe   Recipe? @relation(fields: [recipeId], references: [id])
 }
 
 model Sensor {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    name String
-
-    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+    id            Int         @id @default(autoincrement())
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    name          String
     processStepId Int
-
-    // metrics Metric[]
+    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
 }
 
 model FilterEntry {
-    id Int @id @default(autoincrement())
-
-    addedAt DateTime @default(now())
-
+    id       Int      @id @default(autoincrement())
+    addedAt  DateTime @default(now())
     material String
-
-    filter   Filter @relation(fields: [filterId], references: [id])
     filterId Int
+    filter   Filter   @relation(fields: [filterId], references: [id])
 }
 
 model Filter {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    entries FilterEntry[]
-
-    transportSystem TransportSystem @relation(fields: [transportSystemId], references: [id])
-    transportSystemId Int           @unique
+    id                Int             @id @default(autoincrement())
+    createdAt         DateTime        @default(now())
+    updatedAt         DateTime        @updatedAt
+    transportSystemId Int             @unique
+    transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
+    entries           FilterEntry[]
 }
 
 model TransportSystem {
-    id Int @id @default(autoincrement())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
+    id          Int          @id @default(autoincrement())
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
     name        String
     inputSpeed  Int
     outputSpeed Int
-
-    inventory   Inventory    @relation(fields: [inventoryId], references: [id])
     inventoryId Int          @unique
-    startStep   ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
     startStepId Int?
-    endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
     endStepId   Int?
-
-    filter Filter?
-
-    // events TransportEvent[]
+    filterId    Int?
+    filter      Filter?
+    endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
+    startStep   ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
+    inventory   Inventory    @relation(fields: [inventoryId], references: [id])
 }

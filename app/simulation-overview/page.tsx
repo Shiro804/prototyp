@@ -1,3 +1,4 @@
+"use client";
 import { Title } from "@mantine/core";
 
 import { SimulationGraph } from "@/components/simulation-overview/SimulationGraph";
