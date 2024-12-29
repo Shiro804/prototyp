@@ -1,9 +1,16 @@
 export function distributeRoundRobin<T>(
   items: T[],
-  outputSpeeds: number[]
+  outputSpeeds: number[],
+  outputWhitelists: T[][],
 ): T[][] {
   if (outputSpeeds.length === 0) {
     return [];
+  }
+
+  if (outputSpeeds.length !== outputWhitelists.length) {
+    throw new Error(
+      "The number of output speeds must be equal to the number of whitelists.",
+    );
   }
 
   let result: T[][] = outputSpeeds.map((_) => []);
