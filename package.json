@@ -14,6 +14,7 @@
     "migrate": "npx prisma migrate dev --name init"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.4",
     "@mantine/charts": "^7.12.2",
     "@mantine/core": "^7.12.2",
     "@mantine/dates": "^7.12.2",
