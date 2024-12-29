@@ -160,7 +160,6 @@ model TransportSystem {
     inventoryId Int          @unique
     startStepId Int?
     endStepId   Int?
-    filterId    Int?
     filter      Filter?
     endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
     startStep   ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])

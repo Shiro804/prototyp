@@ -40,7 +40,7 @@ export const FilterEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material
 
 export const FilterScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','transportSystemId']);
 
-export const TransportSystemScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','inputSpeed','outputSpeed','inventoryId','startStepId','endStepId','filterId']);
+export const TransportSystemScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','inputSpeed','outputSpeed','inventoryId','startStepId','endStepId']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -254,7 +254,6 @@ export const TransportSystemSchema = z.object({
   inventoryId: z.number().int(),
   startStepId: z.number().int().nullable(),
   endStepId: z.number().int().nullable(),
-  filterId: z.number().int().nullable(),
 })
 
 export type TransportSystem = z.infer<typeof TransportSystemSchema>
@@ -685,7 +684,6 @@ export const TransportSystemSelectSchema: z.ZodType<Prisma.TransportSystemSelect
   inventoryId: z.boolean().optional(),
   startStepId: z.boolean().optional(),
   endStepId: z.boolean().optional(),
-  filterId: z.boolean().optional(),
   filter: z.union([z.boolean(),z.lazy(() => FilterArgsSchema)]).optional(),
   endStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   startStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
@@ -1628,7 +1626,6 @@ export const TransportSystemWhereInputSchema: z.ZodType<Prisma.TransportSystemWh
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   startStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   endStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
-  filterId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   filter: z.union([ z.lazy(() => FilterNullableRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional().nullable(),
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
@@ -1645,7 +1642,6 @@ export const TransportSystemOrderByWithRelationInputSchema: z.ZodType<Prisma.Tra
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   endStepId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
-  filterId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   filter: z.lazy(() => FilterOrderByWithRelationInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
@@ -1677,7 +1673,6 @@ export const TransportSystemWhereUniqueInputSchema: z.ZodType<Prisma.TransportSy
   outputSpeed: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   startStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   endStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
-  filterId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   filter: z.union([ z.lazy(() => FilterNullableRelationFilterSchema),z.lazy(() => FilterWhereInputSchema) ]).optional().nullable(),
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
@@ -1694,7 +1689,6 @@ export const TransportSystemOrderByWithAggregationInputSchema: z.ZodType<Prisma.
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   endStepId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
-  filterId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => TransportSystemCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => TransportSystemAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => TransportSystemMaxOrderByAggregateInputSchema).optional(),
@@ -1715,7 +1709,6 @@ export const TransportSystemScalarWhereWithAggregatesInputSchema: z.ZodType<Pris
   inventoryId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   startStepId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
   endStepId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
-  filterId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const ResourceCreateInputSchema: z.ZodType<Prisma.ResourceCreateInput> = z.object({
@@ -2486,7 +2479,6 @@ export const TransportSystemCreateInputSchema: z.ZodType<Prisma.TransportSystemC
   name: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
@@ -2503,7 +2495,6 @@ export const TransportSystemUncheckedCreateInputSchema: z.ZodType<Prisma.Transpo
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
   endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
@@ -2513,7 +2504,6 @@ export const TransportSystemUpdateInputSchema: z.ZodType<Prisma.TransportSystemU
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
@@ -2530,7 +2520,6 @@ export const TransportSystemUncheckedUpdateInputSchema: z.ZodType<Prisma.Transpo
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
@@ -2543,8 +2532,7 @@ export const TransportSystemCreateManyInputSchema: z.ZodType<Prisma.TransportSys
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable()
 }).strict();
 
 export const TransportSystemUpdateManyMutationInputSchema: z.ZodType<Prisma.TransportSystemUpdateManyMutationInput> = z.object({
@@ -2553,7 +2541,6 @@ export const TransportSystemUpdateManyMutationInputSchema: z.ZodType<Prisma.Tran
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemUncheckedUpdateManyInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyInput> = z.object({
@@ -2566,7 +2553,6 @@ export const TransportSystemUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Tra
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.object({
@@ -3375,8 +3361,7 @@ export const TransportSystemCountOrderByAggregateInputSchema: z.ZodType<Prisma.T
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
-  endStepId: z.lazy(() => SortOrderSchema).optional(),
-  filterId: z.lazy(() => SortOrderSchema).optional()
+  endStepId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const TransportSystemAvgOrderByAggregateInputSchema: z.ZodType<Prisma.TransportSystemAvgOrderByAggregateInput> = z.object({
@@ -3385,8 +3370,7 @@ export const TransportSystemAvgOrderByAggregateInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
-  endStepId: z.lazy(() => SortOrderSchema).optional(),
-  filterId: z.lazy(() => SortOrderSchema).optional()
+  endStepId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const TransportSystemMaxOrderByAggregateInputSchema: z.ZodType<Prisma.TransportSystemMaxOrderByAggregateInput> = z.object({
@@ -3398,8 +3382,7 @@ export const TransportSystemMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
-  endStepId: z.lazy(() => SortOrderSchema).optional(),
-  filterId: z.lazy(() => SortOrderSchema).optional()
+  endStepId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const TransportSystemMinOrderByAggregateInputSchema: z.ZodType<Prisma.TransportSystemMinOrderByAggregateInput> = z.object({
@@ -3411,8 +3394,7 @@ export const TransportSystemMinOrderByAggregateInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
-  endStepId: z.lazy(() => SortOrderSchema).optional(),
-  filterId: z.lazy(() => SortOrderSchema).optional()
+  endStepId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const TransportSystemSumOrderByAggregateInputSchema: z.ZodType<Prisma.TransportSystemSumOrderByAggregateInput> = z.object({
@@ -3421,8 +3403,7 @@ export const TransportSystemSumOrderByAggregateInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
-  endStepId: z.lazy(() => SortOrderSchema).optional(),
-  filterId: z.lazy(() => SortOrderSchema).optional()
+  endStepId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const MachineCreateNestedOneWithoutResourceInputSchema: z.ZodType<Prisma.MachineCreateNestedOneWithoutResourceInput> = z.object({
@@ -5026,7 +5007,6 @@ export const TransportSystemCreateWithoutInventoryInputSchema: z.ZodType<Prisma.
   name: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional()
@@ -5041,7 +5021,6 @@ export const TransportSystemUncheckedCreateWithoutInventoryInputSchema: z.ZodTyp
   outputSpeed: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
   endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
@@ -5139,7 +5118,6 @@ export const TransportSystemUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional()
@@ -5154,7 +5132,6 @@ export const TransportSystemUncheckedUpdateWithoutInventoryInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
@@ -5475,7 +5452,6 @@ export const TransportSystemCreateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   name: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
@@ -5490,7 +5466,6 @@ export const TransportSystemUncheckedCreateWithoutEndStepInputSchema: z.ZodType<
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
@@ -5509,7 +5484,6 @@ export const TransportSystemCreateWithoutStartStepInputSchema: z.ZodType<Prisma.
   name: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
@@ -5524,7 +5498,6 @@ export const TransportSystemUncheckedCreateWithoutStartStepInputSchema: z.ZodTyp
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable(),
   filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
 }).strict();
 
@@ -5695,7 +5668,6 @@ export const TransportSystemScalarWhereInputSchema: z.ZodType<Prisma.TransportSy
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   startStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   endStepId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
-  filterId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemUpsertWithWhereUniqueWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUpsertWithWhereUniqueWithoutStartStepInput> = z.object({
@@ -6100,7 +6072,6 @@ export const TransportSystemCreateWithoutFilterInputSchema: z.ZodType<Prisma.Tra
   name: z.string(),
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
-  filterId: z.number().int().optional().nullable(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
@@ -6115,8 +6086,7 @@ export const TransportSystemUncheckedCreateWithoutFilterInputSchema: z.ZodType<P
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutFilterInput> = z.object({
@@ -6161,7 +6131,6 @@ export const TransportSystemUpdateWithoutFilterInputSchema: z.ZodType<Prisma.Tra
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
@@ -6177,7 +6146,6 @@ export const TransportSystemUncheckedUpdateWithoutFilterInputSchema: z.ZodType<P
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpsertWithWhereUniqueWithoutFilterInput> = z.object({
@@ -6654,8 +6622,7 @@ export const TransportSystemCreateManyEndStepInputSchema: z.ZodType<Prisma.Trans
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
-  startStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable()
+  startStepId: z.number().int().optional().nullable()
 }).strict();
 
 export const TransportSystemCreateManyStartStepInputSchema: z.ZodType<Prisma.TransportSystemCreateManyStartStepInput> = z.object({
@@ -6666,8 +6633,7 @@ export const TransportSystemCreateManyStartStepInputSchema: z.ZodType<Prisma.Tra
   inputSpeed: z.number().int(),
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
-  endStepId: z.number().int().optional().nullable(),
-  filterId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable()
 }).strict();
 
 export const ResourceUpdateWithoutProcessStepInputSchema: z.ZodType<Prisma.ResourceUpdateWithoutProcessStepInput> = z.object({
@@ -6726,7 +6692,6 @@ export const TransportSystemUpdateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
@@ -6741,7 +6706,6 @@ export const TransportSystemUncheckedUpdateWithoutEndStepInputSchema: z.ZodType<
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
@@ -6754,7 +6718,6 @@ export const TransportSystemUncheckedUpdateManyWithoutEndStepInputSchema: z.ZodT
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUpdateWithoutStartStepInput> = z.object({
@@ -6763,7 +6726,6 @@ export const TransportSystemUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
@@ -6778,7 +6740,6 @@ export const TransportSystemUncheckedUpdateWithoutStartStepInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
 }).strict();
 
@@ -6791,7 +6752,6 @@ export const TransportSystemUncheckedUpdateManyWithoutStartStepInputSchema: z.Zo
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filterId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const ProcessStepCreateManyRecipeInputSchema: z.ZodType<Prisma.ProcessStepCreateManyRecipeInput> = z.object({
