@@ -137,6 +137,7 @@ CREATE TABLE "TransportSystem" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
     "name" TEXT NOT NULL,
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
