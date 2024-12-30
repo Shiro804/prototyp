@@ -34,11 +34,21 @@ export async function GET() {
                     entries: true,
                   },
                 },
+                filter: {
+                  include: {
+                    entries: true,
+                  },
+                },
               },
             },
             outputs: {
               include: {
                 inventory: {
+                  include: {
+                    entries: true,
+                  },
+                },
+                filter: {
                   include: {
                     entries: true,
                   },
