@@ -18,7 +18,7 @@ function randomBetween(min: number, max: number) {
 async function createTransportSystemWithFilter(
   name: string,
   fromStepId: number,
-  toStepId: number
+  toStepId: number,
 ) {
   // 1) TransportSystem anlegen
   const transportSystem = await prisma.transportSystem.create({
@@ -143,30 +143,6 @@ async function main() {
     },
   });
 
-  const eolRecipe = await prisma.recipe.create({
-    data: {
-      name: "EOL Recipe",
-      inputs: {
-        create: [{ material: "Complete Seat", quantity: 1 }],
-      },
-      outputs: {
-        create: [{ material: "Complete Seat", quantity: 1 }],
-      },
-    },
-  });
-
-  const shippingRecipe = await prisma.recipe.create({
-    data: {
-      name: "Shipping Recipe",
-      inputs: {
-        create: [{ material: "Complete Seat", quantity: 1 }],
-      },
-      outputs: {
-        create: [{ material: "Complete Seat", quantity: 1 }],
-      },
-    },
-  });
-
   // --- Locations & ProcessSteps ---
   const hall1 = await prisma.location.create({
     data: {
@@ -241,7 +217,6 @@ async function main() {
                 limit: 500,
               },
             },
-            recipe: { connect: { id: shippingRecipe.id } },
           },
         ],
       },
@@ -339,7 +314,6 @@ async function main() {
             outputSpeed: 100,
             status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 500 } },
-            recipe: { connect: { id: eolRecipe.id } },
           },
         ],
       },
@@ -357,67 +331,73 @@ async function main() {
   await createTransportSystemWithFilter(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
     hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!.id,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Forklift - Hall 5 to Hall 2 (Covers)",
     hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!.id,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
   );
 
   await createTransportSystemWithFilter(
     "DTS - Hall 2 (Storage Rack) to Pre-Assembly (Seat)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Roller - Hall 2 (Storage Rack) to Pre-Assembly (Backrest)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Roller - Pre-Assembly (Seat) to Upholstery (Seat)",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Roller - Pre-Assembly (Backrest) to Upholstery (Backrest)",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Roller - Storage Rack to Upholstery (Backrest)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
+  );
+
+  await createTransportSystemWithFilter(
+    "Roller - Storage Rack to Upholstery (Seat)",
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Upholstery (Seat) to Assembling",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Upholstery (Backrest) to Assembling",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Assembling to End of Line Check",
     hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
-    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id
+    hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
   );
 
   await createTransportSystemWithFilter(
     "Forklift - Hall 4 (EOL) to Hall 5 (Shipping)",
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
-    hall5.processSteps.find((ps) => ps.name === "Shipping")!.id
+    hall5.processSteps.find((ps) => ps.name === "Shipping")!.id,
   );
 
   // Prüfe, was wir haben:
@@ -434,7 +414,7 @@ async function main() {
         },
       }),
     },
-    { depth: 10 }
+    { depth: 10 },
   );
 }
 
