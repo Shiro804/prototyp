@@ -49,6 +49,7 @@
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.1",
     "prisma": "^5.19.1",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.1",
     "typescript": "^5",
     "zod-prisma-types": "^3.1.8"
