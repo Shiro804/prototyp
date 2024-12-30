@@ -303,7 +303,9 @@ export class SimulationMock {
     // Phase 2: Outlet
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
-        const outputSpeeds = processStep.outputs.map((o) =>
+        const outputs = processStep.outputs.filter((o) => o.active);
+
+        const outputSpeeds = outputs.map((o) =>
           Math.min(processStep.outputSpeed, o.inputSpeed),
         );
 
@@ -312,7 +314,7 @@ export class SimulationMock {
             (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
           ),
           outputSpeeds,
-          processStep.outputs.map((o) =>
+          outputs.map((o) =>
             o.filter
               ? (i) =>
                   o.filter!.entries.some((fe) => fe.material === i.material)
@@ -321,7 +323,7 @@ export class SimulationMock {
         );
 
         for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
-          let transportSystem = processStep.outputs[outIndex];
+          let transportSystem = outputs[outIndex];
           // const filterEntries = transportSystem.filter?.entries ?? [];
           // console.log("transportsystem", transportSystem);
           // console.log("filter entries: ", filterEntries);
@@ -355,7 +357,7 @@ export class SimulationMock {
     // Phase 3: Intake
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
-        for (const input of processStep.inputs) {
+        for (const input of processStep.inputs.filter((i) => i.active)) {
           let inputSpeed = Math.min(processStep.inputSpeed, input.outputSpeed);
 
           let inputItems = input.inventory.entries
