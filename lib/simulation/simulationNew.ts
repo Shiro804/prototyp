@@ -118,23 +118,23 @@ export class Simulation {
         .flatMap((l) => l.processSteps)
         .flatMap((ps) => ps.inputs.concat(ps.outputs))
         .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts])
+        .map((ts) => [ts.id, ts]),
     );
 
     for (const location of state.locations) {
       for (const processStep of location.processSteps) {
         processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id]
+          (input) => transportSystems[input.id],
         );
         processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id]
+          (output) => transportSystems[output.id],
         );
       }
     }
   }
 
   private static cloneState(
-    state: SimulationEntityState
+    state: SimulationEntityState,
   ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }
@@ -190,7 +190,7 @@ export class Simulation {
               // Beispiel: richtige Variante -> remove consumed
               processStep.inventory.entries =
                 processStep.inventory.entries.filter(
-                  (e) => !inputEntries.includes(e)
+                  (e) => !inputEntries.includes(e),
                 );
 
               // add outputs
@@ -214,35 +214,41 @@ export class Simulation {
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         const outputSpeeds = processStep.outputs.map((o) =>
-          Math.min(processStep.outputSpeed, o.inputSpeed)
+          Math.min(processStep.outputSpeed, o.inputSpeed),
         );
 
-        const outputItems = distributeRoundRobin(
-          processStep.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .map((e) => e.id),
-          outputSpeeds
+        const itemsPerOutput = distributeRoundRobin(
+          processStep.inventory.entries.toSorted(
+            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
+          ),
+          outputSpeeds,
+          processStep.outputs.map((o) =>
+            o.filter
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
+              : () => true,
+          ),
         );
 
-        const entriesPerOutput = outputItems.map((idsForThatOutput) =>
-          idsForThatOutput.map(
-            (id) => processStep.inventory.entries.find((e) => e.id === id)!
-          )
-        );
+        // const entriesPerOutput = outputItems.map((idsForThatOutput) =>
+        //   idsForThatOutput.map(
+        //     (id) => processStep.inventory.entries.find((e) => e.id === id)!,
+        //   ),
+        // );
 
-        for (let outIndex = 0; outIndex < entriesPerOutput.length; outIndex++) {
+        for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
           let ts = processStep.outputs[outIndex];
-          const filterEntries = ts.filter?.entries ?? [];
-          const allowedMaterials = filterEntries.map((fe) => fe.material);
+          // const filterEntries = ts.filter?.entries ?? [];
+          // const allowedMaterials = filterEntries.map((fe) => fe.material);
+          //
+          // // Filtern nach erlaubten Materials
+          // let relevantItems = entriesPerOutput[outIndex].filter((item) => {
+          //   if (allowedMaterials.length === 0) return true;
+          //   return allowedMaterials.includes(item.material);
+          // });
 
-          // Filtern nach erlaubten Materials
-          let relevantItems = entriesPerOutput[outIndex].filter((item) => {
-            if (allowedMaterials.length === 0) return true;
-            return allowedMaterials.includes(item.material);
-          });
-
-          let entriesToAddToOutput = relevantItems.map((e) => ({
-            ...e,
+          let entriesToAddToOutput = itemsPerOutput[outIndex].map((i) => ({
+            ...i,
             addedAt: new Date(),
             inventoryId: ts.inventory.id,
           }));
@@ -251,7 +257,7 @@ export class Simulation {
 
           // Nur tatsächlich transferierte Items entfernen
           processStep.inventory.entries = processStep.inventory.entries.filter(
-            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id)
+            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id),
           );
         }
       }
@@ -275,7 +281,7 @@ export class Simulation {
           processStep.inventory.entries.push(...inputItems);
 
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((ie) => ie.id === e.id)
+            (e) => !inputItems.some((ie) => ie.id === e.id),
           );
         }
       }

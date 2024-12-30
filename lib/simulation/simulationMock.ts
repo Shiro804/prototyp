@@ -209,7 +209,7 @@ export class SimulationMock {
       this.currentState = SimulationMock.cloneState(nextFrame.state);
       this.frames.push(nextFrame);
       this.futureFrames = this.futureFrames.filter(
-        (f) => f.tick > nextTickIndex
+        (f) => f.tick > nextTickIndex,
       );
     } else {
       // On the fly
@@ -229,7 +229,7 @@ export class SimulationMock {
    * The core logic for computing "one tick".
    */
   private computeNextTick(
-    oldState: SimulationEntityState
+    oldState: SimulationEntityState,
   ): SimulationEntityState {
     let newState = SimulationMock.cloneState(oldState);
     SimulationMock.objectsToReferences(newState);
@@ -276,7 +276,7 @@ export class SimulationMock {
               // remove consumed inputs
               processStep.inventory.entries =
                 processStep.inventory.entries.filter(
-                  (e) => !inputEntries.includes(e)
+                  (e) => !inputEntries.includes(e),
                 );
 
               // add outputs
@@ -304,38 +304,38 @@ export class SimulationMock {
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         const outputSpeeds = processStep.outputs.map((o) =>
-          Math.min(processStep.outputSpeed, o.inputSpeed)
+          Math.min(processStep.outputSpeed, o.inputSpeed),
         );
 
-        const outputItems = distributeRoundRobin(
-          processStep.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .map((e) => e.id),
-          outputSpeeds
+        const itemsPerOutput = distributeRoundRobin(
+          processStep.inventory.entries.toSorted(
+            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
+          ),
+          outputSpeeds,
+          processStep.outputs.map((o) =>
+            o.filter
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
+              : () => true,
+          ),
         );
 
-        const entriesPerOutput = outputItems.map((idsForThatOutput) =>
-          idsForThatOutput.map(
-            (id) => processStep.inventory.entries.find((e) => e.id === id)!
-          )
-        );
-
-        for (let outIndex = 0; outIndex < entriesPerOutput.length; outIndex++) {
+        for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
           let transportSystem = processStep.outputs[outIndex];
-          const filterEntries = transportSystem.filter?.entries ?? [];
-          console.log("transportsystem", transportSystem);
-          console.log("filter entries: ", filterEntries);
-          const allowedMaterials = filterEntries.map((fe) => fe.material);
+          // const filterEntries = transportSystem.filter?.entries ?? [];
+          // console.log("transportsystem", transportSystem);
+          // console.log("filter entries: ", filterEntries);
+          // const allowedMaterials = filterEntries.map((fe) => fe.material);
+          //
+          // console.log("allowed materials: ", allowedMaterials);
+          // // Falls kein Filter definiert ist oder keine Filter-Einträge existieren,
+          // // lassen wir alle Materialien durch
+          // let relevantItems = entriesPerOutput[outIndex].filter((item) => {
+          //   if (allowedMaterials.length === 0) return true;
+          //   return allowedMaterials.includes(item.material);
+          // });
 
-          console.log("allowed materials: ", allowedMaterials);
-          // Falls kein Filter definiert ist oder keine Filter-Einträge existieren,
-          // lassen wir alle Materialien durch
-          let relevantItems = entriesPerOutput[outIndex].filter((item) => {
-            if (allowedMaterials.length === 0) return true;
-            return allowedMaterials.includes(item.material);
-          });
-
-          let entriesToAddToOutput = relevantItems.map((e) => ({
+          let entriesToAddToOutput = itemsPerOutput[outIndex].map((e) => ({
             ...e,
             addedAt: new Date(),
             inventoryId: transportSystem.inventory.id,
@@ -346,7 +346,7 @@ export class SimulationMock {
           // Vom processStep.inventory entfernen nur die Items,
           // die tatsächlich in den TS gewandert sind.
           processStep.inventory.entries = processStep.inventory.entries.filter(
-            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id)
+            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id),
           );
         }
       }
@@ -369,7 +369,7 @@ export class SimulationMock {
 
           processStep.inventory.entries.push(...inputItems);
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((ie) => ie.id === e.id)
+            (e) => !inputItems.some((ie) => ie.id === e.id),
           );
         }
       }
@@ -386,24 +386,24 @@ export class SimulationMock {
         .flatMap((l) => l.processSteps)
         .flatMap((ps) => ps.inputs.concat(ps.outputs))
         .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts])
+        .map((ts) => [ts.id, ts]),
     );
 
     // replace references
     for (const location of state.locations) {
       for (const processStep of location.processSteps) {
         processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id]
+          (input) => transportSystems[input.id],
         );
         processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id]
+          (output) => transportSystems[output.id],
         );
       }
     }
   }
 
   private static cloneState(
-    state: SimulationEntityState
+    state: SimulationEntityState,
   ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }

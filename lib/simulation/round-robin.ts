@@ -1,44 +1,52 @@
 export function distributeRoundRobin<T>(
   items: T[],
   outputSpeeds: number[],
-  outputWhitelists: T[][],
+  outputFilterPredicates?: ((i: T) => boolean)[],
 ): T[][] {
   if (outputSpeeds.length === 0) {
     return [];
   }
 
-  if (outputSpeeds.length !== outputWhitelists.length) {
+  if (!outputFilterPredicates) {
+    outputFilterPredicates = Array(outputSpeeds.length).fill(() => true);
+  } else if (outputSpeeds.length !== outputFilterPredicates.length) {
     throw new Error(
       "The number of output speeds must be equal to the number of whitelists.",
     );
   }
 
-  let result: T[][] = outputSpeeds.map((_) => []);
+  let result: T[][] = outputSpeeds.map(() => []);
 
-  let keys = outputSpeeds.length;
-  let itemIndex = 0;
-  let keyIndex = 0;
-  let full = outputSpeeds.map((_) => false);
+  let outputs = outputSpeeds.length;
+  let remainingItems = [...items];
+  let outputIndex = 0;
+  let availableItems = outputSpeeds.map(() => true);
 
-  while (itemIndex < items.length) {
-    if (keyIndex == keys) {
-      keyIndex = 0;
+  while (
+    result.some((r, i) => r.length < outputSpeeds[i] && availableItems[i])
+  ) {
+    if (outputIndex == outputs) {
+      outputIndex = 0;
     }
 
-    if (result[keyIndex].length < outputSpeeds[keyIndex]) {
-      result[keyIndex].push(items[itemIndex]);
-      itemIndex++;
+    if (
+      result[outputIndex].length < outputSpeeds[outputIndex] &&
+      availableItems[outputIndex]
+    ) {
+      const nextAvailableItemIndex = remainingItems.findIndex(
+        outputFilterPredicates[outputIndex],
+      );
 
-      if (result[keyIndex].length == outputSpeeds[keyIndex]) {
-        full[keyIndex] = true;
-      }
-
-      if (full.every((f) => f === true)) {
-        break;
+      if (nextAvailableItemIndex > -1) {
+        result[outputIndex].push(
+          remainingItems.splice(nextAvailableItemIndex, 1)[0],
+        );
+      } else {
+        availableItems[outputIndex] = false;
       }
     }
 
-    keyIndex++;
+    outputIndex++;
   }
 
   // let itemsTaken = 0;
