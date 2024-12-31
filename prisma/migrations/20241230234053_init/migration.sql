@@ -7,8 +7,8 @@ CREATE TABLE "Resource" (
     "active" BOOLEAN NOT NULL DEFAULT true,
     "locationId" INTEGER NOT NULL,
     "processStepId" INTEGER NOT NULL,
-    CONSTRAINT "Resource_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Resource_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Resource_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Resource_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -68,13 +68,14 @@ CREATE TABLE "ProcessStep" (
     "status" TEXT NOT NULL,
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
-    "recipeRate" INTEGER NOT NULL DEFAULT 1,
+    "recipeRate" INTEGER NOT NULL DEFAULT 10,
+    "duration" INTEGER NOT NULL DEFAULT 1,
     "locationId" INTEGER NOT NULL,
     "inventoryId" INTEGER NOT NULL,
     "recipeId" INTEGER,
-    CONSTRAINT "ProcessStep_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "ProcessStep_recipeId_fkey" FOREIGN KEY ("recipeId") REFERENCES "Recipe" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "ProcessStep_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "ProcessStep_recipeId_fkey" FOREIGN KEY ("recipeId") REFERENCES "Recipe" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT "ProcessStep_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -114,19 +115,38 @@ CREATE TABLE "Sensor" (
 );
 
 -- CreateTable
+CREATE TABLE "FilterEntry" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "addedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "material" TEXT NOT NULL,
+    "filterId" INTEGER NOT NULL,
+    CONSTRAINT "FilterEntry_filterId_fkey" FOREIGN KEY ("filterId") REFERENCES "Filter" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Filter" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "transportSystemId" INTEGER NOT NULL,
+    CONSTRAINT "Filter_transportSystemId_fkey" FOREIGN KEY ("transportSystemId") REFERENCES "TransportSystem" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "TransportSystem" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
     "name" TEXT NOT NULL,
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
     "inventoryId" INTEGER NOT NULL,
     "startStepId" INTEGER,
     "endStepId" INTEGER,
-    CONSTRAINT "TransportSystem_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "TransportSystem_endStepId_fkey" FOREIGN KEY ("endStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "TransportSystem_startStepId_fkey" FOREIGN KEY ("startStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "TransportSystem_endStepId_fkey" FOREIGN KEY ("endStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT "TransportSystem_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -151,6 +171,9 @@ CREATE UNIQUE INDEX "ProcessStep_inventoryId_key" ON "ProcessStep"("inventoryId"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RecipeInput_material_recipeId_key" ON "RecipeInput"("material", "recipeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Filter_transportSystemId_key" ON "Filter"("transportSystemId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TransportSystem_inventoryId_key" ON "TransportSystem"("inventoryId");

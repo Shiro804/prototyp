@@ -14,6 +14,7 @@
     "migrate": "npx prisma migrate dev --name init"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.4",
     "@mantine/charts": "^7.12.2",
     "@mantine/core": "^7.12.2",
     "@mantine/dates": "^7.12.2",
@@ -23,6 +24,7 @@
     "@next/bundle-analyzer": "^14.2.14",
     "@prisma/client": "^5.19.1",
     "@tabler/icons-react": "^3.17.0",
+    "@xyflow/react": "^12.3.6",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "mantine-react-table": "^2.0.0-beta.6",
@@ -47,6 +49,7 @@
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.1",
     "prisma": "^5.19.1",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.1",
     "typescript": "^5",
     "zod-prisma-types": "^3.1.8"

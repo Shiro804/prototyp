@@ -36,6 +36,13 @@ export type LocationFull = Prisma.LocationGetPayload<{
         };
         inputs: {
           include: {
+            // Wichtig: Hier Filter inkl. FilterEntries laden,
+            // sonst haben wir in der Simulation kein filter-Objekt.
+            filter: {
+              include: {
+                entries: true;
+              };
+            };
             inventory: {
               include: {
                 entries: true;
@@ -45,6 +52,12 @@ export type LocationFull = Prisma.LocationGetPayload<{
         };
         outputs: {
           include: {
+            // Gleiches beim Output
+            filter: {
+              include: {
+                entries: true;
+              };
+            };
             inventory: {
               include: {
                 entries: true;
@@ -79,13 +92,13 @@ export interface SimulationFrame {
 }
 
 export interface SimulationRunMock {
-  /** 
+  /**
    * All frames from tick 0 to the last computed tick.
-   * This can grow if we do runNext(10) 
+   * This can grow if we do runNext(10)
    */
   frames: SimulationFrame[];
-  /** 
-   * Any events your logic wants to track 
+  /**
+   * Any events your logic wants to track
    */
   events: Event[];
 }
@@ -104,19 +117,13 @@ export class SimulationMock {
 
   private readonly events: Event[] = [];
 
-  /**
-   * Build a mock simulation from an initial entity state (DB data).
-   * We'll store the "initial" state for reference, but we also
-   * immediately set that as our `currentState`.
-   */
   constructor(initialState: SimulationEntityState) {
+    // Clone the initial state so we don't mutate the original
     this.initialState = SimulationMock.cloneState(initialState);
     this.currentTick = 0;
-
-    // Current state = initial
     this.currentState = SimulationMock.cloneState(this.initialState);
 
-    // Store frame 0 in frames
+    // Frame 0
     this.frames = [
       {
         state: SimulationMock.cloneState(this.currentState),
@@ -128,7 +135,7 @@ export class SimulationMock {
   /** Return a snapshot of the entire simulation so far. */
   public getSimulationRun(): SimulationRunMock {
     return {
-      frames: this.frames.concat(this.futureFrames), // frames + future
+      frames: this.frames.concat(this.futureFrames),
       events: this.events,
     };
   }
@@ -164,13 +171,9 @@ export class SimulationMock {
 
   /**
    * Precompute the next N ticks starting from the *current* state.
-   * The new frames go into `futureFrames`.
    */
   public runNext(n: number) {
-    // Start from the last "real" frame in frames + discard any existing future
     if (this.futureFrames.length > 0) {
-      // Possibly we want to re-start from the last official frame.
-      // We discard old future, because the logic might have changed.
       this.discardFutureFrames();
     }
 
@@ -182,7 +185,10 @@ export class SimulationMock {
     for (let i = 1; i <= n; i++) {
       baseState = this.computeNextTick(baseState);
       let tickNumber = tickStart + i;
-      newFrames.push({ state: SimulationMock.cloneState(baseState), tick: tickNumber });
+      newFrames.push({
+        state: SimulationMock.cloneState(baseState),
+        tick: tickNumber,
+      });
     }
 
     this.futureFrames = newFrames;
@@ -190,26 +196,23 @@ export class SimulationMock {
 
   /**
    * Advance exactly 1 tick:
-   * - If there's a precomputed future frame, we take that.
-   * - Otherwise, compute a new frame from current state.
+   * - If there's a precomputed future frame, we use that.
+   * - Otherwise, compute a new frame from the current state.
    */
   public tickForward() {
-    // If futureFrames has a next tick, just shift from it:
     const nextTickIndex = this.currentTick + 1;
     const nextFrame = this.futureFrames.find((f) => f.tick === nextTickIndex);
 
     if (nextFrame) {
-      // Use the precomputed future frame
+      // Use precomputed
       this.currentTick = nextFrame.tick;
       this.currentState = SimulationMock.cloneState(nextFrame.state);
-
-      // frames grows by that 1 frame
       this.frames.push(nextFrame);
-
-      // Remove it from futureFrames
-      this.futureFrames = this.futureFrames.filter((f) => f.tick > nextTickIndex);
+      this.futureFrames = this.futureFrames.filter(
+        (f) => f.tick > nextTickIndex,
+      );
     } else {
-      // We have to compute a new frame on the fly
+      // On the fly
       let newState = this.computeNextTick(this.currentState);
       this.currentTick += 1;
       this.currentState = SimulationMock.cloneState(newState);
@@ -223,16 +226,17 @@ export class SimulationMock {
   }
 
   /**
-   * This is the core logic for computing "one tick".
-   * It's basically a clone of your old `tick()` method, but refactored
-   * to operate on a given state and return the new state.
+   * The core logic for computing "one tick".
    */
-  private computeNextTick(oldState: SimulationEntityState): SimulationEntityState {
+  private computeNextTick(
+    oldState: SimulationEntityState,
+  ): SimulationEntityState {
     let newState = SimulationMock.cloneState(oldState);
     SimulationMock.objectsToReferences(newState);
 
     // Phase 1: Production
     for (const location of newState.locations) {
+      console.log("Location", location);
       for (const processStep of location.processSteps) {
         if (processStep.recipe) {
           const itemsProducedPerRun = processStep.recipe.outputs
@@ -269,16 +273,19 @@ export class SimulationMock {
             }
 
             if (inputsFulfilled) {
-              // BUG-FIX: you want to remove the consumed inputs, 
-              // so we do 'filter(e => !inputEntries.includes(e))'
+              // remove consumed inputs
               processStep.inventory.entries =
                 processStep.inventory.entries.filter(
-                  (e) => !inputEntries.includes(e)
+                  (e) => !inputEntries.includes(e),
                 );
 
-              // Now add outputs
+              // add outputs
               for (const output of processStep.recipe.outputs) {
-                for (let outputStep = 0; outputStep < output.quantity; outputStep++) {
+                for (
+                  let outputStep = 0;
+                  outputStep < output.quantity;
+                  outputStep++
+                ) {
                   processStep.inventory.entries.push({
                     id: nextFreeInventoryEntryId(newState),
                     addedAt: new Date(),
@@ -296,34 +303,52 @@ export class SimulationMock {
     // Phase 2: Outlet
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
-        const outputSpeeds = processStep.outputs.map((o) =>
-          Math.min(processStep.outputSpeed, o.inputSpeed)
+        const outputs = processStep.outputs.filter((o) => o.active);
+
+        const outputSpeeds = outputs.map((o) =>
+          Math.min(processStep.outputSpeed, o.inputSpeed),
         );
 
-        const outputItems = distributeRoundRobin(
-          processStep.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .map((e) => e.id),
-          outputSpeeds
+        const itemsPerOutput = distributeRoundRobin(
+          processStep.inventory.entries.toSorted(
+            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
+          ),
+          outputSpeeds,
+          outputs.map((o) =>
+            o.filter
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
+              : () => true,
+          ),
         );
 
-        const entriesPerOutput = outputItems.map((o) =>
-          o.map((i) => processStep.inventory.entries.find((e) => e.id === i)!)
-        );
+        for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
+          let transportSystem = outputs[outIndex];
+          // const filterEntries = transportSystem.filter?.entries ?? [];
+          // console.log("transportsystem", transportSystem);
+          // console.log("filter entries: ", filterEntries);
+          // const allowedMaterials = filterEntries.map((fe) => fe.material);
+          //
+          // console.log("allowed materials: ", allowedMaterials);
+          // // Falls kein Filter definiert ist oder keine Filter-Einträge existieren,
+          // // lassen wir alle Materialien durch
+          // let relevantItems = entriesPerOutput[outIndex].filter((item) => {
+          //   if (allowedMaterials.length === 0) return true;
+          //   return allowedMaterials.includes(item.material);
+          // });
 
-        for (let output = 0; output < outputItems.length; output++) {
-          let entriesToAddToOutput = entriesPerOutput[output].map((e) => ({
+          let entriesToAddToOutput = itemsPerOutput[outIndex].map((e) => ({
             ...e,
             addedAt: new Date(),
-            inventoryId: processStep.outputs[output].inventory.id,
+            inventoryId: transportSystem.inventory.id,
           }));
 
-          processStep.outputs[output].inventory.entries.push(
-            ...entriesToAddToOutput
-          );
+          transportSystem.inventory.entries.push(...entriesToAddToOutput);
 
+          // Vom processStep.inventory entfernen nur die Items,
+          // die tatsächlich in den TS gewandert sind.
           processStep.inventory.entries = processStep.inventory.entries.filter(
-            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id)
+            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id),
           );
         }
       }
@@ -332,7 +357,7 @@ export class SimulationMock {
     // Phase 3: Intake
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
-        for (const input of processStep.inputs) {
+        for (const input of processStep.inputs.filter((i) => i.active)) {
           let inputSpeed = Math.min(processStep.inputSpeed, input.outputSpeed);
 
           let inputItems = input.inventory.entries
@@ -346,7 +371,7 @@ export class SimulationMock {
 
           processStep.inventory.entries.push(...inputItems);
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((ie) => ie.id === e.id)
+            (e) => !inputItems.some((ie) => ie.id === e.id),
           );
         }
       }
@@ -357,28 +382,31 @@ export class SimulationMock {
 
   // --- Utilities ---
   private static objectsToReferences(state: SimulationEntityState) {
+    // TransportSystems deduziert
     const transportSystems = Object.fromEntries(
       state.locations
         .flatMap((l) => l.processSteps)
         .flatMap((ps) => ps.inputs.concat(ps.outputs))
-        // Deduplicate by id
-        .filter((ts, i, tss) => tss.map((e) => e.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts])
+        .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
+        .map((ts) => [ts.id, ts]),
     );
 
+    // replace references
     for (const location of state.locations) {
       for (const processStep of location.processSteps) {
         processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id]
+          (input) => transportSystems[input.id],
         );
         processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id]
+          (output) => transportSystems[output.id],
         );
       }
     }
   }
 
-  private static cloneState(state: SimulationEntityState): SimulationEntityState {
+  private static cloneState(
+    state: SimulationEntityState,
+  ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }
 }

@@ -1,3 +1,4 @@
+// simulationNew.ts
 import { InventoryEntry, Prisma } from "@prisma/client";
 import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
@@ -34,6 +35,11 @@ export type LocationFull = Prisma.LocationGetPayload<{
         };
         inputs: {
           include: {
+            filter: {
+              include: {
+                entries: true;
+              };
+            };
             inventory: {
               include: {
                 entries: true;
@@ -43,6 +49,11 @@ export type LocationFull = Prisma.LocationGetPayload<{
         };
         outputs: {
           include: {
+            filter: {
+              include: {
+                entries: true;
+              };
+            };
             inventory: {
               include: {
                 entries: true;
@@ -82,28 +93,12 @@ export class Simulation {
   private readonly events: Event[] = [];
   private readonly frames: SimulationEntityState[] = [];
 
-  // private transportSystemMap = new Map<number, any>();
-  // private processStepMap = new Map<number, any>();
-
   constructor(initialState: SimulationEntityState) {
     this.initialState = Simulation.cloneState(initialState);
-    // this.buildLookupMaps(this.initialState);
   }
 
-  // private buildLookupMaps(state: SimulationEntityState) {
-  //   this.transportSystemMap = new Map(
-  //     state.locations
-  //       .flatMap((l) => l.processSteps)
-  //       .flatMap((ps) => ps.inputs.concat(ps.outputs))
-  //       .map((ts) => [ts.id, ts])
-  //   );
-
-  //   this.processStepMap = new Map(
-  //     state.locations.flatMap((l) => l.processSteps).map((ps) => [ps.id, ps])
-  //   );
-  // }
-
   public run(ticks: number): SimulationRun {
+    // Frame 0
     let firstFrame = Simulation.cloneState(this.initialState);
     this.frames.push(firstFrame);
 
@@ -122,25 +117,24 @@ export class Simulation {
       state.locations
         .flatMap((l) => l.processSteps)
         .flatMap((ps) => ps.inputs.concat(ps.outputs))
-        .filter((ts, i, tss) => tss.map((e) => e.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts])
+        .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
+        .map((ts) => [ts.id, ts]),
     );
 
     for (const location of state.locations) {
       for (const processStep of location.processSteps) {
         processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id]
+          (input) => transportSystems[input.id],
         );
-
         processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id]
+          (output) => transportSystems[output.id],
         );
       }
     }
   }
 
   private static cloneState(
-    state: SimulationEntityState
+    state: SimulationEntityState,
   ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }
@@ -154,7 +148,7 @@ export class Simulation {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    //Phase 1: Production
+    // Phase 1: Production
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         if (processStep.recipe) {
@@ -170,10 +164,10 @@ export class Simulation {
             r++
           ) {
             let inputsFulfilled = true;
-            let inputEntries = [];
+            let inputEntries: InventoryEntry[] = [];
 
             for (let recipeInput of processStep.recipe.inputs) {
-              let possibleInputEntries = [];
+              let possibleInputEntries: InventoryEntry[] = [];
 
               for (const entry of processStep.inventory.entries) {
                 if (recipeInput.material === entry.material) {
@@ -193,22 +187,15 @@ export class Simulation {
             }
 
             if (inputsFulfilled) {
+              // Beispiel: richtige Variante -> remove consumed
               processStep.inventory.entries =
-                processStep.inventory.entries.filter((e) =>
-                  inputEntries.some((ie) => ie.id === e.id)
+                processStep.inventory.entries.filter(
+                  (e) => !inputEntries.includes(e),
                 );
 
-              // processStep.inventory.entries =
-              //   processStep.inventory.entries.filter(
-              //     (e) => !inputEntries.some((ie) => ie.id === e.id)
-              //   );
-
+              // add outputs
               for (const output of processStep.recipe.outputs) {
-                for (
-                  let outputStep = 0;
-                  outputStep < output.quantity;
-                  outputStep++
-                ) {
+                for (let i = 0; i < output.quantity; i++) {
                   processStep.inventory.entries.push({
                     id: nextFreeInventoryEntryId(newState),
                     addedAt: new Date(),
@@ -223,104 +210,60 @@ export class Simulation {
       }
     }
 
-    // for (const location of newState.locations) {
-    //   for (const processStep of location.processSteps) {
-    //     if (processStep.recipe) {
-    //       const itemsProducedPerRun = processStep.recipe.outputs
-    //         .map((o) => o.quantity)
-    //         .reduce((acc, cur) => acc + cur, 0);
-
-    //       // Process the recipe for the step
-    //       for (
-    //         let r = 0;
-    //         r < processStep.recipeRate &&
-    //         processStep.inventory.entries.length + itemsProducedPerRun <=
-    //           processStep.inventory.limit;
-    //         r++
-    //       ) {
-    //         let inputsFulfilled = true;
-    //         let inputEntries: InventoryEntry[] = [];
-
-    //         // Gather required inputs for the recipe
-    //         for (let recipeInput of processStep.recipe.inputs) {
-    //           const possibleInputEntries = processStep.inventory.entries.filter(
-    //             (entry) => entry.material === recipeInput.material
-    //           );
-
-    //           if (possibleInputEntries.length >= recipeInput.quantity) {
-    //             inputEntries.push(
-    //               ...possibleInputEntries.slice(0, recipeInput.quantity)
-    //             );
-    //           } else {
-    //             inputsFulfilled = false; // Missing required inputs
-    //             break;
-    //           }
-    //         }
-
-    //         // If all inputs are satisfied, process the recipe
-    //         if (inputsFulfilled) {
-    //           // Remove consumed inputs from the inventory
-    //           processStep.inventory.entries =
-    //             processStep.inventory.entries.filter(
-    //               (entry) => !inputEntries.includes(entry)
-    //             );
-
-    //           // Add outputs to the inventory
-    //           for (const output of processStep.recipe.outputs) {
-    //             for (let i = 0; i < output.quantity; i++) {
-    //               processStep.inventory.entries.push({
-    //                 id: nextFreeInventoryEntryId(newState),
-    //                 addedAt: new Date(),
-    //                 inventoryId: processStep.inventory.id,
-    //                 material: output.material,
-    //               });
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
     // Phase 2: Outlet
-
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         const outputSpeeds = processStep.outputs.map((o) =>
-          Math.min(processStep.outputSpeed, o.inputSpeed)
+          Math.min(processStep.outputSpeed, o.inputSpeed),
         );
 
-        const outputItems = distributeRoundRobin(
-          processStep.inventory.entries
-            .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
-            .map((e) => e.id),
-          outputSpeeds
+        const itemsPerOutput = distributeRoundRobin(
+          processStep.inventory.entries.toSorted(
+            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
+          ),
+          outputSpeeds,
+          processStep.outputs.map((o) =>
+            o.filter
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
+              : () => true,
+          ),
         );
 
-        const entriesPerOutput = outputItems.map((o) =>
-          o.map((i) => processStep.inventory.entries.find((e) => e.id === i)!)
-        );
+        // const entriesPerOutput = outputItems.map((idsForThatOutput) =>
+        //   idsForThatOutput.map(
+        //     (id) => processStep.inventory.entries.find((e) => e.id === id)!,
+        //   ),
+        // );
 
-        for (let output = 0; output < outputItems.length; output++) {
-          let entriesToAddToOuptut = entriesPerOutput[output].map((e) => ({
-            ...e,
+        for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
+          let ts = processStep.outputs[outIndex];
+          // const filterEntries = ts.filter?.entries ?? [];
+          // const allowedMaterials = filterEntries.map((fe) => fe.material);
+          //
+          // // Filtern nach erlaubten Materials
+          // let relevantItems = entriesPerOutput[outIndex].filter((item) => {
+          //   if (allowedMaterials.length === 0) return true;
+          //   return allowedMaterials.includes(item.material);
+          // });
+
+          let entriesToAddToOutput = itemsPerOutput[outIndex].map((i) => ({
+            ...i,
             addedAt: new Date(),
-            inventoryId: processStep.outputs[output].inventory.id,
+            inventoryId: ts.inventory.id,
           }));
 
-          processStep.outputs
-            .find((o) => o.id === processStep.outputs[output].id)!
-            .inventory.entries.push(...entriesToAddToOuptut);
+          ts.inventory.entries.push(...entriesToAddToOutput);
 
+          // Nur tatsächlich transferierte Items entfernen
           processStep.inventory.entries = processStep.inventory.entries.filter(
-            (e) => !entriesToAddToOuptut.some((eo) => eo.id === e.id)
+            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id),
           );
         }
       }
     }
 
     // Phase 3: Intake
-
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         for (const input of processStep.inputs) {
@@ -329,21 +272,22 @@ export class Simulation {
           let inputItems = input.inventory.entries
             .toSorted((e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime())
             .splice(0, inputSpeed)
-            .map((e) => ({
-              ...e,
+            .map((entry) => ({
+              ...entry,
               addedAt: new Date(),
               inventoryId: processStep.inventory.id,
             }));
 
           processStep.inventory.entries.push(...inputItems);
+
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((ie) => ie.id === e.id)
+            (e) => !inputItems.some((ie) => ie.id === e.id),
           );
         }
       }
     }
 
-    // Phase 4: Update state
+    // Phase 4: Add newState to frames
     this.frames.push(newState);
   }
 }
