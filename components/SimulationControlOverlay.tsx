@@ -5,7 +5,7 @@ import {
   Tooltip,
   Slider,
   ActionIcon,
-  NumberInput,
+  NumberInput
 } from "@mantine/core";
 import {
   IconPlayerPause as IconPause,
@@ -14,7 +14,6 @@ import {
   IconArrowLeft,
   IconArrowRight,
 } from "@tabler/icons-react";
-
 import { FunctionComponent, useState } from "react";
 import { useSimulationMock } from "./SimulationContextMock";
 import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
@@ -32,14 +31,20 @@ const SimulationControlOverlay: FunctionComponent = () => {
     setFrame,
   } = useSimulationMock();
 
-  // Local state for how many ticks the user wants to add
-  const [ticksToAdd, setTicksToAdd] = useState<number>(0);
+  // Wir nennen den State jetzt "targetTick", weil wir gezielt zu *diesem* Tick springen.
+  const [targetTick, setTargetTick] = useState<number>(0);
 
   /**
-   * Helper to move the current frame forward/back safely
+   * Helfer, um den aktuellen Frame-Index vor oder zurück zu bewegen
    */
   const moveFrame = (delta: number) => {
     if (!simulation) return;
+
+    if (frame + delta >= simulation.frames.length) {
+      handleJumpToTick(frame + delta)
+      return
+    }
+
     setFrame((prev) => {
       const next = prev + delta;
       if (next < 0) return 0;
@@ -51,29 +56,24 @@ const SimulationControlOverlay: FunctionComponent = () => {
   };
 
   /**
-   * Handler for the "Add Ticks" button:
-   * We'll call the underlying SimulationMock instance’s `runNext(ticksToAdd)`.
+   * Handler für den "Jump to Tick" Button:
+   * Falls wir den Tick noch nicht haben, rechnen wir fehlende Ticks nach.
+   * Anschließend setzen wir 'frame' auf targetTick.
    */
-  const handleAddTicks = () => {
-    if (!simulation || ticksToAdd <= 0) return;
+  const handleJumpToTick = (tickValue?: number) => {
+    if (!simulation || !simInstance) return;
 
-    // 1) Compute the next N ticks from the current state
-    simInstance?.runNext(ticksToAdd);
+    simInstance.jumpToTick(tickValue ? tickValue : targetTick);
 
-    // 2) Retrieve the updated run
-    const updated = simInstance?.getSimulationRun();
+    // Neues SimulationRun holen
+    const updatedRun = simInstance.getSimulationRun();
+    setSimulation(updatedRun);
 
-    setSimulation(updated)
-
-    // If you store it in a local state (like setSimulation), do that now:
-    // setSimulation(updated);
-
-    // 3) Jump the slider to the new last frame
-    updated && setFrame(updated.frames.length - 1);
-
-    // Optionally reset ticksToAdd or leave it
-    // setTicksToAdd(0);
+    // Aktuellen Tick aus der Simulation lesen
+    setFrame(simInstance.getCurrentTick());
   };
+
+
 
   return (
     <Flex align="center" gap="md" wrap="nowrap" style={{ padding: "1rem" }}>
@@ -117,9 +117,9 @@ const SimulationControlOverlay: FunctionComponent = () => {
         <IconArrowLeft />
       </ActionIcon>
 
-      {/* Slider for manual frames navigation */}
+      {/* Slider für manuelle Frame-Navigation */}
       <Slider
-        styles={{ root: { width: 180 } }} // tweak to your liking
+        styles={{ root: { width: 180 } }}
         min={0}
         max={simulation ? simulation.frames.length - 1 : 0}
         value={frame}
@@ -133,38 +133,42 @@ const SimulationControlOverlay: FunctionComponent = () => {
           },
         ]}
       />
+
+      <p>{frame}</p>
+
       {/* Arrow Right */}
       <ActionIcon
         color="indigo"
         variant="outline"
-        disabled={!simulation || playing || frame >= simulation.frames.length - 1}
+        disabled={!simulation || playing}
         onClick={() => moveFrame(1)}
       >
         <IconArrowRight />
       </ActionIcon>
 
-      {/* Number Input for additional ticks */}
+
+      {/* Number Input: "Target Tick" */}
       <NumberInput
-        placeholder="Add ticks"
+        placeholder="Tick #"
         hideControls
-        min={1}
-        value={ticksToAdd}
+        min={0}
+        value={targetTick}
         onChange={(val) => {
-          if (typeof val === 'number') setTicksToAdd(val);
+          if (typeof val === "number") setTargetTick(val);
         }}
         styles={{ input: { width: 60 } }}
       />
 
-      {/* Button to actually add ticks */}
+
+      {/* Button: Jump to that Tick */}
       <Button
         color="indigo"
         variant="outline"
-        disabled={!simulation || ticksToAdd <= 0}
-        onClick={handleAddTicks}
+        disabled={!simulation || targetTick < 0}
+        onClick={() => handleJumpToTick(undefined)}
       >
-        Add Ticks
+        Jump to Tick
       </Button>
-
     </Flex>
   );
 };
