@@ -195,7 +195,6 @@ export class SimulationMock {
   }
 
   public jumpToTick(targetTick: number): void {
-
     // a) clamp für negative Eingaben
     if (targetTick < 0) {
       targetTick = 0;

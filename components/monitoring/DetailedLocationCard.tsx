@@ -4,8 +4,11 @@ import {
     Button,
     Code,
     Container,
+    Divider,
     Flex,
+    Grid,
     Paper,
+    SimpleGrid,
     Table,
     Text,
 } from "@mantine/core";
@@ -91,15 +94,68 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                             {ps.name}
                         </Accordion.Control>
                         <Accordion.Panel>
-                            <Flex justify="flex-start" align="center">
+                            <Divider mb={30} size="xs"></Divider>
+                            <Flex direction="row" align="center">
                                 <Flex direction="column">
-                                    <Text>Status: {ps.status}</Text>
-                                    <Text>Input Speed: {ps.inputSpeed}</Text>
-                                    <Text>Output Speed: {ps.outputSpeed}</Text>
-                                    <Text>Recipe Rate: {ps.recipeRate}</Text>
+                                    <Flex direction="row" align="center" justify="center" ta="center">
+                                        <Flex direction="column" justify="center" align="center" maw={100} mr={50}>
+                                            <Text fw={700}>Process Step Details</Text>
+                                        </Flex>
+                                        <SimpleGrid cols={4}>
+                                            <Flex w="100%" direction="column" justify="center" align="center">
+                                                <Text fw={600}>Status</Text>
+                                                <Text>{ps.status}</Text>
+                                            </Flex>
+                                            <Flex w="100%" direction="column" justify="center" align="center">
+                                                <Text fw={600}>Input Speed</Text>
+                                                <Text>{ps.inputSpeed}</Text>
+                                            </Flex>
+                                            <Flex w="100%" direction="column" justify="center" align="center">
+                                                <Text fw={600}>Output Speed</Text>
+                                                <Text>{ps.outputSpeed}</Text>
+                                            </Flex>
+                                            <Flex w="100%" direction="column" justify="center" align="center">
+                                                <Text fw={600}>Recipe Rate</Text>
+                                                <Text>{ps.recipeRate}</Text>
+                                            </Flex>
+                                            {ps.totalRecipeTransformations &&
+                                                <Flex w="100%" direction="column">
+                                                    <Flex direction="column">
+                                                        <Text fw={600}>Transformations</Text>
+                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
+                                                    </Flex>
+                                                </Flex>
+                                            }
+                                            {ps.totalRecipeTransformations &&
+                                                <Flex w="100%" direction="column">
+                                                    <Flex direction="column">
+                                                        <Text fw={600}>Transformations</Text>
+                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
+                                                    </Flex>
+                                                </Flex>
+                                            }
+                                            {ps.totalRecipeTransformations &&
+                                                <Flex w="100%" direction="column">
+                                                    <Flex direction="column">
+                                                        <Text fw={600}>Transformations</Text>
+                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
+                                                    </Flex>
+                                                </Flex>
+                                            }
+                                            {ps.totalRecipeTransformations &&
+                                                <Flex w="100%" direction="column">
+                                                    <Flex direction="column" >
+                                                        <Text fw={600}>Transformations</Text>
+                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
+                                                    </Flex>
+                                                </Flex>
+                                            }
+
+                                        </SimpleGrid>
+                                    </Flex>
                                 </Flex>
-                                <Flex direction="column" align="center">
-                                    <Text>Inventory Utilization</Text>
+                                <Flex direction="column" align="center" justify="center" miw={300} maw={500} ml={50}>
+                                    <Text fz={14} ta="center">Inventory Utilization</Text>
                                     <GaugeChart id="gauge-chart4"
                                         nrOfLevels={100}
                                         arcPadding={0}
@@ -110,16 +166,18 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                         textColor="black"
                                         needleColor="grey"
                                         needleBaseColor="grey"
+                                        formatTextValue={(string) => string}
+                                        
                                     />
                                 </Flex>
                                 {/* <GaugeContainer value={calculateInventoryUtilization(ps.inventory)} valueMax={100} height={120} width={120} title="Auslastung" cornerRadius={2}>
                                     <GaugeReferenceArc />
                                     <GaugeValueArc />
                                     <GaugeValueText
-                                        render={(value: number) =>
-                                            `${value.toFixed(1)}%` // Format to 1 decimal place and append '%'
-                                        }/>
-                                </GaugeContainer>; */}
+                                    render={(value: number) =>
+                                    `${value.toFixed(1)}%` // Format to 1 decimal place and append '%'
+                                    }/>
+                                    </GaugeContainer>; */}
                             </Flex>
                             {/* Sub-Accordion for grouped materials */}
                             <Accordion multiple variant="contained" mt="md">

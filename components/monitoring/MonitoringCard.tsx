@@ -1,9 +1,9 @@
 import { FC } from "react";
-import { Paper, Table, Flex, Text, Button, Switch, Container } from "@mantine/core";
+import { Paper, Table, Flex, Text, Button, Switch, Container, Divider } from "@mantine/core";
 import { LocationFull } from "@/lib/simulation/simulationNew";
 import { groupInventory } from "@/app/incoming-goods/helpers";
 import { TransportSystem } from "@prisma/client";
-import { useSimulationMock } from "./SimulationContextMock";
+import { useSimulationMock } from "../SimulationContextMock";
 
 /**
  * Minimal interface: we take a `LocationFull` and an optional `onDetailsClick`.
@@ -29,14 +29,16 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
 
 
                 <Flex align="center" justify="center" direction="row" w="100%">
-                    <Text w="120px"></Text>
-                    <Text fw="bold" size="xl" style={{ position: "absolute" }}>
-                        {name}
-                    </Text>
+                    <Text miw="120px"></Text>
+                    <Flex w="100%" direction="row" justify="center" align="center">
+                        <Text fw="bold" size="xl">
+                            {name}
+                        </Text>
+                    </Flex>
 
                     {/* Button to trigger detailed view */}
                     {onDetailsClick && (
-                        <Button w="120px" ml="auto" variant="gradient" onClick={onDetailsClick}>
+                        <Button miw="120px" ml="auto" variant="gradient" onClick={onDetailsClick}>
                             View Details
                         </Button>
                     )}
@@ -87,6 +89,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                             </Table>
                         </Flex>
                     ))}
+
 
                 {/* Transport Systems */}
                 {transportSystems && transportSystems.length > 0 && (

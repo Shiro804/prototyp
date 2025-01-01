@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Title, SimpleGrid, Text } from "@mantine/core";
 import { useSimulationLive } from "@/components/SimulationContextLive";
-import { MonitoringCard } from "@/components/MonitoringCard";
-import { DetailedLocationCard } from "@/components/DetailedLocationCard";
+import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
+import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
 
 export default function Monitoring() {
   const { simulation, frame } = useSimulationLive();

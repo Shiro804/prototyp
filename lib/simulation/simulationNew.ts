@@ -161,7 +161,9 @@ export class Simulation {
    * The actual logic from your old "tick()" method,
    * refactored into `computeNextTick()`.
    */
-  private computeNextTick(oldState: SimulationEntityState): SimulationEntityState {
+  private computeNextTick(
+    oldState: SimulationEntityState
+  ): SimulationEntityState {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
@@ -204,9 +206,10 @@ export class Simulation {
 
             if (inputsFulfilled) {
               // remove consumed inputs
-              processStep.inventory.entries = processStep.inventory.entries.filter(
-                (e) => !inputEntries.includes(e),
-              );
+              processStep.inventory.entries =
+                processStep.inventory.entries.filter(
+                  (e) => !inputEntries.includes(e)
+                );
 
               // add outputs
               for (const output of processStep.recipe.outputs) {
@@ -219,6 +222,12 @@ export class Simulation {
                   });
                 }
               }
+              // Increment the totalRecipeTransformations counter
+              if (processStep.totalRecipeTransformations == null) {
+                processStep.totalRecipeTransformations = 0;
+              }
+              processStep.totalRecipeTransformations++;
+              console.log(processStep);
             }
           }
         }
@@ -229,19 +238,20 @@ export class Simulation {
     for (const location of newState.locations) {
       for (const processStep of location.processSteps) {
         const outputSpeeds = processStep.outputs.map((o) =>
-          Math.min(processStep.outputSpeed, o.inputSpeed),
+          Math.min(processStep.outputSpeed, o.inputSpeed)
         );
 
         const itemsPerOutput = distributeRoundRobin(
           processStep.inventory.entries.toSorted(
-            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime(),
+            (e1, e2) => e1.addedAt.getTime() - e2.addedAt.getTime()
           ),
           outputSpeeds,
           processStep.outputs.map((o) =>
             o.filter
-              ? (i) => o.filter!.entries.some((fe) => fe.material === i.material)
-              : () => true,
-          ),
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
+              : () => true
+          )
         );
 
         for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
@@ -257,7 +267,7 @@ export class Simulation {
 
           // Nur tatsächlich transferierte Items entfernen
           processStep.inventory.entries = processStep.inventory.entries.filter(
-            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id),
+            (e) => !entriesToAddToOutput.some((eo) => eo.id === e.id)
           );
         }
       }
@@ -281,7 +291,7 @@ export class Simulation {
           processStep.inventory.entries.push(...inputItems);
 
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((ie) => ie.id === e.id),
+            (e) => !inputItems.some((ie) => ie.id === e.id)
           );
         }
       }
@@ -296,22 +306,24 @@ export class Simulation {
         .flatMap((l) => l.processSteps)
         .flatMap((ps) => ps.inputs.concat(ps.outputs))
         .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts]),
+        .map((ts) => [ts.id, ts])
     );
 
     for (const location of state.locations) {
       for (const processStep of location.processSteps) {
         processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id],
+          (input) => transportSystems[input.id]
         );
         processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id],
+          (output) => transportSystems[output.id]
         );
       }
     }
   }
 
-  private static cloneState(state: SimulationEntityState): SimulationEntityState {
+  private static cloneState(
+    state: SimulationEntityState
+  ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }
 }
