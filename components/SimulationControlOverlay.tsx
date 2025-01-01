@@ -21,7 +21,7 @@ import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
 const SimulationControlOverlay: FunctionComponent = () => {
   const {
     playing,
-    loading,
+    loadingMock,
     simulation,
     frame,
     simInstance,
@@ -29,49 +29,12 @@ const SimulationControlOverlay: FunctionComponent = () => {
     load,
     toggle,
     setFrame,
+    moveFrame,
+    handleJumpToTick
   } = useSimulationMock();
 
   // Wir nennen den State jetzt "targetTick", weil wir gezielt zu *diesem* Tick springen.
   const [targetTick, setTargetTick] = useState<number>(0);
-
-  /**
-   * Helfer, um den aktuellen Frame-Index vor oder zurück zu bewegen
-   */
-  const moveFrame = (delta: number) => {
-    if (!simulation) return;
-
-    if (frame + delta >= simulation.frames.length) {
-      handleJumpToTick(frame + delta)
-      return
-    }
-
-    setFrame((prev) => {
-      const next = prev + delta;
-      if (next < 0) return 0;
-      if (next >= simulation.frames.length) {
-        return simulation.frames.length - 1;
-      }
-      return next;
-    });
-  };
-
-  /**
-   * Handler für den "Jump to Tick" Button:
-   * Falls wir den Tick noch nicht haben, rechnen wir fehlende Ticks nach.
-   * Anschließend setzen wir 'frame' auf targetTick.
-   */
-  const handleJumpToTick = (tickValue?: number) => {
-    if (!simulation || !simInstance) return;
-
-    simInstance.jumpToTick(tickValue ? tickValue : targetTick);
-
-    // Neues SimulationRun holen
-    const updatedRun = simInstance.getSimulationRun();
-    setSimulation(updatedRun);
-
-    // Aktuellen Tick aus der Simulation lesen
-    setFrame(simInstance.getCurrentTick());
-  };
 
 
 
@@ -83,7 +46,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Button: Calculate/Reload Simulation (precompute 1 tick, for instance) */}
       <Tooltip label="Calculate Simulation" position="bottom" withArrow>
-        <Button color="indigo" onClick={() => load(1)} loading={loading}>
+        <Button color="indigo" onClick={() => load(1)} loading={loadingMock}>
           <IconReload />
         </Button>
       </Tooltip>
@@ -98,7 +61,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
           color="indigo"
           disabled={!simulation}
           onClick={toggle}
-          loading={loading}
+          loading={loadingMock}
         >
           {playing ? <IconPause /> : <IconPlay />}
         </Button>
@@ -165,7 +128,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
         color="indigo"
         variant="outline"
         disabled={!simulation || targetTick < 0}
-        onClick={() => handleJumpToTick(undefined)}
+        onClick={() => handleJumpToTick(targetTick)}
       >
         Jump to Tick
       </Button>
