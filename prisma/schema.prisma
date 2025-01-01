@@ -87,6 +87,7 @@ model ProcessStep {
     locationId  Int
     inventoryId Int               @unique
     recipeId    Int?
+    totalRecipeTransformations Int?
     recipe      Recipe?           @relation(fields: [recipeId], references: [id])
     inventory   Inventory         @relation(fields: [inventoryId], references: [id])
     location    Location          @relation(fields: [locationId], references: [id])

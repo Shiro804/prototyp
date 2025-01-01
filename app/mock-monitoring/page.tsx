@@ -6,7 +6,7 @@ import { Prisma, TransportSystem } from "@prisma/client";
 import { groupInventory } from "../incoming-goods/helpers";
 import { useSimulationMock } from "@/components/SimulationContextMock";
 import { LocationFull } from "@/lib/simulation/simulationMock";
-import { MonitoringCard } from "@/components/MonitoringCard";
+import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
 
 
 
