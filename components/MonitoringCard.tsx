@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Paper, Table, Flex, Text, Button, Switch } from "@mantine/core";
+import { Paper, Table, Flex, Text, Button, Switch, Container } from "@mantine/core";
 import { LocationFull } from "@/lib/simulation/simulationNew";
 import { groupInventory } from "@/app/incoming-goods/helpers";
 import { TransportSystem } from "@prisma/client";
@@ -24,97 +24,100 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
     const { toggleTransportSystem } = useSimulationMock();
 
     return (
-        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg="white">
+        <Paper shadow="md" p="lg" style={{ overflowY: "auto", width: "100%", height: "550px" }} bg="white">
+            <Flex direction="column" h="100%">
 
-            <Flex align="center" justify="center" direction="row" w="100%">
-                <Text w="120px"></Text>
-                <Text fw="bold" size="xl" style={{position: "absolute"}}>
-                    {name}
-                </Text>
 
-                {/* Button to trigger detailed view */}
-                {onDetailsClick && (
-                    <Button w="120px" ml="auto" variant="gradient" onClick={onDetailsClick}>
-                        View Details
-                    </Button>
-                )}
-            </Flex>
+                <Flex align="center" justify="center" direction="row" w="100%">
+                    <Text w="120px"></Text>
+                    <Text fw="bold" size="xl" style={{ position: "absolute" }}>
+                        {name}
+                    </Text>
 
-            {/* SUMMARY: For each ProcessStep, show grouped inventory in a Table */}
-            {processSteps
-                .slice() // so reverse() does not mutate
-                .reverse()
-                .map((ps) => (
-                    <div key={ps.id} style={{ marginBottom: "2rem" }}>
-                        <Text my="md" fw={600}>
-                            {ps.name}
+                    {/* Button to trigger detailed view */}
+                    {onDetailsClick && (
+                        <Button w="120px" ml="auto" variant="gradient" onClick={onDetailsClick}>
+                            View Details
+                        </Button>
+                    )}
+                </Flex>
+
+                {/* SUMMARY: For each ProcessStep, show grouped inventory in a Table */}
+                {processSteps
+                    .slice() // so reverse() does not mutate
+                    .reverse()
+                    .map((ps) => (
+                        <Flex w="100%" direction="column" key={ps.id}>
+                            <Text my="md" fw={600}>
+                                {ps.name}
+                            </Text>
+                            <Table withRowBorders highlightOnHover>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Flex
+                                            gap="md"
+                                            justify="space-between"
+                                            align="flex-start"
+                                            direction="row"
+                                            wrap="nowrap"
+                                        >
+                                            <Table.Th fw={700}>Material</Table.Th>
+                                            <Table.Th fw={600}>Count</Table.Th>
+                                        </Flex>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {Object.entries(groupInventory([ps.inventory])).map(
+                                        ([material, count]) => (
+                                            <Table.Tr key={material}>
+                                                <Flex
+                                                    gap="md"
+                                                    justify="space-between"
+                                                    align="flex-start"
+                                                    direction="row"
+                                                    wrap="nowrap"
+                                                >
+                                                    <Table.Td fw={600}>{material}</Table.Td>
+                                                    <Table.Td fw={600}>{count}</Table.Td>
+                                                </Flex>
+                                            </Table.Tr>
+                                        ),
+                                    )}
+                                </Table.Tbody>
+                            </Table>
+                        </Flex>
+                    ))}
+
+                {/* Transport Systems */}
+                {transportSystems && transportSystems.length > 0 && (
+                    <Flex w="100%" direction="column" mt="auto">
+                        <Text fw="bold" mt="lg" mb="sm">
+                            Transport Systems
                         </Text>
-                        <Table withRowBorders highlightOnHover>
+                        <Table withTableBorder>
                             <Table.Thead>
                                 <Table.Tr>
-                                    <Flex
-                                        gap="md"
-                                        justify="space-between"
-                                        align="flex-start"
-                                        direction="row"
-                                        wrap="nowrap"
-                                    >
-                                        <Table.Th fw={700}>Material</Table.Th>
-                                        <Table.Th fw={600}>Count</Table.Th>
-                                    </Flex>
+                                    <Table.Th>Name</Table.Th>
+                                    <Table.Th>Active</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {Object.entries(groupInventory([ps.inventory])).map(
-                                    ([material, count]) => (
-                                        <Table.Tr key={material}>
-                                            <Flex
-                                                gap="md"
-                                                justify="space-between"
-                                                align="flex-start"
-                                                direction="row"
-                                                wrap="nowrap"
-                                            >
-                                                <Table.Td fw={600}>{material}</Table.Td>
-                                                <Table.Td fw={600}>{count}</Table.Td>
-                                            </Flex>
-                                        </Table.Tr>
-                                    ),
-                                )}
+                                {transportSystems.map((ts) => (
+                                    <Table.Tr key={ts.id}>
+                                        <Table.Td>{ts.name}</Table.Td>
+                                        <Table.Td>
+                                            <Switch
+                                                checked={ts.active}
+                                                onChange={() => toggleTransportSystem(ts.id)}
+                                            />
+                                        </Table.Td>
+                                    </Table.Tr>
+                                ))}
                             </Table.Tbody>
                         </Table>
-                    </div>
-                ))}
-
-            {/* Transport Systems */}
-            {transportSystems && transportSystems.length > 0 && (
-                <>
-                    <Text fw="bold" mt="lg" mb="sm">
-                        Transport Systems
-                    </Text>
-                    <Table withTableBorder>
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>Name</Table.Th>
-                                <Table.Th>Active</Table.Th>
-                            </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                            {transportSystems.map((ts) => (
-                                <Table.Tr key={ts.id}>
-                                    <Table.Td>{ts.name}</Table.Td>
-                                    <Table.Td>
-                                        <Switch
-                                            checked={ts.active}
-                                            onChange={() => toggleTransportSystem(ts.id)}
-                                        />
-                                    </Table.Td>
-                                </Table.Tr>
-                            ))}
-                        </Table.Tbody>
-                    </Table>
-                </>
-            )}
+                    </Flex>
+                )}
+            </Flex>
         </Paper>
     );
 };
