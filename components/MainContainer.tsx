@@ -7,7 +7,7 @@ import {
   Flex,
   Group,
   NavLink,
-  ScrollArea,
+  ScrollArea
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Notifications } from "@mantine/notifications";
@@ -17,26 +17,24 @@ import {
   IconBell,
   IconBrandSteam,
   IconBuildingFactory2,
-  IconCarCrane,
   IconChartInfographic,
   IconDeviceDesktopAnalytics,
   IconGraph,
   IconHome,
-  IconPackages,
   IconReportAnalytics,
   IconReportSearch,
   IconSettings,
   IconTruck,
-  IconUserCog,
+  IconUserCog
 } from "@tabler/icons-react";
 import { ExoticComponent, ReactNode, useEffect } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
-import SimulationControlOverlay from "./SimulationControlOverlay";
 import { SimulationContextLive, useProvideSimulationLive } from "./SimulationContextLive";
 import { SimulationContextMock, useProvideSimulationMock } from "./SimulationContextMock";
+import SimulationControlOverlay from "./SimulationControlOverlay";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -47,11 +45,11 @@ interface LinkDescription {
 const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
-  {
-    icon: IconBuildingFactory2,
-    label: "Incoming Commodities",
-    href: "/incoming-goods",
-  },
+  // {
+  //   icon: IconBuildingFactory2,
+  //   label: "Incoming Commodities",
+  //   href: "/incoming-goods",
+  // },
   // {
   //   icon: IconPackages,
   //   label: "Commodity Monitoring",
@@ -140,9 +138,11 @@ export default function MainContainer({
   const simulationContextMock = useProvideSimulationMock(1);
   const simulationContextLive = useProvideSimulationLive(3);
 
+
   useEffect(() => {
-    simulationContextLive.load(1000)
+    simulationContextLive.load(1)
   }, [])
+
 
   return (
     <AppShell

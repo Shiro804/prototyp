@@ -1,76 +1,44 @@
 "use client";
 
-import { Flex, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
-import { FC, ReactNode, useEffect } from "react";
-
+import { useState } from "react";
+import { Title, SimpleGrid, Text } from "@mantine/core";
 import { useSimulationLive } from "@/components/SimulationContextLive";
-import { Prisma } from "@prisma/client";
-import { groupInventory } from "../incoming-goods/helpers";
-
-interface MonitoringCardProps {
-  name: ReactNode;
-  processSteps: Prisma.ProcessStepGetPayload<{
-    include: { inventory: { include: { entries: true } } };
-  }>[];
-}
-
-const MonitoringCard: FC<MonitoringCardProps> = ({ name, processSteps }) => (
-  <Paper shadow="sm" p="lg">
-    <Text fw="bold" size="lg" mb="md">
-      {name}
-    </Text>
-    {processSteps.reverse().map((ps) => (
-      <>
-        <Text fw="600">{ps.name}</Text>
-        <Table withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
-                <Table.Th fw={600}>Material</Table.Th>
-                <Table.Th fw={600}>Count</Table.Th>
-              </Flex>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {Object.entries(groupInventory([ps.inventory])).map(
-              ([material, count]) => (
-                <Table.Tr key={material}>
-                  <Flex gap="md" justify="space-between" align="flex-start" direction="row" wrap="nowrap">
-                    <Table.Td fw={600}>{material}</Table.Td>
-                    <Table.Td fw={600}>{count}</Table.Td>
-                  </Flex>
-                </Table.Tr>
-              )
-            )}
-          </Table.Tbody>
-        </Table>
-      </>
-    ))}
-  </Paper>
-);
+import { MonitoringCard } from "@/components/MonitoringCard";
+import { DetailedLocationCard } from "@/components/DetailedLocationCard";
 
 export default function Monitoring() {
-  const { simulation, frame, speed, setSpeed, toggle } = useSimulationLive();
+  const { simulation, frame } = useSimulationLive();
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
 
-  useEffect(() => {
-    // console.log("monitoring set speed")
-    // setSpeed(10)
-  }, []);
+  if (!simulation) {
+    return <Text>Loading...</Text>;
+  }
 
-  useEffect(() => {
-    console.log(simulation);
-    // setSpeed(10)
-  }, [simulation]);
+  const currentFrame = simulation.frames[frame];
 
+  // If a location is selected, show the Detailed View
+  if (selectedLocationId !== null) {
+    const location = currentFrame.locations.find((l) => l.id === selectedLocationId);
+    if (!location) return <Text>Error: Location not found</Text>;
+
+    return (
+      <DetailedLocationCard
+        location={location}
+        onBack={() => setSelectedLocationId(null)}
+      />
+    );
+  }
+
+  // Otherwise, show the Overview
   return (
     <>
       <Title>Monitoring</Title>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
-        {simulation?.frames[frame].locations.map((l) => (
+        {currentFrame.locations.map((loc) => (
           <MonitoringCard
-            key={l.id}
-            name={l.name}
-            processSteps={l.processSteps}
+            key={loc.id}
+            location={loc}
+            onDetailsClick={() => setSelectedLocationId(loc.id)}
           />
         ))}
       </SimpleGrid>
