@@ -28,7 +28,13 @@ export function groupInventory(
       grouped[entry.material] = (grouped[entry.material] || 0) + 1;
     }
   }
+  // Sortieren der Gruppen nach Alphabet
+  const sortedGrouped = Object.fromEntries(
+    Object.entries(grouped).sort(([materialA], [materialB]) =>
+      materialA.localeCompare(materialB)
+    )
+  );
 
-  return grouped;
+  return sortedGrouped;
 }
 
