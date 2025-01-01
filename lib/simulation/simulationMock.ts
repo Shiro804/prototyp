@@ -195,50 +195,47 @@ export class SimulationMock {
   }
 
   public jumpToTick(targetTick: number): void {
+
     // a) clamp für negative Eingaben
     if (targetTick < 0) {
       targetTick = 0;
     }
-  
+
     const lastFrame = this.frames[this.frames.length - 1];
     const currentMaxTick = lastFrame.tick;
-  
+
     // b) Vorwärts (z.B. von 3 auf 100)
     if (targetTick > currentMaxTick) {
       const missing = targetTick - currentMaxTick;
-  
+
       // Wir verwerfen alte futureFrames komplett,
       // falls die vorhanden sind (z.B. aus einer alten Vorberechnung).
       this.discardFutureFrames();
-  
+
       // Dann rechnen wir die fehlenden Ticks gleich *richtig* in this.frames
       for (let i = 1; i <= missing; i++) {
-        this.tickForward(); 
+        this.tickForward();
         // Achtung: tickForward() fügt jeweils EINE Frame in this.frames hinzu.
         // => Nach missing Iterationen sind wir bei tick = targetTick.
-      }
-    }
-    // c) Rückwärts (z.B. von 100 auf 3)
-    else if (targetTick < currentMaxTick) {
+      } // c) Rückwärts (z.B. von 100 auf 3)
+    } else if (targetTick < currentMaxTick) {
       // Frames oberhalb targetTick wegschneiden
       this.frames = this.frames.filter((f) => f.tick <= targetTick);
-      
+
       // Neuer "letzter" Frame ist dann frames[targetTick].
       const newLast = this.frames[this.frames.length - 1];
       this.currentTick = newLast.tick;
       this.currentState = SimulationMock.cloneState(newLast.state);
-  
+
       // futureFrames auch verwerfen
       this.discardFutureFrames();
     }
     // d) Falls targetTick == currentMaxTick, machen wir einfach nichts weiter
     //    (wir sind ja schon dort).
-  
+
     // Zuletzt:
     // this.frames[this.frames.length-1] ist jetzt unser echter aktueller Frame
   }
-  
-  
 
   /**
    * Advance exactly 1 tick:
@@ -274,7 +271,9 @@ export class SimulationMock {
   /**
    * The core logic for computing "one tick".
    */
-  private computeNextTick(oldState: SimulationEntityState): SimulationEntityState {
+  private computeNextTick(
+    oldState: SimulationEntityState
+  ): SimulationEntityState {
     let newState = SimulationMock.cloneState(oldState);
     SimulationMock.objectsToReferences(newState);
 
@@ -325,7 +324,11 @@ export class SimulationMock {
 
               // add outputs
               for (const output of processStep.recipe.outputs) {
-                for (let outputStep = 0; outputStep < output.quantity; outputStep++) {
+                for (
+                  let outputStep = 0;
+                  outputStep < output.quantity;
+                  outputStep++
+                ) {
                   processStep.inventory.entries.push({
                     id: nextFreeInventoryEntryId(newState),
                     addedAt: new Date(),
@@ -357,7 +360,8 @@ export class SimulationMock {
           outputSpeeds,
           outputs.map((o) =>
             o.filter
-              ? (i) => o.filter!.entries.some((fe) => fe.material === i.material)
+              ? (i) =>
+                  o.filter!.entries.some((fe) => fe.material === i.material)
               : () => true
           )
         );
@@ -432,7 +436,9 @@ export class SimulationMock {
     }
   }
 
-  private static cloneState(state: SimulationEntityState): SimulationEntityState {
+  private static cloneState(
+    state: SimulationEntityState
+  ): SimulationEntityState {
     return JSON.parse(JSON.stringify(state), convertDates);
   }
 
@@ -444,23 +450,22 @@ export class SimulationMock {
     // 1) Letztes Frame
     const lastFrame = this.frames[this.frames.length - 1];
     const { locations } = lastFrame.state;
-  
+
     // 2) Alle TS zusammensuchen
     const allSteps = locations.flatMap((loc) => loc.processSteps);
     const allTS = allSteps.flatMap((step) => [...step.inputs, ...step.outputs]);
-  
+
     // 3) toggle
     const foundTS = allTS.find((ts) => ts.id === tsId);
     if (foundTS) {
       foundTS.active = !foundTS.active;
       console.log("Toggle TS", foundTS.name, foundTS.id, "->", foundTS.active);
     }
-  
+
     // 4) Future Frames verwerfen
     this.discardFutureFrames();
-  
+
     // 5) (WICHTIG) `this.currentState` soll denselben Stand wie lastFrame.state haben
     this.currentState = SimulationMock.cloneState(lastFrame.state);
   }
-  
 }
