@@ -83,68 +83,85 @@ export interface SimulationEntityState {
 }
 
 export interface SimulationRun {
+  /**
+   * Now just an array of frames from tick 0 up to the last computed tick
+   */
   frames: SimulationEntityState[];
+  /**
+   * Any events your logic wants to track
+   */
   events: Event[];
 }
 
+/**
+ * "Live" Simulation class refactored to compute ticks on-demand,
+ * similar to SimulationMock.
+ */
 export class Simulation {
-  private readonly initialState: SimulationEntityState;
-
   private readonly events: Event[] = [];
-  private readonly frames: SimulationEntityState[] = [];
+
+  /**
+   * We store every state as a "frame".
+   * frames[0] = the initial state at tick=0
+   * frames[1] = the state after the first tick
+   * ...
+   */
+  private frames: SimulationEntityState[] = [];
+
+  /**
+   * We'll keep track of a 'currentTick' integer and a 'currentState'
+   * to know the latest actual state.
+   */
+  private currentTick = 0;
+  private currentState: SimulationEntityState;
 
   constructor(initialState: SimulationEntityState) {
-    this.initialState = Simulation.cloneState(initialState);
+    // 1) Clone the initial state so we don't mutate the original
+    this.currentState = Simulation.cloneState(initialState);
+    // 2) frames[0] = initial state at tick 0
+    this.frames.push(Simulation.cloneState(this.currentState));
   }
 
-  public run(ticks: number): SimulationRun {
-    // Frame 0
-    let firstFrame = Simulation.cloneState(this.initialState);
-    this.frames.push(firstFrame);
-
-    for (let i = 1; i < ticks; i++) {
-      this.tick();
-    }
-
+  /** Return the entire simulation so far. */
+  public getSimulationRun(): SimulationRun {
     return {
+      // We can return a clone if you want full immutability
+      frames: this.frames.map((f) => Simulation.cloneState(f)),
       events: this.events,
-      frames: this.frames,
     };
   }
 
-  private static objectsToReferences(state: SimulationEntityState) {
-    const transportSystems = Object.fromEntries(
-      state.locations
-        .flatMap((l) => l.processSteps)
-        .flatMap((ps) => ps.inputs.concat(ps.outputs))
-        .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
-        .map((ts) => [ts.id, ts]),
-    );
+  /** Return the current tick index. */
+  public getCurrentTick(): number {
+    return this.currentTick;
+  }
 
-    for (const location of state.locations) {
-      for (const processStep of location.processSteps) {
-        processStep.inputs = processStep.inputs.map(
-          (input) => transportSystems[input.id],
-        );
-        processStep.outputs = processStep.outputs.map(
-          (output) => transportSystems[output.id],
-        );
-      }
+  /**
+   * Compute the next tick from the currentState, and store the result as a new frame.
+   */
+  public tickForward(): void {
+    const newState = this.computeNextTick(this.currentState);
+    this.currentTick += 1;
+    this.currentState = Simulation.cloneState(newState);
+
+    // push the new state into frames
+    this.frames.push(Simulation.cloneState(this.currentState));
+  }
+
+  /**
+   * Optionally, a helper to compute multiple ticks in a row:
+   */
+  public runNext(n: number) {
+    for (let i = 0; i < n; i++) {
+      this.tickForward();
     }
   }
 
-  private static cloneState(
-    state: SimulationEntityState,
-  ): SimulationEntityState {
-    return JSON.parse(JSON.stringify(state), convertDates);
-  }
-
-  public tick() {
-    let oldState = this.frames.at(-1);
-    if (!oldState) {
-      throw new Error("No initial frame present.");
-    }
-
+  /**
+   * The actual logic from your old "tick()" method,
+   * refactored into `computeNextTick()`.
+   */
+  private computeNextTick(oldState: SimulationEntityState): SimulationEntityState {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
@@ -173,7 +190,6 @@ export class Simulation {
                 if (recipeInput.material === entry.material) {
                   possibleInputEntries.push(entry);
                 }
-
                 if (possibleInputEntries.length >= recipeInput.quantity) {
                   break;
                 }
@@ -187,11 +203,10 @@ export class Simulation {
             }
 
             if (inputsFulfilled) {
-              // Beispiel: richtige Variante -> remove consumed
-              processStep.inventory.entries =
-                processStep.inventory.entries.filter(
-                  (e) => !inputEntries.includes(e),
-                );
+              // remove consumed inputs
+              processStep.inventory.entries = processStep.inventory.entries.filter(
+                (e) => !inputEntries.includes(e),
+              );
 
               // add outputs
               for (const output of processStep.recipe.outputs) {
@@ -224,28 +239,13 @@ export class Simulation {
           outputSpeeds,
           processStep.outputs.map((o) =>
             o.filter
-              ? (i) =>
-                  o.filter!.entries.some((fe) => fe.material === i.material)
+              ? (i) => o.filter!.entries.some((fe) => fe.material === i.material)
               : () => true,
           ),
         );
 
-        // const entriesPerOutput = outputItems.map((idsForThatOutput) =>
-        //   idsForThatOutput.map(
-        //     (id) => processStep.inventory.entries.find((e) => e.id === id)!,
-        //   ),
-        // );
-
         for (let outIndex = 0; outIndex < itemsPerOutput.length; outIndex++) {
           let ts = processStep.outputs[outIndex];
-          // const filterEntries = ts.filter?.entries ?? [];
-          // const allowedMaterials = filterEntries.map((fe) => fe.material);
-          //
-          // // Filtern nach erlaubten Materials
-          // let relevantItems = entriesPerOutput[outIndex].filter((item) => {
-          //   if (allowedMaterials.length === 0) return true;
-          //   return allowedMaterials.includes(item.material);
-          // });
 
           let entriesToAddToOutput = itemsPerOutput[outIndex].map((i) => ({
             ...i,
@@ -287,7 +287,31 @@ export class Simulation {
       }
     }
 
-    // Phase 4: Add newState to frames
-    this.frames.push(newState);
+    return newState;
+  }
+
+  private static objectsToReferences(state: SimulationEntityState) {
+    const transportSystems = Object.fromEntries(
+      state.locations
+        .flatMap((l) => l.processSteps)
+        .flatMap((ps) => ps.inputs.concat(ps.outputs))
+        .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
+        .map((ts) => [ts.id, ts]),
+    );
+
+    for (const location of state.locations) {
+      for (const processStep of location.processSteps) {
+        processStep.inputs = processStep.inputs.map(
+          (input) => transportSystems[input.id],
+        );
+        processStep.outputs = processStep.outputs.map(
+          (output) => transportSystems[output.id],
+        );
+      }
+    }
+  }
+
+  private static cloneState(state: SimulationEntityState): SimulationEntityState {
+    return JSON.parse(JSON.stringify(state), convertDates);
   }
 }
