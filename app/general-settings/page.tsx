@@ -10,13 +10,13 @@ const disabledNotifications: Record<string, boolean> = {};
 
 // Exported function to handle notifications
 export function handleNotification(
-    processStepName: string,
+    notificationIdName: string,
     title: string,
     message: string
 ) {
-    if (!disabledNotifications[processStepName]) {
+    if (!disabledNotifications[notificationIdName]) {
         notifications.show({
-            id: processStepName,
+            id: notificationIdName,
             title,
             message,
         });
@@ -71,10 +71,11 @@ function GeneralSettings() {
                     maw={500}
                     gap={20}
                 >
+                    <Text fz={20} fw={700}>Locations</Text>
                     {simulation?.frames[frame].locations && returnLocationsWithProcessStepsWithRecipes(simulation?.frames[frame].locations).map((loc) => (
                         <Flex key={loc.id} direction="column" w="100%">
                             {/* Location Name */}
-                            <Text fw={600} fz={18} mb={10}>
+                            <Text fw={600} fz={16} mb={10}>
                                 {loc.name}
                             </Text>
                             {/* Process Steps */}
@@ -103,6 +104,51 @@ function GeneralSettings() {
                             </Flex>
                         </Flex>
                     ))}
+                    <Text fz={20} fw={700}>Orders</Text>
+                    <Flex key={"cock"} direction="column" pl={20} w="100%" gap={10}>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Order Status</Text>
+                            <Switch
+                                checked={!disabledNotifications["Order Status"]}
+                                onChange={() => toggleNotificationForProcessStep("Order Status")}
+                            />
+                        </Flex>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Order Reservation</Text>
+                            <Switch
+                                checked={!disabledNotifications["Order Reservation"]}
+                                onChange={() => toggleNotificationForProcessStep("Order Reservation")}
+                            />
+                        </Flex>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Order Completed</Text>
+                            <Switch
+                                checked={!disabledNotifications["Order Completed"]}
+                                onChange={() => toggleNotificationForProcessStep("Order Completed")}
+                            />
+                        </Flex>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Order Reservation Failed</Text>
+                            <Switch
+                                checked={!disabledNotifications["Order Reservation Failed"]}
+                                onChange={() => toggleNotificationForProcessStep("Order Reservation Failed")}
+                            />
+                        </Flex>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Live Simulation</Text>
+                            <Switch
+                                checked={!disabledNotifications["Live Simulation"]}
+                                onChange={() => toggleNotificationForProcessStep("Live Simulation")}
+                            />
+                        </Flex>
+                        <Flex direction="row" align="center" justify="space-between">
+                            <Text>Simulation Stopped</Text>
+                            <Switch
+                                checked={!disabledNotifications["Simulation Stopped"]}
+                                onChange={() => toggleNotificationForProcessStep("Simulation Stopped")}
+                            />
+                        </Flex>
+                    </Flex>
                 </Flex>
             </Flex>
         </SimpleGrid>

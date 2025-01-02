@@ -136,7 +136,7 @@ export default function MainContainer({
   const [opened, { toggle }] = useDisclosure();
 
   const simulationContextMock = useProvideSimulationMock(1);
-  const simulationContextLive = useProvideSimulationLive(3);
+  const simulationContextLive = useProvideSimulationLive(1);
 
 
   useEffect(() => {
