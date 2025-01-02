@@ -89,7 +89,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
             {/* Big accordion: each processStep */}
             <Accordion multiple variant="separated" mt="lg">
                 {processSteps.map((ps) => (
-                    <Accordion.Item key={ps.id} value={`ps-${ps.id}`} bg="#ebf0fa">
+                    <Accordion.Item key={ps.id} value={`ps-${ps.id}`}>
                         <Accordion.Control>
                             {ps.name}
                         </Accordion.Control>
@@ -167,7 +167,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                         needleColor="grey"
                                         needleBaseColor="grey"
                                         formatTextValue={(string) => string}
-                                        
+
                                     />
                                 </Flex>
                                 {/* <GaugeContainer value={calculateInventoryUtilization(ps.inventory)} valueMax={100} height={120} width={120} title="Auslastung" cornerRadius={2}>
