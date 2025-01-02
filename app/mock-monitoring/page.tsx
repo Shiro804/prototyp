@@ -1,17 +1,22 @@
 "use client";
 
-import { Flex, Paper, SimpleGrid, Table, Text, Title, Switch, Divider } from "@mantine/core";
-import { FC, ReactNode, useEffect } from "react";
-import { Prisma, TransportSystem } from "@prisma/client";
-import { groupInventory } from "../incoming-goods/helpers";
+import { useState } from "react";
+import { Title, SimpleGrid, Text } from "@mantine/core";
 import { useSimulationMock } from "@/components/SimulationContextMock";
-import { LocationFull } from "@/lib/simulation/simulationMock";
 import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
-
-
+import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
+import { LocationFull } from "@/lib/simulation/simulationMock";
+import { TransportSystem } from "@prisma/client";
 
 export default function Monitoring() {
   const { simulation, frame } = useSimulationMock();
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+
+  if (!simulation) {
+    return <Text>Please press on the calculate button.</Text>;
+  }
+
+  const currentFrame = simulation.frames[frame];
 
   function getTransportSystemsForLocation(
     location: LocationFull
@@ -29,7 +34,21 @@ export default function Monitoring() {
     return Array.from(tsSet.values());
   }
 
+  // If a location is selected, show the Detailed View
+  if (selectedLocationId !== null) {
+    const location = currentFrame.state.locations.find((l) => l.id === selectedLocationId);
+    if (!location) return <Text>Error: Location not found</Text>;
 
+    return (
+      <DetailedLocationCard
+        location={location}
+        onBack={() => setSelectedLocationId(null)}
+      />
+    );
+  }
+
+
+  // Otherwise, show the Overview
   return (
     <>
       <Title>Monitoring</Title>
@@ -42,6 +61,7 @@ export default function Monitoring() {
               key={loc.id}
               location={loc}
               transportSystems={locationTS}
+              onDetailsClick={() => setSelectedLocationId(loc.id)}
             />
           );
         })}
