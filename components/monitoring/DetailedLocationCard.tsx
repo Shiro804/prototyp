@@ -183,7 +183,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                             <Accordion multiple variant="contained" mt="md">
                                 <Accordion.Item value={`inventory-ps-${ps.id}`}>
                                     <Accordion.Control>
-                                        Inventory Entries ({ps.inventory.entries.length})
+                                        Materials ({ps.inventory.entries.length})
                                     </Accordion.Control>
                                     <Accordion.Panel>
                                         {renderGroupedMaterials(ps.inventory.entries, processSteps)}
