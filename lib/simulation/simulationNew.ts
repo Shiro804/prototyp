@@ -3,6 +3,8 @@ import { InventoryEntry, Prisma } from "@prisma/client";
 import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
 import { distributeRoundRobin } from "./round-robin";
+import { notifications } from "@mantine/notifications";
+import { handleNotification } from "@/app/general-settings/page";
 
 export function convertDates(key: string, value: any) {
   if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(value)) return value;
@@ -227,6 +229,13 @@ export class Simulation {
                 processStep.totalRecipeTransformations = 0;
               }
               processStep.totalRecipeTransformations++;
+
+              // Call the centralized notification handler
+              handleNotification(
+                processStep.name,
+                `Live Simulation: ${processStep.name}`,
+                "Transformation complete"
+              );
               console.log(processStep);
             }
           }

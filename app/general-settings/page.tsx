@@ -1,0 +1,112 @@
+"use client";
+
+import { useSimulationLive } from "@/components/SimulationContextLive";
+import { LocationFull } from "@/lib/simulation/simulationNew";
+import { Flex, SimpleGrid, Switch, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+
+// State to manage disabled notifications
+const disabledNotifications: Record<string, boolean> = {};
+
+// Exported function to handle notifications
+export function handleNotification(
+    processStepName: string,
+    title: string,
+    message: string
+) {
+    if (!disabledNotifications[processStepName]) {
+        notifications.show({
+            id: processStepName,
+            title,
+            message,
+        });
+    }
+}
+
+function GeneralSettings() {
+    const { simulation, frame } = useSimulationLive();
+
+    // Toggle notification visibility for a specific process step
+    const toggleNotificationForProcessStep = (processStepName: string) => {
+        disabledNotifications[processStepName] = !disabledNotifications[processStepName];
+
+        if (disabledNotifications[processStepName]) {
+            notifications.hide(processStepName);
+            notifications.show({
+                title: "Notification Disabled",
+                message: `Notifications for process step \"${processStepName}\" have been disabled.`,
+                color: "red",
+            });
+        } else {
+            notifications.show({
+                id: processStepName,
+                title: "Notification Enabled",
+                message: `Notifications for process step \"${processStepName}\" have been enabled.`,
+                color: "green",
+            });
+        }
+    };
+
+    function returnLocationsWithProcessStepsWithRecipes(locations: LocationFull[]): LocationFull[] {
+        return locations.filter((loc) =>
+            loc.processSteps.some((ps) => ps.recipe) // Prüfe, ob mindestens ein `processStep` ein Rezept hat
+        );
+    }
+    return (
+        <SimpleGrid cols={1}>
+            {/* Notification Settings */}
+            <Text fw={700} fz={25} mb={-10}>
+                Notification Settings
+            </Text>
+            <Text fw={600} fz={15} mb={10} maw={800}>
+                Here you can (De-)Activate Notifications for every process step within
+                the Live Simulation. Only process steps, which produce (sub)products, thus producing messages, are being shown.
+            </Text>
+            <Flex direction="column">
+                <Flex
+                    w="100%"
+                    direction="column"
+                    justify="center"
+                    align="flex-start"
+                    maw={500}
+                    gap={20}
+                >
+                    {simulation?.frames[frame].locations && returnLocationsWithProcessStepsWithRecipes(simulation?.frames[frame].locations).map((loc) => (
+                        <Flex key={loc.id} direction="column" w="100%">
+                            {/* Location Name */}
+                            <Text fw={600} fz={18} mb={10}>
+                                {loc.name}
+                            </Text>
+                            {/* Process Steps */}
+                            <Flex
+                                direction="column"
+                                w="100%"
+                                gap={10}
+                                pl={20} // Indent process steps for better UI
+                            >
+                                {loc.processSteps.map((ps) => (
+                                    <Flex
+                                        key={ps.id}
+                                        direction="row"
+                                        align="center"
+                                        justify="space-between"
+                                    >
+                                        <Text fw={500} fz={16}>
+                                            {ps.name}
+                                        </Text>
+                                        <Switch
+                                            checked={!disabledNotifications[ps.name]}
+                                            onChange={() => toggleNotificationForProcessStep(ps.name)}
+                                        />
+                                    </Flex>
+                                ))}
+                            </Flex>
+                        </Flex>
+                    ))}
+                </Flex>
+            </Flex>
+        </SimpleGrid>
+    );
+}
+
+export default GeneralSettings;

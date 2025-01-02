@@ -104,7 +104,7 @@ const reportsAndAnalytics: LinkDescription[] = [
 ];
 
 const settingsLinks: LinkDescription[] = [
-  { icon: IconUserCog, label: "User Management", href: "/placeholder4" },
+  { icon: IconSettings, label: "General Settings", href: "/general-settings" },
   {
     icon: IconSettings,
     label: "Simulation Configuration",
