@@ -336,6 +336,11 @@ export class SimulationMock {
                   });
                 }
               }
+              // Increment the totalRecipeTransformations counter
+              if (processStep.totalRecipeTransformations == null) {
+                processStep.totalRecipeTransformations = 0;
+              }
+              processStep.totalRecipeTransformations++;
             }
           }
         }
