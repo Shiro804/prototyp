@@ -22,7 +22,7 @@ export const WorkerRoleScalarFieldEnumSchema = z.enum(['id','name','description'
 
 export const InventoryScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','type','limit']);
 
-export const InventoryEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','inventoryId']);
+export const InventoryEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','inventoryId','orderId']);
 
 export const LocationScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','description']);
 
@@ -38,9 +38,11 @@ export const SensorScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt',
 
 export const FilterEntryScalarFieldEnumSchema = z.enum(['id','addedAt','material','filterId']);
 
-export const FilterScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','transportSystemId']);
+export const FilterScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','transportSystemId','orderId']);
 
 export const TransportSystemScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','active','name','inputSpeed','outputSpeed','inventoryId','startStepId','endStepId']);
+
+export const OrderScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','status','priority','dueDate','description','quantity','completedAt','canceledAt']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -122,6 +124,7 @@ export const InventoryEntrySchema = z.object({
   addedAt: z.coerce.date(),
   material: z.string(),
   inventoryId: z.number().int(),
+  orderId: z.number().int().nullable(),
 })
 
 export type InventoryEntry = z.infer<typeof InventoryEntrySchema>
@@ -237,6 +240,7 @@ export const FilterSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   transportSystemId: z.number().int(),
+  orderId: z.number().int().nullable(),
 })
 
 export type Filter = z.infer<typeof FilterSchema>
@@ -259,6 +263,25 @@ export const TransportSystemSchema = z.object({
 })
 
 export type TransportSystem = z.infer<typeof TransportSystemSchema>
+
+/////////////////////////////////////////
+// ORDER SCHEMA
+/////////////////////////////////////////
+
+export const OrderSchema = z.object({
+  id: z.number().int(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  status: z.string(),
+  priority: z.number().int(),
+  dueDate: z.coerce.date().nullable(),
+  description: z.string().nullable(),
+  quantity: z.number().int(),
+  completedAt: z.coerce.date().nullable(),
+  canceledAt: z.coerce.date().nullable(),
+})
+
+export type Order = z.infer<typeof OrderSchema>
 
 /////////////////////////////////////////
 // SELECT & INCLUDE
@@ -410,6 +433,7 @@ export const InventorySelectSchema: z.ZodType<Prisma.InventorySelect> = z.object
 
 export const InventoryEntryIncludeSchema: z.ZodType<Prisma.InventoryEntryInclude> = z.object({
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
+  Order: z.union([z.boolean(),z.lazy(() => OrderArgsSchema)]).optional(),
 }).strict()
 
 export const InventoryEntryArgsSchema: z.ZodType<Prisma.InventoryEntryDefaultArgs> = z.object({
@@ -422,7 +446,9 @@ export const InventoryEntrySelectSchema: z.ZodType<Prisma.InventoryEntrySelect> 
   addedAt: z.boolean().optional(),
   material: z.boolean().optional(),
   inventoryId: z.boolean().optional(),
+  orderId: z.boolean().optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
+  Order: z.union([z.boolean(),z.lazy(() => OrderArgsSchema)]).optional(),
 }).strict()
 
 // LOCATION
@@ -463,6 +489,7 @@ export const LocationSelectSchema: z.ZodType<Prisma.LocationSelect> = z.object({
 //------------------------------------------------------
 
 export const ProcessStepIncludeSchema: z.ZodType<Prisma.ProcessStepInclude> = z.object({
+  orders: z.union([z.boolean(),z.lazy(() => OrderFindManyArgsSchema)]).optional(),
   recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
   location: z.union([z.boolean(),z.lazy(() => LocationArgsSchema)]).optional(),
@@ -483,6 +510,7 @@ export const ProcessStepCountOutputTypeArgsSchema: z.ZodType<Prisma.ProcessStepC
 }).strict();
 
 export const ProcessStepCountOutputTypeSelectSchema: z.ZodType<Prisma.ProcessStepCountOutputTypeSelect> = z.object({
+  orders: z.boolean().optional(),
   resources: z.boolean().optional(),
   sensors: z.boolean().optional(),
   inputs: z.boolean().optional(),
@@ -503,6 +531,7 @@ export const ProcessStepSelectSchema: z.ZodType<Prisma.ProcessStepSelect> = z.ob
   inventoryId: z.boolean().optional(),
   recipeId: z.boolean().optional(),
   totalRecipeTransformations: z.boolean().optional(),
+  orders: z.union([z.boolean(),z.lazy(() => OrderFindManyArgsSchema)]).optional(),
   recipe: z.union([z.boolean(),z.lazy(() => RecipeArgsSchema)]).optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
   location: z.union([z.boolean(),z.lazy(() => LocationArgsSchema)]).optional(),
@@ -657,6 +686,7 @@ export const FilterSelectSchema: z.ZodType<Prisma.FilterSelect> = z.object({
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   transportSystemId: z.boolean().optional(),
+  orderId: z.boolean().optional(),
   transportSystem: z.union([z.boolean(),z.lazy(() => TransportSystemArgsSchema)]).optional(),
   entries: z.union([z.boolean(),z.lazy(() => FilterEntryFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => FilterCountOutputTypeArgsSchema)]).optional(),
@@ -670,11 +700,21 @@ export const TransportSystemIncludeSchema: z.ZodType<Prisma.TransportSystemInclu
   endStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   startStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
+  orders: z.union([z.boolean(),z.lazy(() => OrderFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => TransportSystemCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
 export const TransportSystemArgsSchema: z.ZodType<Prisma.TransportSystemDefaultArgs> = z.object({
   select: z.lazy(() => TransportSystemSelectSchema).optional(),
   include: z.lazy(() => TransportSystemIncludeSchema).optional(),
+}).strict();
+
+export const TransportSystemCountOutputTypeArgsSchema: z.ZodType<Prisma.TransportSystemCountOutputTypeDefaultArgs> = z.object({
+  select: z.lazy(() => TransportSystemCountOutputTypeSelectSchema).nullish(),
+}).strict();
+
+export const TransportSystemCountOutputTypeSelectSchema: z.ZodType<Prisma.TransportSystemCountOutputTypeSelect> = z.object({
+  orders: z.boolean().optional(),
 }).strict();
 
 export const TransportSystemSelectSchema: z.ZodType<Prisma.TransportSystemSelect> = z.object({
@@ -692,6 +732,50 @@ export const TransportSystemSelectSchema: z.ZodType<Prisma.TransportSystemSelect
   endStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   startStep: z.union([z.boolean(),z.lazy(() => ProcessStepArgsSchema)]).optional(),
   inventory: z.union([z.boolean(),z.lazy(() => InventoryArgsSchema)]).optional(),
+  orders: z.union([z.boolean(),z.lazy(() => OrderFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => TransportSystemCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+// ORDER
+//------------------------------------------------------
+
+export const OrderIncludeSchema: z.ZodType<Prisma.OrderInclude> = z.object({
+  inventoryEntries: z.union([z.boolean(),z.lazy(() => InventoryEntryFindManyArgsSchema)]).optional(),
+  processSteps: z.union([z.boolean(),z.lazy(() => ProcessStepFindManyArgsSchema)]).optional(),
+  transportSystems: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => OrderCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+export const OrderArgsSchema: z.ZodType<Prisma.OrderDefaultArgs> = z.object({
+  select: z.lazy(() => OrderSelectSchema).optional(),
+  include: z.lazy(() => OrderIncludeSchema).optional(),
+}).strict();
+
+export const OrderCountOutputTypeArgsSchema: z.ZodType<Prisma.OrderCountOutputTypeDefaultArgs> = z.object({
+  select: z.lazy(() => OrderCountOutputTypeSelectSchema).nullish(),
+}).strict();
+
+export const OrderCountOutputTypeSelectSchema: z.ZodType<Prisma.OrderCountOutputTypeSelect> = z.object({
+  inventoryEntries: z.boolean().optional(),
+  processSteps: z.boolean().optional(),
+  transportSystems: z.boolean().optional(),
+}).strict();
+
+export const OrderSelectSchema: z.ZodType<Prisma.OrderSelect> = z.object({
+  id: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  status: z.boolean().optional(),
+  priority: z.boolean().optional(),
+  dueDate: z.boolean().optional(),
+  description: z.boolean().optional(),
+  quantity: z.boolean().optional(),
+  completedAt: z.boolean().optional(),
+  canceledAt: z.boolean().optional(),
+  inventoryEntries: z.union([z.boolean(),z.lazy(() => InventoryEntryFindManyArgsSchema)]).optional(),
+  processSteps: z.union([z.boolean(),z.lazy(() => ProcessStepFindManyArgsSchema)]).optional(),
+  transportSystems: z.union([z.boolean(),z.lazy(() => TransportSystemFindManyArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => OrderCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
 
@@ -1022,7 +1106,9 @@ export const InventoryEntryWhereInputSchema: z.ZodType<Prisma.InventoryEntryWher
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
+  Order: z.union([ z.lazy(() => OrderNullableRelationFilterSchema),z.lazy(() => OrderWhereInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const InventoryEntryOrderByWithRelationInputSchema: z.ZodType<Prisma.InventoryEntryOrderByWithRelationInput> = z.object({
@@ -1030,7 +1116,9 @@ export const InventoryEntryOrderByWithRelationInputSchema: z.ZodType<Prisma.Inve
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
-  inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional()
+  orderId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional(),
+  Order: z.lazy(() => OrderOrderByWithRelationInputSchema).optional()
 }).strict();
 
 export const InventoryEntryWhereUniqueInputSchema: z.ZodType<Prisma.InventoryEntryWhereUniqueInput> = z.object({
@@ -1044,7 +1132,9 @@ export const InventoryEntryWhereUniqueInputSchema: z.ZodType<Prisma.InventoryEnt
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
+  Order: z.union([ z.lazy(() => OrderNullableRelationFilterSchema),z.lazy(() => OrderWhereInputSchema) ]).optional().nullable(),
 }).strict());
 
 export const InventoryEntryOrderByWithAggregationInputSchema: z.ZodType<Prisma.InventoryEntryOrderByWithAggregationInput> = z.object({
@@ -1052,6 +1142,7 @@ export const InventoryEntryOrderByWithAggregationInputSchema: z.ZodType<Prisma.I
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => InventoryEntryCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => InventoryEntryAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => InventoryEntryMaxOrderByAggregateInputSchema).optional(),
@@ -1067,6 +1158,7 @@ export const InventoryEntryScalarWhereWithAggregatesInputSchema: z.ZodType<Prism
   addedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const LocationWhereInputSchema: z.ZodType<Prisma.LocationWhereInput> = z.object({
@@ -1149,6 +1241,7 @@ export const ProcessStepWhereInputSchema: z.ZodType<Prisma.ProcessStepWhereInput
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+  orders: z.lazy(() => OrderListRelationFilterSchema).optional(),
   recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   location: z.union([ z.lazy(() => LocationRelationFilterSchema),z.lazy(() => LocationWhereInputSchema) ]).optional(),
@@ -1172,6 +1265,7 @@ export const ProcessStepOrderByWithRelationInputSchema: z.ZodType<Prisma.Process
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   recipeId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  orders: z.lazy(() => OrderOrderByRelationAggregateInputSchema).optional(),
   recipe: z.lazy(() => RecipeOrderByWithRelationInputSchema).optional(),
   inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional(),
   location: z.lazy(() => LocationOrderByWithRelationInputSchema).optional(),
@@ -1210,6 +1304,7 @@ export const ProcessStepWhereUniqueInputSchema: z.ZodType<Prisma.ProcessStepWher
   locationId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   recipeId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
+  orders: z.lazy(() => OrderListRelationFilterSchema).optional(),
   recipe: z.union([ z.lazy(() => RecipeNullableRelationFilterSchema),z.lazy(() => RecipeWhereInputSchema) ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
   location: z.union([ z.lazy(() => LocationRelationFilterSchema),z.lazy(() => LocationWhereInputSchema) ]).optional(),
@@ -1563,6 +1658,7 @@ export const FilterWhereInputSchema: z.ZodType<Prisma.FilterWhereInput> = z.obje
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   transportSystemId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
   transportSystem: z.union([ z.lazy(() => TransportSystemRelationFilterSchema),z.lazy(() => TransportSystemWhereInputSchema) ]).optional(),
   entries: z.lazy(() => FilterEntryListRelationFilterSchema).optional()
 }).strict();
@@ -1572,6 +1668,7 @@ export const FilterOrderByWithRelationInputSchema: z.ZodType<Prisma.FilterOrderB
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   transportSystem: z.lazy(() => TransportSystemOrderByWithRelationInputSchema).optional(),
   entries: z.lazy(() => FilterEntryOrderByRelationAggregateInputSchema).optional()
 }).strict();
@@ -1596,6 +1693,7 @@ export const FilterWhereUniqueInputSchema: z.ZodType<Prisma.FilterWhereUniqueInp
   NOT: z.union([ z.lazy(() => FilterWhereInputSchema),z.lazy(() => FilterWhereInputSchema).array() ]).optional(),
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
   transportSystem: z.union([ z.lazy(() => TransportSystemRelationFilterSchema),z.lazy(() => TransportSystemWhereInputSchema) ]).optional(),
   entries: z.lazy(() => FilterEntryListRelationFilterSchema).optional()
 }).strict());
@@ -1605,6 +1703,7 @@ export const FilterOrderByWithAggregationInputSchema: z.ZodType<Prisma.FilterOrd
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => FilterCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => FilterAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => FilterMaxOrderByAggregateInputSchema).optional(),
@@ -1620,6 +1719,7 @@ export const FilterScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Filter
   createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
   transportSystemId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemWhereInputSchema: z.ZodType<Prisma.TransportSystemWhereInput> = z.object({
@@ -1640,6 +1740,7 @@ export const TransportSystemWhereInputSchema: z.ZodType<Prisma.TransportSystemWh
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
+  orders: z.lazy(() => OrderListRelationFilterSchema).optional()
 }).strict();
 
 export const TransportSystemOrderByWithRelationInputSchema: z.ZodType<Prisma.TransportSystemOrderByWithRelationInput> = z.object({
@@ -1656,7 +1757,8 @@ export const TransportSystemOrderByWithRelationInputSchema: z.ZodType<Prisma.Tra
   filter: z.lazy(() => FilterOrderByWithRelationInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepOrderByWithRelationInputSchema).optional(),
-  inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional()
+  inventory: z.lazy(() => InventoryOrderByWithRelationInputSchema).optional(),
+  orders: z.lazy(() => OrderOrderByRelationAggregateInputSchema).optional()
 }).strict();
 
 export const TransportSystemWhereUniqueInputSchema: z.ZodType<Prisma.TransportSystemWhereUniqueInput> = z.union([
@@ -1689,6 +1791,7 @@ export const TransportSystemWhereUniqueInputSchema: z.ZodType<Prisma.TransportSy
   endStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   startStep: z.union([ z.lazy(() => ProcessStepNullableRelationFilterSchema),z.lazy(() => ProcessStepWhereInputSchema) ]).optional().nullable(),
   inventory: z.union([ z.lazy(() => InventoryRelationFilterSchema),z.lazy(() => InventoryWhereInputSchema) ]).optional(),
+  orders: z.lazy(() => OrderListRelationFilterSchema).optional()
 }).strict());
 
 export const TransportSystemOrderByWithAggregationInputSchema: z.ZodType<Prisma.TransportSystemOrderByWithAggregationInput> = z.object({
@@ -1723,6 +1826,97 @@ export const TransportSystemScalarWhereWithAggregatesInputSchema: z.ZodType<Pris
   inventoryId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
   startStepId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
   endStepId: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
+}).strict();
+
+export const OrderWhereInputSchema: z.ZodType<Prisma.OrderWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => OrderWhereInputSchema),z.lazy(() => OrderWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => OrderWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => OrderWhereInputSchema),z.lazy(() => OrderWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  priority: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  dueDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  description: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  completedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  canceledAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryListRelationFilterSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepListRelationFilterSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemListRelationFilterSchema).optional()
+}).strict();
+
+export const OrderOrderByWithRelationInputSchema: z.ZodType<Prisma.OrderOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  status: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  dueDate: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  description: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  completedAt: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  canceledAt: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  inventoryEntries: z.lazy(() => InventoryEntryOrderByRelationAggregateInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepOrderByRelationAggregateInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemOrderByRelationAggregateInputSchema).optional()
+}).strict();
+
+export const OrderWhereUniqueInputSchema: z.ZodType<Prisma.OrderWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => OrderWhereInputSchema),z.lazy(() => OrderWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => OrderWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => OrderWhereInputSchema),z.lazy(() => OrderWhereInputSchema).array() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  priority: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  dueDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  description: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  completedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  canceledAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryListRelationFilterSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepListRelationFilterSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemListRelationFilterSchema).optional()
+}).strict());
+
+export const OrderOrderByWithAggregationInputSchema: z.ZodType<Prisma.OrderOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  status: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  dueDate: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  description: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  completedAt: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  canceledAt: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  _count: z.lazy(() => OrderCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => OrderAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => OrderMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => OrderMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => OrderSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const OrderScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.OrderScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => OrderScalarWhereWithAggregatesInputSchema),z.lazy(() => OrderScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => OrderScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => OrderScalarWhereWithAggregatesInputSchema),z.lazy(() => OrderScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  status: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  priority: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  dueDate: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema),z.coerce.date() ]).optional().nullable(),
+  description: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  quantity: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  completedAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema),z.coerce.date() ]).optional().nullable(),
+  canceledAt: z.union([ z.lazy(() => DateTimeNullableWithAggregatesFilterSchema),z.coerce.date() ]).optional().nullable(),
 }).strict();
 
 export const ResourceCreateInputSchema: z.ZodType<Prisma.ResourceCreateInput> = z.object({
@@ -1975,20 +2169,23 @@ export const InventoryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Inventory
 export const InventoryEntryCreateInputSchema: z.ZodType<Prisma.InventoryEntryCreateInput> = z.object({
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  inventory: z.lazy(() => InventoryCreateNestedOneWithoutEntriesInputSchema)
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutEntriesInputSchema),
+  Order: z.lazy(() => OrderCreateNestedOneWithoutInventoryEntriesInputSchema).optional()
 }).strict();
 
 export const InventoryEntryUncheckedCreateInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedCreateInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  inventoryId: z.number().int()
+  inventoryId: z.number().int(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const InventoryEntryUpdateInputSchema: z.ZodType<Prisma.InventoryEntryUpdateInput> = z.object({
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutEntriesNestedInputSchema).optional()
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutEntriesNestedInputSchema).optional(),
+  Order: z.lazy(() => OrderUpdateOneWithoutInventoryEntriesNestedInputSchema).optional()
 }).strict();
 
 export const InventoryEntryUncheckedUpdateInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateInput> = z.object({
@@ -1996,13 +2193,15 @@ export const InventoryEntryUncheckedUpdateInputSchema: z.ZodType<Prisma.Inventor
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const InventoryEntryCreateManyInputSchema: z.ZodType<Prisma.InventoryEntryCreateManyInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
   material: z.string(),
-  inventoryId: z.number().int()
+  inventoryId: z.number().int(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const InventoryEntryUpdateManyMutationInputSchema: z.ZodType<Prisma.InventoryEntryUpdateManyMutationInput> = z.object({
@@ -2015,6 +2214,7 @@ export const InventoryEntryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Inve
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const LocationCreateInputSchema: z.ZodType<Prisma.LocationCreateInput> = z.object({
@@ -2088,6 +2288,7 @@ export const ProcessStepCreateInputSchema: z.ZodType<Prisma.ProcessStepCreateInp
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
@@ -2111,6 +2312,7 @@ export const ProcessStepUncheckedCreateInputSchema: z.ZodType<Prisma.ProcessStep
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
@@ -2127,6 +2329,7 @@ export const ProcessStepUpdateInputSchema: z.ZodType<Prisma.ProcessStepUpdateInp
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
@@ -2150,6 +2353,7 @@ export const ProcessStepUncheckedUpdateInputSchema: z.ZodType<Prisma.ProcessStep
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
@@ -2448,6 +2652,7 @@ export const FilterEntryUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FilterE
 export const FilterCreateInputSchema: z.ZodType<Prisma.FilterCreateInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  orderId: z.number().int().optional().nullable(),
   transportSystem: z.lazy(() => TransportSystemCreateNestedOneWithoutFilterInputSchema),
   entries: z.lazy(() => FilterEntryCreateNestedManyWithoutFilterInputSchema).optional()
 }).strict();
@@ -2457,12 +2662,14 @@ export const FilterUncheckedCreateInputSchema: z.ZodType<Prisma.FilterUncheckedC
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   transportSystemId: z.number().int(),
+  orderId: z.number().int().optional().nullable(),
   entries: z.lazy(() => FilterEntryUncheckedCreateNestedManyWithoutFilterInputSchema).optional()
 }).strict();
 
 export const FilterUpdateInputSchema: z.ZodType<Prisma.FilterUpdateInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   transportSystem: z.lazy(() => TransportSystemUpdateOneRequiredWithoutFilterNestedInputSchema).optional(),
   entries: z.lazy(() => FilterEntryUpdateManyWithoutFilterNestedInputSchema).optional()
 }).strict();
@@ -2472,6 +2679,7 @@ export const FilterUncheckedUpdateInputSchema: z.ZodType<Prisma.FilterUncheckedU
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   entries: z.lazy(() => FilterEntryUncheckedUpdateManyWithoutFilterNestedInputSchema).optional()
 }).strict();
 
@@ -2479,12 +2687,14 @@ export const FilterCreateManyInputSchema: z.ZodType<Prisma.FilterCreateManyInput
   id: z.number().int().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  transportSystemId: z.number().int()
+  transportSystemId: z.number().int(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const FilterUpdateManyMutationInputSchema: z.ZodType<Prisma.FilterUpdateManyMutationInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const FilterUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateManyInput> = z.object({
@@ -2492,6 +2702,7 @@ export const FilterUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FilterUnchec
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemCreateInputSchema: z.ZodType<Prisma.TransportSystemCreateInput> = z.object({
@@ -2504,7 +2715,8 @@ export const TransportSystemCreateInputSchema: z.ZodType<Prisma.TransportSystemC
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
-  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateInput> = z.object({
@@ -2518,7 +2730,8 @@ export const TransportSystemUncheckedCreateInputSchema: z.ZodType<Prisma.Transpo
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
   endStepId: z.number().int().optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUpdateInputSchema: z.ZodType<Prisma.TransportSystemUpdateInput> = z.object({
@@ -2531,7 +2744,8 @@ export const TransportSystemUpdateInputSchema: z.ZodType<Prisma.TransportSystemU
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
-  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateInput> = z.object({
@@ -2545,7 +2759,8 @@ export const TransportSystemUncheckedUpdateInputSchema: z.ZodType<Prisma.Transpo
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateManyInputSchema: z.ZodType<Prisma.TransportSystemCreateManyInput> = z.object({
@@ -2581,6 +2796,106 @@ export const TransportSystemUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Tra
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const OrderCreateInputSchema: z.ZodType<Prisma.OrderCreateInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryCreateNestedManyWithoutOrderInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutOrdersInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedCreateInputSchema: z.ZodType<Prisma.OrderUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedCreateNestedManyWithoutOrderInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutOrdersInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderUpdateInputSchema: z.ZodType<Prisma.OrderUpdateInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUpdateManyWithoutOrderNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutOrdersNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedUpdateManyWithoutOrderNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderCreateManyInputSchema: z.ZodType<Prisma.OrderCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable()
+}).strict();
+
+export const OrderUpdateManyMutationInputSchema: z.ZodType<Prisma.OrderUpdateManyMutationInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const OrderUncheckedUpdateManyInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.object({
@@ -2932,40 +3247,77 @@ export const InventorySumOrderByAggregateInputSchema: z.ZodType<Prisma.Inventory
   limit: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
+export const IntNullableFilterSchema: z.ZodType<Prisma.IntNullableFilter> = z.object({
+  equals: z.number().optional().nullable(),
+  in: z.number().array().optional().nullable(),
+  notIn: z.number().array().optional().nullable(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+}).strict();
+
 export const InventoryRelationFilterSchema: z.ZodType<Prisma.InventoryRelationFilter> = z.object({
   is: z.lazy(() => InventoryWhereInputSchema).optional(),
   isNot: z.lazy(() => InventoryWhereInputSchema).optional()
+}).strict();
+
+export const OrderNullableRelationFilterSchema: z.ZodType<Prisma.OrderNullableRelationFilter> = z.object({
+  is: z.lazy(() => OrderWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => OrderWhereInputSchema).optional().nullable()
 }).strict();
 
 export const InventoryEntryCountOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntryCountOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntryAvgOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntryAvgOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntryMaxOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntryMaxOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntryMinOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntryMinOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   addedAt: z.lazy(() => SortOrderSchema).optional(),
   material: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const InventoryEntrySumOrderByAggregateInputSchema: z.ZodType<Prisma.InventoryEntrySumOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  inventoryId: z.lazy(() => SortOrderSchema).optional()
+  inventoryId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const IntNullableWithAggregatesFilterSchema: z.ZodType<Prisma.IntNullableWithAggregatesFilter> = z.object({
+  equals: z.number().optional().nullable(),
+  in: z.number().array().optional().nullable(),
+  notIn: z.number().array().optional().nullable(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _avg: z.lazy(() => NestedFloatNullableFilterSchema).optional(),
+  _sum: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedIntNullableFilterSchema).optional()
 }).strict();
 
 export const ProcessStepListRelationFilterSchema: z.ZodType<Prisma.ProcessStepListRelationFilter> = z.object({
@@ -3020,15 +3372,10 @@ export const LocationSumOrderByAggregateInputSchema: z.ZodType<Prisma.LocationSu
   id: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
-export const IntNullableFilterSchema: z.ZodType<Prisma.IntNullableFilter> = z.object({
-  equals: z.number().optional().nullable(),
-  in: z.number().array().optional().nullable(),
-  notIn: z.number().array().optional().nullable(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+export const OrderListRelationFilterSchema: z.ZodType<Prisma.OrderListRelationFilter> = z.object({
+  every: z.lazy(() => OrderWhereInputSchema).optional(),
+  some: z.lazy(() => OrderWhereInputSchema).optional(),
+  none: z.lazy(() => OrderWhereInputSchema).optional()
 }).strict();
 
 export const RecipeNullableRelationFilterSchema: z.ZodType<Prisma.RecipeNullableRelationFilter> = z.object({
@@ -3046,6 +3393,10 @@ export const TransportSystemListRelationFilterSchema: z.ZodType<Prisma.Transport
   every: z.lazy(() => TransportSystemWhereInputSchema).optional(),
   some: z.lazy(() => TransportSystemWhereInputSchema).optional(),
   none: z.lazy(() => TransportSystemWhereInputSchema).optional()
+}).strict();
+
+export const OrderOrderByRelationAggregateInputSchema: z.ZodType<Prisma.OrderOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const SensorOrderByRelationAggregateInputSchema: z.ZodType<Prisma.SensorOrderByRelationAggregateInput> = z.object({
@@ -3126,22 +3477,6 @@ export const ProcessStepSumOrderByAggregateInputSchema: z.ZodType<Prisma.Process
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   recipeId: z.lazy(() => SortOrderSchema).optional(),
   totalRecipeTransformations: z.lazy(() => SortOrderSchema).optional()
-}).strict();
-
-export const IntNullableWithAggregatesFilterSchema: z.ZodType<Prisma.IntNullableWithAggregatesFilter> = z.object({
-  equals: z.number().optional().nullable(),
-  in: z.number().array().optional().nullable(),
-  notIn: z.number().array().optional().nullable(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntNullableWithAggregatesFilterSchema) ]).optional().nullable(),
-  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _avg: z.lazy(() => NestedFloatNullableFilterSchema).optional(),
-  _sum: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _min: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _max: z.lazy(() => NestedIntNullableFilterSchema).optional()
 }).strict();
 
 export const RecipeInputListRelationFilterSchema: z.ZodType<Prisma.RecipeInputListRelationFilter> = z.object({
@@ -3353,31 +3688,36 @@ export const FilterCountOrderByAggregateInputSchema: z.ZodType<Prisma.FilterCoun
   id: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const FilterAvgOrderByAggregateInputSchema: z.ZodType<Prisma.FilterAvgOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const FilterMaxOrderByAggregateInputSchema: z.ZodType<Prisma.FilterMaxOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const FilterMinOrderByAggregateInputSchema: z.ZodType<Prisma.FilterMinOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
-  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const FilterSumOrderByAggregateInputSchema: z.ZodType<Prisma.FilterSumOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
-  transportSystemId: z.lazy(() => SortOrderSchema).optional()
+  transportSystemId: z.lazy(() => SortOrderSchema).optional(),
+  orderId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const FilterNullableRelationFilterSchema: z.ZodType<Prisma.FilterNullableRelationFilter> = z.object({
@@ -3440,6 +3780,82 @@ export const TransportSystemSumOrderByAggregateInputSchema: z.ZodType<Prisma.Tra
   inventoryId: z.lazy(() => SortOrderSchema).optional(),
   startStepId: z.lazy(() => SortOrderSchema).optional(),
   endStepId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const DateTimeNullableFilterSchema: z.ZodType<Prisma.DateTimeNullableFilter> = z.object({
+  equals: z.coerce.date().optional().nullable(),
+  in: z.coerce.date().array().optional().nullable(),
+  notIn: z.coerce.date().array().optional().nullable(),
+  lt: z.coerce.date().optional(),
+  lte: z.coerce.date().optional(),
+  gt: z.coerce.date().optional(),
+  gte: z.coerce.date().optional(),
+  not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeNullableFilterSchema) ]).optional().nullable(),
+}).strict();
+
+export const OrderCountOrderByAggregateInputSchema: z.ZodType<Prisma.OrderCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  status: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  dueDate: z.lazy(() => SortOrderSchema).optional(),
+  description: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  completedAt: z.lazy(() => SortOrderSchema).optional(),
+  canceledAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const OrderAvgOrderByAggregateInputSchema: z.ZodType<Prisma.OrderAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const OrderMaxOrderByAggregateInputSchema: z.ZodType<Prisma.OrderMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  status: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  dueDate: z.lazy(() => SortOrderSchema).optional(),
+  description: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  completedAt: z.lazy(() => SortOrderSchema).optional(),
+  canceledAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const OrderMinOrderByAggregateInputSchema: z.ZodType<Prisma.OrderMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  status: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  dueDate: z.lazy(() => SortOrderSchema).optional(),
+  description: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional(),
+  completedAt: z.lazy(() => SortOrderSchema).optional(),
+  canceledAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const OrderSumOrderByAggregateInputSchema: z.ZodType<Prisma.OrderSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  priority: z.lazy(() => SortOrderSchema).optional(),
+  quantity: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const DateTimeNullableWithAggregatesFilterSchema: z.ZodType<Prisma.DateTimeNullableWithAggregatesFilter> = z.object({
+  equals: z.coerce.date().optional().nullable(),
+  in: z.coerce.date().array().optional().nullable(),
+  notIn: z.coerce.date().array().optional().nullable(),
+  lt: z.coerce.date().optional(),
+  lte: z.coerce.date().optional(),
+  gt: z.coerce.date().optional(),
+  gte: z.coerce.date().optional(),
+  not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedDateTimeNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedDateTimeNullableFilterSchema).optional()
 }).strict();
 
 export const MachineCreateNestedOneWithoutResourceInputSchema: z.ZodType<Prisma.MachineCreateNestedOneWithoutResourceInput> = z.object({
@@ -3774,12 +4190,36 @@ export const InventoryCreateNestedOneWithoutEntriesInputSchema: z.ZodType<Prisma
   connect: z.lazy(() => InventoryWhereUniqueInputSchema).optional()
 }).strict();
 
+export const OrderCreateNestedOneWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderCreateNestedOneWithoutInventoryEntriesInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedCreateWithoutInventoryEntriesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => OrderCreateOrConnectWithoutInventoryEntriesInputSchema).optional(),
+  connect: z.lazy(() => OrderWhereUniqueInputSchema).optional()
+}).strict();
+
 export const InventoryUpdateOneRequiredWithoutEntriesNestedInputSchema: z.ZodType<Prisma.InventoryUpdateOneRequiredWithoutEntriesNestedInput> = z.object({
   create: z.union([ z.lazy(() => InventoryCreateWithoutEntriesInputSchema),z.lazy(() => InventoryUncheckedCreateWithoutEntriesInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => InventoryCreateOrConnectWithoutEntriesInputSchema).optional(),
   upsert: z.lazy(() => InventoryUpsertWithoutEntriesInputSchema).optional(),
   connect: z.lazy(() => InventoryWhereUniqueInputSchema).optional(),
   update: z.union([ z.lazy(() => InventoryUpdateToOneWithWhereWithoutEntriesInputSchema),z.lazy(() => InventoryUpdateWithoutEntriesInputSchema),z.lazy(() => InventoryUncheckedUpdateWithoutEntriesInputSchema) ]).optional(),
+}).strict();
+
+export const OrderUpdateOneWithoutInventoryEntriesNestedInputSchema: z.ZodType<Prisma.OrderUpdateOneWithoutInventoryEntriesNestedInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedCreateWithoutInventoryEntriesInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => OrderCreateOrConnectWithoutInventoryEntriesInputSchema).optional(),
+  upsert: z.lazy(() => OrderUpsertWithoutInventoryEntriesInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => OrderWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => OrderWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => OrderWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => OrderUpdateToOneWithWhereWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUpdateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutInventoryEntriesInputSchema) ]).optional(),
+}).strict();
+
+export const NullableIntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableIntFieldUpdateOperationsInput> = z.object({
+  set: z.number().optional().nullable(),
+  increment: z.number().optional(),
+  decrement: z.number().optional(),
+  multiply: z.number().optional(),
+  divide: z.number().optional()
 }).strict();
 
 export const ProcessStepCreateNestedManyWithoutLocationInputSchema: z.ZodType<Prisma.ProcessStepCreateNestedManyWithoutLocationInput> = z.object({
@@ -3866,6 +4306,12 @@ export const ResourceUncheckedUpdateManyWithoutLocationNestedInputSchema: z.ZodT
   deleteMany: z.union([ z.lazy(() => ResourceScalarWhereInputSchema),z.lazy(() => ResourceScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
+export const OrderCreateNestedManyWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderCreateNestedManyWithoutProcessStepsInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateWithoutProcessStepsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
 export const RecipeCreateNestedOneWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeCreateNestedOneWithoutProcessStepsInput> = z.object({
   create: z.union([ z.lazy(() => RecipeCreateWithoutProcessStepsInputSchema),z.lazy(() => RecipeUncheckedCreateWithoutProcessStepsInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => RecipeCreateOrConnectWithoutProcessStepsInputSchema).optional(),
@@ -3912,6 +4358,12 @@ export const TransportSystemCreateNestedManyWithoutStartStepInputSchema: z.ZodTy
   connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
+export const OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUncheckedCreateNestedManyWithoutProcessStepsInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateWithoutProcessStepsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
 export const ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema: z.ZodType<Prisma.ResourceUncheckedCreateNestedManyWithoutProcessStepInput> = z.object({
   create: z.union([ z.lazy(() => ResourceCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateWithoutProcessStepInputSchema).array(),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema),z.lazy(() => ResourceUncheckedCreateWithoutProcessStepInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema),z.lazy(() => ResourceCreateOrConnectWithoutProcessStepInputSchema).array() ]).optional(),
@@ -3940,12 +4392,17 @@ export const TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema
   connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
-export const NullableIntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableIntFieldUpdateOperationsInput> = z.object({
-  set: z.number().optional().nullable(),
-  increment: z.number().optional(),
-  decrement: z.number().optional(),
-  multiply: z.number().optional(),
-  divide: z.number().optional()
+export const OrderUpdateManyWithoutProcessStepsNestedInputSchema: z.ZodType<Prisma.OrderUpdateManyWithoutProcessStepsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateWithoutProcessStepsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => OrderUpsertWithWhereUniqueWithoutProcessStepsInputSchema),z.lazy(() => OrderUpsertWithWhereUniqueWithoutProcessStepsInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => OrderUpdateWithWhereUniqueWithoutProcessStepsInputSchema),z.lazy(() => OrderUpdateWithWhereUniqueWithoutProcessStepsInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => OrderUpdateManyWithWhereWithoutProcessStepsInputSchema),z.lazy(() => OrderUpdateManyWithWhereWithoutProcessStepsInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
 export const RecipeUpdateOneWithoutProcessStepsNestedInputSchema: z.ZodType<Prisma.RecipeUpdateOneWithoutProcessStepsNestedInput> = z.object({
@@ -4028,6 +4485,19 @@ export const TransportSystemUpdateManyWithoutStartStepNestedInputSchema: z.ZodTy
   update: z.union([ z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutStartStepInputSchema),z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutStartStepInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => TransportSystemUpdateManyWithWhereWithoutStartStepInputSchema),z.lazy(() => TransportSystemUpdateManyWithWhereWithoutStartStepInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => TransportSystemScalarWhereInputSchema),z.lazy(() => TransportSystemScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateManyWithoutProcessStepsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateWithoutProcessStepsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutProcessStepsInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => OrderUpsertWithWhereUniqueWithoutProcessStepsInputSchema),z.lazy(() => OrderUpsertWithWhereUniqueWithoutProcessStepsInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => OrderUpdateWithWhereUniqueWithoutProcessStepsInputSchema),z.lazy(() => OrderUpdateWithWhereUniqueWithoutProcessStepsInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => OrderUpdateManyWithWhereWithoutProcessStepsInputSchema),z.lazy(() => OrderUpdateManyWithWhereWithoutProcessStepsInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
 export const ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema: z.ZodType<Prisma.ResourceUncheckedUpdateManyWithoutProcessStepNestedInput> = z.object({
@@ -4352,10 +4822,22 @@ export const InventoryCreateNestedOneWithoutTransportSystemInputSchema: z.ZodTyp
   connect: z.lazy(() => InventoryWhereUniqueInputSchema).optional()
 }).strict();
 
+export const OrderCreateNestedManyWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderCreateNestedManyWithoutTransportSystemsInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
 export const FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUncheckedCreateNestedOneWithoutTransportSystemInput> = z.object({
   create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
   connect: z.lazy(() => FilterWhereUniqueInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUncheckedCreateNestedManyWithoutTransportSystemsInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
 export const FilterUpdateOneWithoutTransportSystemNestedInputSchema: z.ZodType<Prisma.FilterUpdateOneWithoutTransportSystemNestedInput> = z.object({
@@ -4396,6 +4878,19 @@ export const InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema: 
   update: z.union([ z.lazy(() => InventoryUpdateToOneWithWhereWithoutTransportSystemInputSchema),z.lazy(() => InventoryUpdateWithoutTransportSystemInputSchema),z.lazy(() => InventoryUncheckedUpdateWithoutTransportSystemInputSchema) ]).optional(),
 }).strict();
 
+export const OrderUpdateManyWithoutTransportSystemsNestedInputSchema: z.ZodType<Prisma.OrderUpdateManyWithoutTransportSystemsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => OrderUpsertWithWhereUniqueWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpsertWithWhereUniqueWithoutTransportSystemsInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => OrderUpdateWithWhereUniqueWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpdateWithWhereUniqueWithoutTransportSystemsInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => OrderUpdateManyWithWhereWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpdateManyWithWhereWithoutTransportSystemsInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
 export const FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema: z.ZodType<Prisma.FilterUncheckedUpdateOneWithoutTransportSystemNestedInput> = z.object({
   create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => FilterCreateOrConnectWithoutTransportSystemInputSchema).optional(),
@@ -4404,6 +4899,141 @@ export const FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema: z.
   delete: z.union([ z.boolean(),z.lazy(() => FilterWhereInputSchema) ]).optional(),
   connect: z.lazy(() => FilterWhereUniqueInputSchema).optional(),
   update: z.union([ z.lazy(() => FilterUpdateToOneWithWhereWithoutTransportSystemInputSchema),z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]).optional(),
+}).strict();
+
+export const OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateManyWithoutTransportSystemsNestedInput> = z.object({
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema).array(),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema),z.lazy(() => OrderCreateOrConnectWithoutTransportSystemsInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => OrderUpsertWithWhereUniqueWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpsertWithWhereUniqueWithoutTransportSystemsInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => OrderWhereUniqueInputSchema),z.lazy(() => OrderWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => OrderUpdateWithWhereUniqueWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpdateWithWhereUniqueWithoutTransportSystemsInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => OrderUpdateManyWithWhereWithoutTransportSystemsInputSchema),z.lazy(() => OrderUpdateManyWithWhereWithoutTransportSystemsInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const InventoryEntryCreateNestedManyWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryCreateNestedManyWithoutOrderInput> = z.object({
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema).array(),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => InventoryEntryCreateManyOrderInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepCreateNestedManyWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepCreateNestedManyWithoutOrdersInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemCreateNestedManyWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemCreateNestedManyWithoutOrdersInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema).array(),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const InventoryEntryUncheckedCreateNestedManyWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedCreateNestedManyWithoutOrderInput> = z.object({
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema).array(),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => InventoryEntryCreateManyOrderInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUncheckedCreateNestedManyWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateNestedManyWithoutOrdersInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemUncheckedCreateNestedManyWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateNestedManyWithoutOrdersInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema).array(),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const NullableDateTimeFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableDateTimeFieldUpdateOperationsInput> = z.object({
+  set: z.coerce.date().optional().nullable()
+}).strict();
+
+export const InventoryEntryUpdateManyWithoutOrderNestedInputSchema: z.ZodType<Prisma.InventoryEntryUpdateManyWithoutOrderNestedInput> = z.object({
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema).array(),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => InventoryEntryUpsertWithWhereUniqueWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpsertWithWhereUniqueWithoutOrderInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => InventoryEntryCreateManyOrderInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => InventoryEntryUpdateWithWhereUniqueWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpdateWithWhereUniqueWithoutOrderInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => InventoryEntryUpdateManyWithWhereWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpdateManyWithWhereWithoutOrderInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => InventoryEntryScalarWhereInputSchema),z.lazy(() => InventoryEntryScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUpdateManyWithoutOrdersNestedInputSchema: z.ZodType<Prisma.ProcessStepUpdateManyWithoutOrdersNestedInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ProcessStepUpdateManyWithWhereWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpdateManyWithWhereWithoutOrdersInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ProcessStepScalarWhereInputSchema),z.lazy(() => ProcessStepScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemUpdateManyWithoutOrdersNestedInputSchema: z.ZodType<Prisma.TransportSystemUpdateManyWithoutOrdersNestedInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema).array(),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => TransportSystemUpsertWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpsertWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => TransportSystemUpdateManyWithWhereWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpdateManyWithWhereWithoutOrdersInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => TransportSystemScalarWhereInputSchema),z.lazy(() => TransportSystemScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const InventoryEntryUncheckedUpdateManyWithoutOrderNestedInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateManyWithoutOrderNestedInput> = z.object({
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema).array(),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema),z.lazy(() => InventoryEntryCreateOrConnectWithoutOrderInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => InventoryEntryUpsertWithWhereUniqueWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpsertWithWhereUniqueWithoutOrderInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => InventoryEntryCreateManyOrderInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => InventoryEntryWhereUniqueInputSchema),z.lazy(() => InventoryEntryWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => InventoryEntryUpdateWithWhereUniqueWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpdateWithWhereUniqueWithoutOrderInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => InventoryEntryUpdateManyWithWhereWithoutOrderInputSchema),z.lazy(() => InventoryEntryUpdateManyWithWhereWithoutOrderInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => InventoryEntryScalarWhereInputSchema),z.lazy(() => InventoryEntryScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const ProcessStepUncheckedUpdateManyWithoutOrdersNestedInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateManyWithoutOrdersNestedInput> = z.object({
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema).array(),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => ProcessStepCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpsertWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => ProcessStepWhereUniqueInputSchema),z.lazy(() => ProcessStepWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpdateWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => ProcessStepUpdateManyWithWhereWithoutOrdersInputSchema),z.lazy(() => ProcessStepUpdateManyWithWhereWithoutOrdersInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => ProcessStepScalarWhereInputSchema),z.lazy(() => ProcessStepScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const TransportSystemUncheckedUpdateManyWithoutOrdersNestedInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutOrdersNestedInput> = z.object({
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema).array(),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema),z.lazy(() => TransportSystemCreateOrConnectWithoutOrdersInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => TransportSystemUpsertWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpsertWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  set: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => TransportSystemWhereUniqueInputSchema),z.lazy(() => TransportSystemWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpdateWithWhereUniqueWithoutOrdersInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => TransportSystemUpdateManyWithWhereWithoutOrdersInputSchema),z.lazy(() => TransportSystemUpdateManyWithWhereWithoutOrdersInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => TransportSystemScalarWhereInputSchema),z.lazy(() => TransportSystemScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
 export const NestedIntFilterSchema: z.ZodType<Prisma.NestedIntFilter> = z.object({
@@ -4582,6 +5212,31 @@ export const NestedFloatNullableFilterSchema: z.ZodType<Prisma.NestedFloatNullab
   not: z.union([ z.number(),z.lazy(() => NestedFloatNullableFilterSchema) ]).optional().nullable(),
 }).strict();
 
+export const NestedDateTimeNullableFilterSchema: z.ZodType<Prisma.NestedDateTimeNullableFilter> = z.object({
+  equals: z.coerce.date().optional().nullable(),
+  in: z.coerce.date().array().optional().nullable(),
+  notIn: z.coerce.date().array().optional().nullable(),
+  lt: z.coerce.date().optional(),
+  lte: z.coerce.date().optional(),
+  gt: z.coerce.date().optional(),
+  gte: z.coerce.date().optional(),
+  not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeNullableFilterSchema) ]).optional().nullable(),
+}).strict();
+
+export const NestedDateTimeNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDateTimeNullableWithAggregatesFilter> = z.object({
+  equals: z.coerce.date().optional().nullable(),
+  in: z.coerce.date().array().optional().nullable(),
+  notIn: z.coerce.date().array().optional().nullable(),
+  lt: z.coerce.date().optional(),
+  lte: z.coerce.date().optional(),
+  gt: z.coerce.date().optional(),
+  gte: z.coerce.date().optional(),
+  not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedDateTimeNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedDateTimeNullableFilterSchema).optional()
+}).strict();
+
 export const MachineCreateWithoutResourceInputSchema: z.ZodType<Prisma.MachineCreateWithoutResourceInput> = z.object({
 }).strict();
 
@@ -4604,6 +5259,7 @@ export const ProcessStepCreateWithoutResourcesInputSchema: z.ZodType<Prisma.Proc
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
@@ -4626,6 +5282,7 @@ export const ProcessStepUncheckedCreateWithoutResourcesInputSchema: z.ZodType<Pr
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional()
@@ -4711,6 +5368,7 @@ export const ProcessStepUpdateWithoutResourcesInputSchema: z.ZodType<Prisma.Proc
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
@@ -4733,6 +5391,7 @@ export const ProcessStepUncheckedUpdateWithoutResourcesInputSchema: z.ZodType<Pr
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
@@ -4983,13 +5642,15 @@ export const WorkerScalarWhereInputSchema: z.ZodType<Prisma.WorkerScalarWhereInp
 
 export const InventoryEntryCreateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateWithoutInventoryInput> = z.object({
   addedAt: z.coerce.date().optional(),
-  material: z.string()
+  material: z.string(),
+  Order: z.lazy(() => OrderCreateNestedOneWithoutInventoryEntriesInputSchema).optional()
 }).strict();
 
 export const InventoryEntryUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedCreateWithoutInventoryInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
-  material: z.string()
+  material: z.string(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const InventoryEntryCreateOrConnectWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateOrConnectWithoutInventoryInput> = z.object({
@@ -5011,6 +5672,7 @@ export const ProcessStepCreateWithoutInventoryInputSchema: z.ZodType<Prisma.Proc
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
@@ -5032,6 +5694,7 @@ export const ProcessStepUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Pr
   locationId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
@@ -5052,7 +5715,8 @@ export const TransportSystemCreateWithoutInventoryInputSchema: z.ZodType<Prisma.
   outputSpeed: z.number().int(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
-  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional()
+  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutInventoryInput> = z.object({
@@ -5065,7 +5729,8 @@ export const TransportSystemUncheckedCreateWithoutInventoryInputSchema: z.ZodTyp
   outputSpeed: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
   endStepId: z.number().int().optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutInventoryInput> = z.object({
@@ -5097,6 +5762,7 @@ export const InventoryEntryScalarWhereInputSchema: z.ZodType<Prisma.InventoryEnt
   addedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   material: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
   inventoryId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  orderId: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
 }).strict();
 
 export const ProcessStepUpsertWithoutInventoryInputSchema: z.ZodType<Prisma.ProcessStepUpsertWithoutInventoryInput> = z.object({
@@ -5120,6 +5786,7 @@ export const ProcessStepUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.Proc
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
@@ -5141,6 +5808,7 @@ export const ProcessStepUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Pr
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
@@ -5167,7 +5835,8 @@ export const TransportSystemUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
-  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional()
+  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutInventoryInput> = z.object({
@@ -5180,7 +5849,8 @@ export const TransportSystemUncheckedUpdateWithoutInventoryInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const InventoryCreateWithoutEntriesInputSchema: z.ZodType<Prisma.InventoryCreateWithoutEntriesInput> = z.object({
@@ -5205,6 +5875,40 @@ export const InventoryUncheckedCreateWithoutEntriesInputSchema: z.ZodType<Prisma
 export const InventoryCreateOrConnectWithoutEntriesInputSchema: z.ZodType<Prisma.InventoryCreateOrConnectWithoutEntriesInput> = z.object({
   where: z.lazy(() => InventoryWhereUniqueInputSchema),
   create: z.union([ z.lazy(() => InventoryCreateWithoutEntriesInputSchema),z.lazy(() => InventoryUncheckedCreateWithoutEntriesInputSchema) ]),
+}).strict();
+
+export const OrderCreateWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderCreateWithoutInventoryEntriesInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutOrdersInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedCreateWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderUncheckedCreateWithoutInventoryEntriesInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutOrdersInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderCreateOrConnectWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderCreateOrConnectWithoutInventoryEntriesInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => OrderCreateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedCreateWithoutInventoryEntriesInputSchema) ]),
 }).strict();
 
 export const InventoryUpsertWithoutEntriesInputSchema: z.ZodType<Prisma.InventoryUpsertWithoutEntriesInput> = z.object({
@@ -5237,6 +5941,46 @@ export const InventoryUncheckedUpdateWithoutEntriesInputSchema: z.ZodType<Prisma
   transportSystem: z.lazy(() => TransportSystemUncheckedUpdateOneWithoutInventoryNestedInputSchema).optional()
 }).strict();
 
+export const OrderUpsertWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderUpsertWithoutInventoryEntriesInput> = z.object({
+  update: z.union([ z.lazy(() => OrderUpdateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutInventoryEntriesInputSchema) ]),
+  create: z.union([ z.lazy(() => OrderCreateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedCreateWithoutInventoryEntriesInputSchema) ]),
+  where: z.lazy(() => OrderWhereInputSchema).optional()
+}).strict();
+
+export const OrderUpdateToOneWithWhereWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderUpdateToOneWithWhereWithoutInventoryEntriesInput> = z.object({
+  where: z.lazy(() => OrderWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => OrderUpdateWithoutInventoryEntriesInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutInventoryEntriesInputSchema) ]),
+}).strict();
+
+export const OrderUpdateWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderUpdateWithoutInventoryEntriesInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutOrdersNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateWithoutInventoryEntriesInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateWithoutInventoryEntriesInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
 export const ProcessStepCreateWithoutLocationInputSchema: z.ZodType<Prisma.ProcessStepCreateWithoutLocationInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
@@ -5247,6 +5991,7 @@ export const ProcessStepCreateWithoutLocationInputSchema: z.ZodType<Prisma.Proce
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
@@ -5268,6 +6013,7 @@ export const ProcessStepUncheckedCreateWithoutLocationInputSchema: z.ZodType<Pri
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
@@ -5375,6 +6121,40 @@ export const ResourceScalarWhereInputSchema: z.ZodType<Prisma.ResourceScalarWher
   active: z.union([ z.lazy(() => BoolFilterSchema),z.boolean() ]).optional(),
   locationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   processStepId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+}).strict();
+
+export const OrderCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderCreateWithoutProcessStepsInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryCreateNestedManyWithoutOrderInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUncheckedCreateWithoutProcessStepsInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedCreateNestedManyWithoutOrderInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderCreateOrConnectWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderCreateOrConnectWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema) ]),
 }).strict();
 
 export const RecipeCreateWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeCreateWithoutProcessStepsInput> = z.object({
@@ -5506,7 +6286,8 @@ export const TransportSystemCreateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   outputSpeed: z.number().int(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
-  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutEndStepInput> = z.object({
@@ -5519,7 +6300,8 @@ export const TransportSystemUncheckedCreateWithoutEndStepInputSchema: z.ZodType<
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutEndStepInput> = z.object({
@@ -5540,7 +6322,8 @@ export const TransportSystemCreateWithoutStartStepInputSchema: z.ZodType<Prisma.
   outputSpeed: z.number().int(),
   filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
-  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutStartStepInput> = z.object({
@@ -5553,7 +6336,8 @@ export const TransportSystemUncheckedCreateWithoutStartStepInputSchema: z.ZodTyp
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   endStepId: z.number().int().optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutStartStepInput> = z.object({
@@ -5563,6 +6347,38 @@ export const TransportSystemCreateOrConnectWithoutStartStepInputSchema: z.ZodTyp
 
 export const TransportSystemCreateManyStartStepInputEnvelopeSchema: z.ZodType<Prisma.TransportSystemCreateManyStartStepInputEnvelope> = z.object({
   data: z.union([ z.lazy(() => TransportSystemCreateManyStartStepInputSchema),z.lazy(() => TransportSystemCreateManyStartStepInputSchema).array() ]),
+}).strict();
+
+export const OrderUpsertWithWhereUniqueWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUpsertWithWhereUniqueWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => OrderUpdateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutProcessStepsInputSchema) ]),
+  create: z.union([ z.lazy(() => OrderCreateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutProcessStepsInputSchema) ]),
+}).strict();
+
+export const OrderUpdateWithWhereUniqueWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUpdateWithWhereUniqueWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => OrderUpdateWithoutProcessStepsInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutProcessStepsInputSchema) ]),
+}).strict();
+
+export const OrderUpdateManyWithWhereWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUpdateManyWithWhereWithoutProcessStepsInput> = z.object({
+  where: z.lazy(() => OrderScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => OrderUpdateManyMutationInputSchema),z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsInputSchema) ]),
+}).strict();
+
+export const OrderScalarWhereInputSchema: z.ZodType<Prisma.OrderScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => OrderScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => OrderScalarWhereInputSchema),z.lazy(() => OrderScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  status: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  priority: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  dueDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  description: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  quantity: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  completedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
+  canceledAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema),z.coerce.date() ]).optional().nullable(),
 }).strict();
 
 export const RecipeUpsertWithoutProcessStepsInputSchema: z.ZodType<Prisma.RecipeUpsertWithoutProcessStepsInput> = z.object({
@@ -5752,6 +6568,7 @@ export const ProcessStepCreateWithoutRecipeInputSchema: z.ZodType<Prisma.Process
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
   resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
@@ -5773,6 +6590,7 @@ export const ProcessStepUncheckedCreateWithoutRecipeInputSchema: z.ZodType<Prism
   locationId: z.number().int(),
   inventoryId: z.number().int(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
@@ -6006,6 +6824,7 @@ export const ProcessStepCreateWithoutSensorsInputSchema: z.ZodType<Prisma.Proces
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
@@ -6028,6 +6847,7 @@ export const ProcessStepUncheckedCreateWithoutSensorsInputSchema: z.ZodType<Pris
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional()
@@ -6059,6 +6879,7 @@ export const ProcessStepUpdateWithoutSensorsInputSchema: z.ZodType<Prisma.Proces
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
@@ -6081,6 +6902,7 @@ export const ProcessStepUncheckedUpdateWithoutSensorsInputSchema: z.ZodType<Pris
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
@@ -6089,6 +6911,7 @@ export const ProcessStepUncheckedUpdateWithoutSensorsInputSchema: z.ZodType<Pris
 export const FilterCreateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterCreateWithoutEntriesInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  orderId: z.number().int().optional().nullable(),
   transportSystem: z.lazy(() => TransportSystemCreateNestedOneWithoutFilterInputSchema)
 }).strict();
 
@@ -6096,7 +6919,8 @@ export const FilterUncheckedCreateWithoutEntriesInputSchema: z.ZodType<Prisma.Fi
   id: z.number().int().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  transportSystemId: z.number().int()
+  transportSystemId: z.number().int(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const FilterCreateOrConnectWithoutEntriesInputSchema: z.ZodType<Prisma.FilterCreateOrConnectWithoutEntriesInput> = z.object({
@@ -6118,6 +6942,7 @@ export const FilterUpdateToOneWithWhereWithoutEntriesInputSchema: z.ZodType<Pris
 export const FilterUpdateWithoutEntriesInputSchema: z.ZodType<Prisma.FilterUpdateWithoutEntriesInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   transportSystem: z.lazy(() => TransportSystemUpdateOneRequiredWithoutFilterNestedInputSchema).optional()
 }).strict();
 
@@ -6126,6 +6951,7 @@ export const FilterUncheckedUpdateWithoutEntriesInputSchema: z.ZodType<Prisma.Fi
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   transportSystemId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const TransportSystemCreateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateWithoutFilterInput> = z.object({
@@ -6137,7 +6963,8 @@ export const TransportSystemCreateWithoutFilterInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.number().int(),
   endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
-  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedCreateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutFilterInput> = z.object({
@@ -6150,7 +6977,8 @@ export const TransportSystemUncheckedCreateWithoutFilterInputSchema: z.ZodType<P
   outputSpeed: z.number().int(),
   inventoryId: z.number().int(),
   startStepId: z.number().int().optional().nullable(),
-  endStepId: z.number().int().optional().nullable()
+  endStepId: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutTransportSystemsInputSchema).optional()
 }).strict();
 
 export const TransportSystemCreateOrConnectWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutFilterInput> = z.object({
@@ -6198,7 +7026,8 @@ export const TransportSystemUpdateWithoutFilterInputSchema: z.ZodType<Prisma.Tra
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
-  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutFilterInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutFilterInput> = z.object({
@@ -6212,6 +7041,7 @@ export const TransportSystemUncheckedUpdateWithoutFilterInputSchema: z.ZodType<P
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const FilterEntryUpsertWithWhereUniqueWithoutFilterInputSchema: z.ZodType<Prisma.FilterEntryUpsertWithWhereUniqueWithoutFilterInput> = z.object({
@@ -6243,6 +7073,7 @@ export const FilterEntryScalarWhereInputSchema: z.ZodType<Prisma.FilterEntryScal
 export const FilterCreateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterCreateWithoutTransportSystemInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  orderId: z.number().int().optional().nullable(),
   entries: z.lazy(() => FilterEntryCreateNestedManyWithoutFilterInputSchema).optional()
 }).strict();
 
@@ -6250,6 +7081,7 @@ export const FilterUncheckedCreateWithoutTransportSystemInputSchema: z.ZodType<P
   id: z.number().int().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  orderId: z.number().int().optional().nullable(),
   entries: z.lazy(() => FilterEntryUncheckedCreateNestedManyWithoutFilterInputSchema).optional()
 }).strict();
 
@@ -6268,6 +7100,7 @@ export const ProcessStepCreateWithoutInputsInputSchema: z.ZodType<Prisma.Process
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
@@ -6290,6 +7123,7 @@ export const ProcessStepUncheckedCreateWithoutInputsInputSchema: z.ZodType<Prism
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional()
@@ -6310,6 +7144,7 @@ export const ProcessStepCreateWithoutOutputsInputSchema: z.ZodType<Prisma.Proces
   recipeRate: z.number().int().optional(),
   duration: z.number().int().optional(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
   inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
   location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
@@ -6332,6 +7167,7 @@ export const ProcessStepUncheckedCreateWithoutOutputsInputSchema: z.ZodType<Pris
   inventoryId: z.number().int(),
   recipeId: z.number().int().optional().nullable(),
   totalRecipeTransformations: z.number().int().optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedCreateNestedManyWithoutProcessStepsInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional()
@@ -6366,6 +7202,40 @@ export const InventoryCreateOrConnectWithoutTransportSystemInputSchema: z.ZodTyp
   create: z.union([ z.lazy(() => InventoryCreateWithoutTransportSystemInputSchema),z.lazy(() => InventoryUncheckedCreateWithoutTransportSystemInputSchema) ]),
 }).strict();
 
+export const OrderCreateWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderCreateWithoutTransportSystemsInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryCreateNestedManyWithoutOrderInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedCreateWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUncheckedCreateWithoutTransportSystemsInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  status: z.string().optional(),
+  priority: z.number().int().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  description: z.string().optional().nullable(),
+  quantity: z.number().int().optional(),
+  completedAt: z.coerce.date().optional().nullable(),
+  canceledAt: z.coerce.date().optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedCreateNestedManyWithoutOrderInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedCreateNestedManyWithoutOrdersInputSchema).optional()
+}).strict();
+
+export const OrderCreateOrConnectWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderCreateOrConnectWithoutTransportSystemsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema) ]),
+}).strict();
+
 export const FilterUpsertWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUpsertWithoutTransportSystemInput> = z.object({
   update: z.union([ z.lazy(() => FilterUpdateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedUpdateWithoutTransportSystemInputSchema) ]),
   create: z.union([ z.lazy(() => FilterCreateWithoutTransportSystemInputSchema),z.lazy(() => FilterUncheckedCreateWithoutTransportSystemInputSchema) ]),
@@ -6380,6 +7250,7 @@ export const FilterUpdateToOneWithWhereWithoutTransportSystemInputSchema: z.ZodT
 export const FilterUpdateWithoutTransportSystemInputSchema: z.ZodType<Prisma.FilterUpdateWithoutTransportSystemInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   entries: z.lazy(() => FilterEntryUpdateManyWithoutFilterNestedInputSchema).optional()
 }).strict();
 
@@ -6387,6 +7258,7 @@ export const FilterUncheckedUpdateWithoutTransportSystemInputSchema: z.ZodType<P
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   entries: z.lazy(() => FilterEntryUncheckedUpdateManyWithoutFilterNestedInputSchema).optional()
 }).strict();
 
@@ -6411,6 +7283,7 @@ export const ProcessStepUpdateWithoutInputsInputSchema: z.ZodType<Prisma.Process
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
@@ -6433,6 +7306,7 @@ export const ProcessStepUncheckedUpdateWithoutInputsInputSchema: z.ZodType<Prism
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
@@ -6459,6 +7333,7 @@ export const ProcessStepUpdateWithoutOutputsInputSchema: z.ZodType<Prisma.Proces
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
@@ -6481,6 +7356,7 @@ export const ProcessStepUncheckedUpdateWithoutOutputsInputSchema: z.ZodType<Pris
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional()
@@ -6514,6 +7390,168 @@ export const InventoryUncheckedUpdateWithoutTransportSystemInputSchema: z.ZodTyp
   limit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   entries: z.lazy(() => InventoryEntryUncheckedUpdateManyWithoutInventoryNestedInputSchema).optional(),
   processStep: z.lazy(() => ProcessStepUncheckedUpdateOneWithoutInventoryNestedInputSchema).optional()
+}).strict();
+
+export const OrderUpsertWithWhereUniqueWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUpsertWithWhereUniqueWithoutTransportSystemsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => OrderUpdateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutTransportSystemsInputSchema) ]),
+  create: z.union([ z.lazy(() => OrderCreateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedCreateWithoutTransportSystemsInputSchema) ]),
+}).strict();
+
+export const OrderUpdateWithWhereUniqueWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUpdateWithWhereUniqueWithoutTransportSystemsInput> = z.object({
+  where: z.lazy(() => OrderWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => OrderUpdateWithoutTransportSystemsInputSchema),z.lazy(() => OrderUncheckedUpdateWithoutTransportSystemsInputSchema) ]),
+}).strict();
+
+export const OrderUpdateManyWithWhereWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUpdateManyWithWhereWithoutTransportSystemsInput> = z.object({
+  where: z.lazy(() => OrderScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => OrderUpdateManyMutationInputSchema),z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsInputSchema) ]),
+}).strict();
+
+export const InventoryEntryCreateWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryCreateWithoutOrderInput> = z.object({
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutEntriesInputSchema)
+}).strict();
+
+export const InventoryEntryUncheckedCreateWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedCreateWithoutOrderInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  inventoryId: z.number().int()
+}).strict();
+
+export const InventoryEntryCreateOrConnectWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryCreateOrConnectWithoutOrderInput> = z.object({
+  where: z.lazy(() => InventoryEntryWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema) ]),
+}).strict();
+
+export const InventoryEntryCreateManyOrderInputEnvelopeSchema: z.ZodType<Prisma.InventoryEntryCreateManyOrderInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => InventoryEntryCreateManyOrderInputSchema),z.lazy(() => InventoryEntryCreateManyOrderInputSchema).array() ]),
+}).strict();
+
+export const ProcessStepCreateWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepCreateWithoutOrdersInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  status: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  recipeRate: z.number().int().optional(),
+  duration: z.number().int().optional(),
+  totalRecipeTransformations: z.number().int().optional().nullable(),
+  recipe: z.lazy(() => RecipeCreateNestedOneWithoutProcessStepsInputSchema).optional(),
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutProcessStepInputSchema),
+  location: z.lazy(() => LocationCreateNestedOneWithoutProcessStepsInputSchema),
+  resources: z.lazy(() => ResourceCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  sensors: z.lazy(() => SensorCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemCreateNestedManyWithoutEndStepInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemCreateNestedManyWithoutStartStepInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedCreateWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUncheckedCreateWithoutOrdersInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  status: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  recipeRate: z.number().int().optional(),
+  duration: z.number().int().optional(),
+  locationId: z.number().int(),
+  inventoryId: z.number().int(),
+  recipeId: z.number().int().optional().nullable(),
+  totalRecipeTransformations: z.number().int().optional().nullable(),
+  resources: z.lazy(() => ResourceUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  sensors: z.lazy(() => SensorUncheckedCreateNestedManyWithoutProcessStepInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutEndStepInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUncheckedCreateNestedManyWithoutStartStepInputSchema).optional()
+}).strict();
+
+export const ProcessStepCreateOrConnectWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepCreateOrConnectWithoutOrdersInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const TransportSystemCreateWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemCreateWithoutOrdersInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  active: z.boolean().optional(),
+  name: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  filter: z.lazy(() => FilterCreateNestedOneWithoutTransportSystemInputSchema).optional(),
+  endStep: z.lazy(() => ProcessStepCreateNestedOneWithoutInputsInputSchema).optional(),
+  startStep: z.lazy(() => ProcessStepCreateNestedOneWithoutOutputsInputSchema).optional(),
+  inventory: z.lazy(() => InventoryCreateNestedOneWithoutTransportSystemInputSchema)
+}).strict();
+
+export const TransportSystemUncheckedCreateWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUncheckedCreateWithoutOrdersInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  active: z.boolean().optional(),
+  name: z.string(),
+  inputSpeed: z.number().int(),
+  outputSpeed: z.number().int(),
+  inventoryId: z.number().int(),
+  startStepId: z.number().int().optional().nullable(),
+  endStepId: z.number().int().optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedCreateNestedOneWithoutTransportSystemInputSchema).optional()
+}).strict();
+
+export const TransportSystemCreateOrConnectWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemCreateOrConnectWithoutOrdersInput> = z.object({
+  where: z.lazy(() => TransportSystemWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const InventoryEntryUpsertWithWhereUniqueWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUpsertWithWhereUniqueWithoutOrderInput> = z.object({
+  where: z.lazy(() => InventoryEntryWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => InventoryEntryUpdateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedUpdateWithoutOrderInputSchema) ]),
+  create: z.union([ z.lazy(() => InventoryEntryCreateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedCreateWithoutOrderInputSchema) ]),
+}).strict();
+
+export const InventoryEntryUpdateWithWhereUniqueWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUpdateWithWhereUniqueWithoutOrderInput> = z.object({
+  where: z.lazy(() => InventoryEntryWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => InventoryEntryUpdateWithoutOrderInputSchema),z.lazy(() => InventoryEntryUncheckedUpdateWithoutOrderInputSchema) ]),
+}).strict();
+
+export const InventoryEntryUpdateManyWithWhereWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUpdateManyWithWhereWithoutOrderInput> = z.object({
+  where: z.lazy(() => InventoryEntryScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => InventoryEntryUpdateManyMutationInputSchema),z.lazy(() => InventoryEntryUncheckedUpdateManyWithoutOrderInputSchema) ]),
+}).strict();
+
+export const ProcessStepUpsertWithWhereUniqueWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUpsertWithWhereUniqueWithoutOrdersInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => ProcessStepUpdateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutOrdersInputSchema) ]),
+  create: z.union([ z.lazy(() => ProcessStepCreateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedCreateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const ProcessStepUpdateWithWhereUniqueWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUpdateWithWhereUniqueWithoutOrdersInput> = z.object({
+  where: z.lazy(() => ProcessStepWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => ProcessStepUpdateWithoutOrdersInputSchema),z.lazy(() => ProcessStepUncheckedUpdateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const ProcessStepUpdateManyWithWhereWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUpdateManyWithWhereWithoutOrdersInput> = z.object({
+  where: z.lazy(() => ProcessStepScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => ProcessStepUpdateManyMutationInputSchema),z.lazy(() => ProcessStepUncheckedUpdateManyWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const TransportSystemUpsertWithWhereUniqueWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUpsertWithWhereUniqueWithoutOrdersInput> = z.object({
+  where: z.lazy(() => TransportSystemWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => TransportSystemUpdateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedUpdateWithoutOrdersInputSchema) ]),
+  create: z.union([ z.lazy(() => TransportSystemCreateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedCreateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const TransportSystemUpdateWithWhereUniqueWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUpdateWithWhereUniqueWithoutOrdersInput> = z.object({
+  where: z.lazy(() => TransportSystemWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => TransportSystemUpdateWithoutOrdersInputSchema),z.lazy(() => TransportSystemUncheckedUpdateWithoutOrdersInputSchema) ]),
+}).strict();
+
+export const TransportSystemUpdateManyWithWhereWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUpdateManyWithWhereWithoutOrdersInput> = z.object({
+  where: z.lazy(() => TransportSystemScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => TransportSystemUpdateManyMutationInputSchema),z.lazy(() => TransportSystemUncheckedUpdateManyWithoutOrdersInputSchema) ]),
 }).strict();
 
 export const WorkerRoleUpdateWithoutWorkersInputSchema: z.ZodType<Prisma.WorkerRoleUpdateWithoutWorkersInput> = z.object({
@@ -6550,24 +7588,28 @@ export const WorkerUncheckedUpdateManyWithoutWorkerRolesInputSchema: z.ZodType<P
 export const InventoryEntryCreateManyInventoryInputSchema: z.ZodType<Prisma.InventoryEntryCreateManyInventoryInput> = z.object({
   id: z.number().int().optional(),
   addedAt: z.coerce.date().optional(),
-  material: z.string()
+  material: z.string(),
+  orderId: z.number().int().optional().nullable()
 }).strict();
 
 export const InventoryEntryUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUpdateWithoutInventoryInput> = z.object({
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  Order: z.lazy(() => OrderUpdateOneWithoutInventoryEntriesNestedInputSchema).optional()
 }).strict();
 
 export const InventoryEntryUncheckedUpdateWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateWithoutInventoryInput> = z.object({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const InventoryEntryUncheckedUpdateManyWithoutInventoryInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateManyWithoutInventoryInput> = z.object({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  orderId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const ProcessStepCreateManyLocationInputSchema: z.ZodType<Prisma.ProcessStepCreateManyLocationInput> = z.object({
@@ -6604,6 +7646,7 @@ export const ProcessStepUpdateWithoutLocationInputSchema: z.ZodType<Prisma.Proce
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
@@ -6625,6 +7668,7 @@ export const ProcessStepUncheckedUpdateWithoutLocationInputSchema: z.ZodType<Pri
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
@@ -6716,6 +7760,48 @@ export const TransportSystemCreateManyStartStepInputSchema: z.ZodType<Prisma.Tra
   endStepId: z.number().int().optional().nullable()
 }).strict();
 
+export const OrderUpdateWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUpdateWithoutProcessStepsInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUpdateManyWithoutOrderNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateWithoutProcessStepsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedUpdateManyWithoutOrderNestedInputSchema).optional(),
+  transportSystems: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateManyWithoutProcessStepsInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateManyWithoutProcessStepsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
 export const ResourceUpdateWithoutProcessStepInputSchema: z.ZodType<Prisma.ResourceUpdateWithoutProcessStepInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6775,7 +7861,8 @@ export const TransportSystemUpdateWithoutEndStepInputSchema: z.ZodType<Prisma.Tr
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
-  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutEndStepInput> = z.object({
@@ -6788,7 +7875,8 @@ export const TransportSystemUncheckedUpdateWithoutEndStepInputSchema: z.ZodType<
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateManyWithoutEndStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutEndStepInput> = z.object({
@@ -6812,7 +7900,8 @@ export const TransportSystemUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
   endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
-  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutStartStepInput> = z.object({
@@ -6825,7 +7914,8 @@ export const TransportSystemUncheckedUpdateWithoutStartStepInputSchema: z.ZodTyp
   outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
-  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutTransportSystemsNestedInputSchema).optional()
 }).strict();
 
 export const TransportSystemUncheckedUpdateManyWithoutStartStepInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutStartStepInput> = z.object({
@@ -6877,6 +7967,7 @@ export const ProcessStepUpdateWithoutRecipeInputSchema: z.ZodType<Prisma.Process
   recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
   location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
@@ -6898,6 +7989,7 @@ export const ProcessStepUncheckedUpdateWithoutRecipeInputSchema: z.ZodType<Prism
   locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  orders: z.lazy(() => OrderUncheckedUpdateManyWithoutProcessStepsNestedInputSchema).optional(),
   resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
   inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
@@ -6974,6 +8066,170 @@ export const FilterEntryUncheckedUpdateManyWithoutFilterInputSchema: z.ZodType<P
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const OrderUpdateWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUpdateWithoutTransportSystemsInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUpdateManyWithoutOrderNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateWithoutTransportSystemsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  inventoryEntries: z.lazy(() => InventoryEntryUncheckedUpdateManyWithoutOrderNestedInputSchema).optional(),
+  processSteps: z.lazy(() => ProcessStepUncheckedUpdateManyWithoutOrdersNestedInputSchema).optional()
+}).strict();
+
+export const OrderUncheckedUpdateManyWithoutTransportSystemsInputSchema: z.ZodType<Prisma.OrderUncheckedUpdateManyWithoutTransportSystemsInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  priority: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  dueDate: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  description: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  quantity: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  completedAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  canceledAt: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const InventoryEntryCreateManyOrderInputSchema: z.ZodType<Prisma.InventoryEntryCreateManyOrderInput> = z.object({
+  id: z.number().int().optional(),
+  addedAt: z.coerce.date().optional(),
+  material: z.string(),
+  inventoryId: z.number().int()
+}).strict();
+
+export const InventoryEntryUpdateWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUpdateWithoutOrderInput> = z.object({
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutEntriesNestedInputSchema).optional()
+}).strict();
+
+export const InventoryEntryUncheckedUpdateWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateWithoutOrderInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const InventoryEntryUncheckedUpdateManyWithoutOrderInputSchema: z.ZodType<Prisma.InventoryEntryUncheckedUpdateManyWithoutOrderInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  addedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  material: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const ProcessStepUpdateWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUpdateWithoutOrdersInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recipe: z.lazy(() => RecipeUpdateOneWithoutProcessStepsNestedInputSchema).optional(),
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutProcessStepNestedInputSchema).optional(),
+  location: z.lazy(() => LocationUpdateOneRequiredWithoutProcessStepsNestedInputSchema).optional(),
+  resources: z.lazy(() => ResourceUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  sensors: z.lazy(() => SensorUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUpdateManyWithoutEndStepNestedInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUpdateManyWithoutStartStepNestedInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedUpdateWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateWithoutOrdersInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  resources: z.lazy(() => ResourceUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  sensors: z.lazy(() => SensorUncheckedUpdateManyWithoutProcessStepNestedInputSchema).optional(),
+  inputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutEndStepNestedInputSchema).optional(),
+  outputs: z.lazy(() => TransportSystemUncheckedUpdateManyWithoutStartStepNestedInputSchema).optional()
+}).strict();
+
+export const ProcessStepUncheckedUpdateManyWithoutOrdersInputSchema: z.ZodType<Prisma.ProcessStepUncheckedUpdateManyWithoutOrdersInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeRate: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  duration: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  locationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  recipeId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  totalRecipeTransformations: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const TransportSystemUpdateWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUpdateWithoutOrdersInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  filter: z.lazy(() => FilterUpdateOneWithoutTransportSystemNestedInputSchema).optional(),
+  endStep: z.lazy(() => ProcessStepUpdateOneWithoutInputsNestedInputSchema).optional(),
+  startStep: z.lazy(() => ProcessStepUpdateOneWithoutOutputsNestedInputSchema).optional(),
+  inventory: z.lazy(() => InventoryUpdateOneRequiredWithoutTransportSystemNestedInputSchema).optional()
+}).strict();
+
+export const TransportSystemUncheckedUpdateWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateWithoutOrdersInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  filter: z.lazy(() => FilterUncheckedUpdateOneWithoutTransportSystemNestedInputSchema).optional()
+}).strict();
+
+export const TransportSystemUncheckedUpdateManyWithoutOrdersInputSchema: z.ZodType<Prisma.TransportSystemUncheckedUpdateManyWithoutOrdersInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  inputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  outputSpeed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  inventoryId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  startStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  endStepId: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 /////////////////////////////////////////
@@ -7910,6 +9166,68 @@ export const TransportSystemFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.Transp
   where: TransportSystemWhereUniqueInputSchema,
 }).strict() ;
 
+export const OrderFindFirstArgsSchema: z.ZodType<Prisma.OrderFindFirstArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereInputSchema.optional(),
+  orderBy: z.union([ OrderOrderByWithRelationInputSchema.array(),OrderOrderByWithRelationInputSchema ]).optional(),
+  cursor: OrderWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ OrderScalarFieldEnumSchema,OrderScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const OrderFindFirstOrThrowArgsSchema: z.ZodType<Prisma.OrderFindFirstOrThrowArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereInputSchema.optional(),
+  orderBy: z.union([ OrderOrderByWithRelationInputSchema.array(),OrderOrderByWithRelationInputSchema ]).optional(),
+  cursor: OrderWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ OrderScalarFieldEnumSchema,OrderScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const OrderFindManyArgsSchema: z.ZodType<Prisma.OrderFindManyArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereInputSchema.optional(),
+  orderBy: z.union([ OrderOrderByWithRelationInputSchema.array(),OrderOrderByWithRelationInputSchema ]).optional(),
+  cursor: OrderWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ OrderScalarFieldEnumSchema,OrderScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const OrderAggregateArgsSchema: z.ZodType<Prisma.OrderAggregateArgs> = z.object({
+  where: OrderWhereInputSchema.optional(),
+  orderBy: z.union([ OrderOrderByWithRelationInputSchema.array(),OrderOrderByWithRelationInputSchema ]).optional(),
+  cursor: OrderWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const OrderGroupByArgsSchema: z.ZodType<Prisma.OrderGroupByArgs> = z.object({
+  where: OrderWhereInputSchema.optional(),
+  orderBy: z.union([ OrderOrderByWithAggregationInputSchema.array(),OrderOrderByWithAggregationInputSchema ]).optional(),
+  by: OrderScalarFieldEnumSchema.array(),
+  having: OrderScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const OrderFindUniqueArgsSchema: z.ZodType<Prisma.OrderFindUniqueArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereUniqueInputSchema,
+}).strict() ;
+
+export const OrderFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.OrderFindUniqueOrThrowArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereUniqueInputSchema,
+}).strict() ;
+
 export const ResourceCreateArgsSchema: z.ZodType<Prisma.ResourceCreateArgs> = z.object({
   select: ResourceSelectSchema.optional(),
   include: ResourceIncludeSchema.optional(),
@@ -8568,4 +9886,48 @@ export const TransportSystemUpdateManyArgsSchema: z.ZodType<Prisma.TransportSyst
 
 export const TransportSystemDeleteManyArgsSchema: z.ZodType<Prisma.TransportSystemDeleteManyArgs> = z.object({
   where: TransportSystemWhereInputSchema.optional(),
+}).strict() ;
+
+export const OrderCreateArgsSchema: z.ZodType<Prisma.OrderCreateArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  data: z.union([ OrderCreateInputSchema,OrderUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const OrderUpsertArgsSchema: z.ZodType<Prisma.OrderUpsertArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereUniqueInputSchema,
+  create: z.union([ OrderCreateInputSchema,OrderUncheckedCreateInputSchema ]),
+  update: z.union([ OrderUpdateInputSchema,OrderUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const OrderCreateManyArgsSchema: z.ZodType<Prisma.OrderCreateManyArgs> = z.object({
+  data: z.union([ OrderCreateManyInputSchema,OrderCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const OrderCreateManyAndReturnArgsSchema: z.ZodType<Prisma.OrderCreateManyAndReturnArgs> = z.object({
+  data: z.union([ OrderCreateManyInputSchema,OrderCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const OrderDeleteArgsSchema: z.ZodType<Prisma.OrderDeleteArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  where: OrderWhereUniqueInputSchema,
+}).strict() ;
+
+export const OrderUpdateArgsSchema: z.ZodType<Prisma.OrderUpdateArgs> = z.object({
+  select: OrderSelectSchema.optional(),
+  include: OrderIncludeSchema.optional(),
+  data: z.union([ OrderUpdateInputSchema,OrderUncheckedUpdateInputSchema ]),
+  where: OrderWhereUniqueInputSchema,
+}).strict() ;
+
+export const OrderUpdateManyArgsSchema: z.ZodType<Prisma.OrderUpdateManyArgs> = z.object({
+  data: z.union([ OrderUpdateManyMutationInputSchema,OrderUncheckedUpdateManyInputSchema ]),
+  where: OrderWhereInputSchema.optional(),
+}).strict() ;
+
+export const OrderDeleteManyArgsSchema: z.ZodType<Prisma.OrderDeleteManyArgs> = z.object({
+  where: OrderWhereInputSchema.optional(),
 }).strict() ;

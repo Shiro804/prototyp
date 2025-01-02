@@ -62,6 +62,8 @@ model InventoryEntry {
     material    String
     inventoryId Int
     inventory   Inventory @relation(fields: [inventoryId], references: [id])
+    Order       Order?    @relation(fields: [orderId], references: [id])
+    orderId     Int?
 }
 
 model Location {
@@ -75,26 +77,28 @@ model Location {
 }
 
 model ProcessStep {
-    id          Int               @id @default(autoincrement())
-    createdAt   DateTime          @default(now())
-    updatedAt   DateTime          @updatedAt
-    name        String
-    status      String
-    inputSpeed  Int
-    outputSpeed Int
-    recipeRate  Int               @default(10)
-    duration    Int               @default(1)
-    locationId  Int
-    inventoryId Int               @unique
-    recipeId    Int?
+    id                         Int               @id @default(autoincrement())
+    createdAt                  DateTime          @default(now())
+    updatedAt                  DateTime          @updatedAt
+    name                       String
+    status                     String
+    inputSpeed                 Int
+    outputSpeed                Int
+    recipeRate                 Int               @default(10)
+    duration                   Int               @default(1)
+    locationId                 Int
+    inventoryId                Int               @unique
+    recipeId                   Int?
     totalRecipeTransformations Int?
-    recipe      Recipe?           @relation(fields: [recipeId], references: [id])
-    inventory   Inventory         @relation(fields: [inventoryId], references: [id])
-    location    Location          @relation(fields: [locationId], references: [id])
-    resources   Resource[]
-    sensors     Sensor[]
-    inputs      TransportSystem[] @relation("stepInputs")
-    outputs     TransportSystem[] @relation("stepOutputs")
+    // Many-to-Many Beziehung mit Orders
+    orders                     Order[]           @relation("OrderToProcessStep")
+    recipe                     Recipe?           @relation(fields: [recipeId], references: [id])
+    inventory                  Inventory         @relation(fields: [inventoryId], references: [id])
+    location                   Location          @relation(fields: [locationId], references: [id])
+    resources                  Resource[]
+    sensors                    Sensor[]
+    inputs                     TransportSystem[] @relation("stepInputs")
+    outputs                    TransportSystem[] @relation("stepOutputs")
 }
 
 model Recipe {
@@ -149,6 +153,7 @@ model Filter {
     transportSystemId Int             @unique
     transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
     entries           FilterEntry[]
+    orderId           Int?
 }
 
 model TransportSystem {
@@ -166,4 +171,24 @@ model TransportSystem {
     endStep     ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
     startStep   ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
     inventory   Inventory    @relation(fields: [inventoryId], references: [id])
+    orders      Order[]      @relation("OrderToTransportSystem") // Many-to-Many mit Orders
+}
+
+model Order {
+    id               Int               @id @default(autoincrement())
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+    status           String            @default("pending") // Mögliche Werte: pending, in_progress, completed, canceled
+    priority         Int               @default(1) // Höhere Priorität für dringendere Aufträge
+    dueDate          DateTime? // Optionales Fälligkeitsdatum für den Auftrag
+    description      String? // Beschreibung des Auftrags
+    quantity         Int               @default(1)
+    // Verweis auf zugeordnete Materialien/Produkte
+    inventoryEntries InventoryEntry[] // Materialien/Produkte, die diesem Auftrag zugeordnet sind
+    processSteps     ProcessStep[]     @relation("OrderToProcessStep") // Many-to-Many mit ProcessSteps
+    transportSystems TransportSystem[] @relation("OrderToTransportSystem") // Many-to-Many mit TransportSystem
+
+    // Historische Informationen, z.B. für Logs
+    completedAt DateTime? // Wann der Auftrag abgeschlossen wurde
+    canceledAt  DateTime? // Wann der Auftrag abgebrochen wurde
 }

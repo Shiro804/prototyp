@@ -24,7 +24,8 @@ async function createTransportSystemWithFilter(
     // Falls wir beides wollen (Recipe + overrides), könnten wir eine zweite Liste einführen
     // oder einen bool „mergeRecipeInputs“.
     overrideMaterials?: string[];
-  }
+  },
+  orderId?: number
 ) {
   // 1) TransportSystem anlegen
   const transportSystem = await prisma.transportSystem.create({
@@ -73,11 +74,32 @@ async function createTransportSystemWithFilter(
         entries: {
           create: uniqueMaterials.map((material) => ({ material })),
         },
+        orderId: orderId,
       },
     });
   }
 
   return transportSystem;
+}
+
+// --- Mock Orders erstellen ---
+async function createMockOrders(count: number) {
+  const description = "Bestellung Komplettsitz";
+
+  for (let i = 0; i < count; i++) {
+    const randomQuantity = randomBetween(1, 5);
+
+    await prisma.order.create({
+      data: {
+        status: "pending",
+        priority: 1,
+        description: description,
+        quantity: randomQuantity,
+        // dueDate wird hier nicht gesetzt, da es optional ist
+        // Beziehungen zu anderen Modellen können hier hinzugefügt werden, falls gewünscht
+      },
+    });
+  }
 }
 
 async function main() {
@@ -418,6 +440,8 @@ async function main() {
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
     hall5.processSteps.find((ps) => ps.name === "Shipping")!.id
   );
+
+  await createMockOrders(10);
 
   // Prüfe, was wir haben:
   console.dir(
