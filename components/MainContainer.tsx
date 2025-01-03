@@ -104,13 +104,13 @@ const reportsAndAnalytics: LinkDescription[] = [
 ];
 
 const settingsLinks: LinkDescription[] = [
+  { icon: IconBell, label: "Notification", href: "/notification-settings" },
   { icon: IconSettings, label: "General Settings", href: "/general-settings" },
   {
     icon: IconSettings,
     label: "Simulation Configuration",
     href: "/placeholder5",
   },
-  { icon: IconBell, label: "Notification", href: "/placeholder6" },
 ];
 
 function MenuLink({ link }: { link: LinkDescription }) {
