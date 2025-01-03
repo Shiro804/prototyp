@@ -18,7 +18,7 @@ import GaugeChart from 'react-gauge-chart'
 
 interface DetailedLocationCardProps {
     location: LocationFull;
-    onBack: () => void;
+    onBack?: () => void;
 }
 
 interface InventoryEntry {
@@ -26,6 +26,7 @@ interface InventoryEntry {
     addedAt: string | Date;
     material: string;
     inventoryId: number;
+    orderId: number | null;
 }
 
 /**
@@ -39,7 +40,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
     location,
     onBack,
 }) => {
-    const { name, description, processSteps } = location;
+    const { name, description, processSteps, createdAt, updatedAt } = location;
 
     /**
      * Calculates the inventory utilization of a process step.
@@ -68,19 +69,21 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                 <Text fw="bold" size="xl">
                     {name} - Detailed View
                 </Text>
-                <Button variant="gradient" onClick={onBack}>
-                    Back to Overview
-                </Button>
+                {onBack &&
+                    <Button variant="gradient" onClick={onBack}>
+                        Back to Overview
+                    </Button>
+                }
             </Flex>
 
             {/* Location Info */}
             <Text fw="bold" mb="sm">
                 Location Info
             </Text>
-            <Text>Name: {location.name}</Text>
-            <Text>Description: {location.description}</Text>
-            <Text>Created At: {new Date(location.createdAt).toLocaleString()}</Text>
-            <Text>Updated At: {new Date(location.updatedAt).toLocaleString()}</Text>
+            <Text>Name: {name}</Text>
+            <Text>Description: {description}</Text>
+            <Text>Created At: {new Date(createdAt).toLocaleString()}</Text>
+            <Text>Updated At: {new Date(updatedAt).toLocaleString()}</Text>
             {description && <Text>Description: {description}</Text>}
 
             {/* If you want a debug dump */}
@@ -126,30 +129,6 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                     </Flex>
                                                 </Flex>
                                             }
-                                            {ps.totalRecipeTransformations &&
-                                                <Flex w="100%" direction="column">
-                                                    <Flex direction="column">
-                                                        <Text fw={600}>Transformations</Text>
-                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
-                                                    </Flex>
-                                                </Flex>
-                                            }
-                                            {ps.totalRecipeTransformations &&
-                                                <Flex w="100%" direction="column">
-                                                    <Flex direction="column">
-                                                        <Text fw={600}>Transformations</Text>
-                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
-                                                    </Flex>
-                                                </Flex>
-                                            }
-                                            {ps.totalRecipeTransformations &&
-                                                <Flex w="100%" direction="column">
-                                                    <Flex direction="column" >
-                                                        <Text fw={600}>Transformations</Text>
-                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
-                                                    </Flex>
-                                                </Flex>
-                                            }
 
                                         </SimpleGrid>
                                     </Flex>
@@ -183,7 +162,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                             <Accordion multiple variant="contained" mt="md">
                                 <Accordion.Item value={`inventory-ps-${ps.id}`}>
                                     <Accordion.Control>
-3                                        Materials ({ps.inventory.entries.length})
+                                        Materials ({ps.inventory.entries.length})
                                     </Accordion.Control>
                                     <Accordion.Panel>
                                         {renderGroupedMaterials(ps.inventory.entries, processSteps)}
@@ -237,6 +216,7 @@ function renderGroupedMaterials(entries: InventoryEntry[], processSteps?: Proces
                                 <Table.Tr>
                                     <Table.Th>ID</Table.Th>
                                     <Table.Th>Added At</Table.Th>
+                                    <Table.Th>Order ID</Table.Th>
                                     <Table.Th>Inventory ID</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
@@ -247,6 +227,7 @@ function renderGroupedMaterials(entries: InventoryEntry[], processSteps?: Proces
                                         <Table.Td>
                                             {new Date(item.addedAt).toLocaleString()}
                                         </Table.Td>
+                                        <Table.Td>{item.orderId}</Table.Td>
                                         <Table.Td>{item.inventoryId}</Table.Td>
                                     </Table.Tr>
                                 ))}
