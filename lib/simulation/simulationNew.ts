@@ -153,7 +153,7 @@ export class Simulation {
       this.handleSimulationStop();
     }
     // console.log("Orders:", this.orders);
-    // console.log("Simulation", this.frames);
+    console.log("Simulation", this.frames.length);
   }
 
   /**
@@ -184,6 +184,14 @@ export class Simulation {
       return newState;
     }
 
+    // *** QUICK-WIN (1) ***
+    // Baue ein Set aller aktiven OrderIds (pending/in_progress):
+    const activeOrderIds = new Set(
+      this.orders
+        .filter((o) => o.status === "in_progress" || o.status === "pending")
+        .map((o) => o.id)
+    );
+
     // Phase 1: Production
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
@@ -206,16 +214,22 @@ export class Simulation {
           for (const recipeInput of ps.recipe.inputs) {
             let possible: InventoryEntry[] = [];
             for (const entry of ps.inventory.entries) {
+              // if (recipeInput.material === entry.material) {
+              //   // nur items mit aktiver order
+              //   if (
+              //     entry.orderId &&
+              //     this.orders.find(
+              //       (o) =>
+              //         o.id === entry.orderId &&
+              //         (o.status === "in_progress" || o.status === "pending")
+              //     )
+              //   ) {
+              //     possible.push(entry);
+              //   }
+              // }
+
               if (recipeInput.material === entry.material) {
-                // nur items mit aktiver order
-                if (
-                  entry.orderId &&
-                  this.orders.find(
-                    (o) =>
-                      o.id === entry.orderId &&
-                      (o.status === "in_progress" || o.status === "pending")
-                  )
-                ) {
+                if (entry.orderId && activeOrderIds.has(entry.orderId)) {
                   possible.push(entry);
                 }
               }
@@ -235,8 +249,13 @@ export class Simulation {
               new Set(inputEntries.map((e) => e.orderId))
             );
 
+            // ps.inventory.entries = ps.inventory.entries.filter(
+            //   (e) => !inputEntries.includes(e)
+            // );
+
+            const inputEntriesSet = new Set(inputEntries);
             ps.inventory.entries = ps.inventory.entries.filter(
-              (e) => !inputEntries.includes(e)
+              (e) => !inputEntriesSet.has(e)
             );
 
             for (const out of ps.recipe.outputs) {
@@ -276,12 +295,15 @@ export class Simulation {
         );
         const itemsPerOutput = distributeRoundRobin(
           ps.inventory.entries
-            .filter((entry) =>
-              this.orders.some(
-                (o) =>
-                  o.id === entry.orderId &&
-                  (o.status === "in_progress" || o.status === "pending")
-              )
+            // .filter((entry) =>
+            //   this.orders.some(
+            //     (o) =>
+            //       o.id === entry.orderId &&
+            //       (o.status === "in_progress" || o.status === "pending")
+            //   )
+            // )
+            .filter(
+              (entry) => entry.orderId && activeOrderIds.has(entry.orderId)
             )
             .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime()),
           outputSpeeds,
@@ -302,8 +324,12 @@ export class Simulation {
           ts.inventory.entries.push(...entriesOut);
 
           // remove from ps
+          // ps.inventory.entries = ps.inventory.entries.filter(
+          //   (e) => !entriesOut.some((eo) => eo.id === e.id)
+          // );
+          const outIds = new Set(entriesOut.map((x) => x.id));
           ps.inventory.entries = ps.inventory.entries.filter(
-            (e) => !entriesOut.some((eo) => eo.id === e.id)
+            (e) => !outIds.has(e.id)
           );
         }
       }
@@ -315,12 +341,15 @@ export class Simulation {
         for (const input of ps.inputs) {
           let speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
           let inputItems = input.inventory.entries
-            .filter((entry) =>
-              this.orders.some(
-                (o) =>
-                  o.id === entry.orderId &&
-                  (o.status === "in_progress" || o.status === "pending")
-              )
+            // .filter((entry) =>
+            //   this.orders.some(
+            //     (o) =>
+            //       o.id === entry.orderId &&
+            //       (o.status === "in_progress" || o.status === "pending")
+            //   )
+            // )
+            .filter(
+              (entry) => entry.orderId && activeOrderIds.has(entry.orderId)
             )
             .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
             .slice(0, speedIn)
@@ -331,8 +360,12 @@ export class Simulation {
             }));
 
           ps.inventory.entries.push(...inputItems);
+          // input.inventory.entries = input.inventory.entries.filter(
+          //   (e) => !inputItems.some((it) => it.id === e.id)
+          // );
+          const inputSet = new Set(inputItems.map((x) => x.id));
           input.inventory.entries = input.inventory.entries.filter(
-            (e) => !inputItems.some((it) => it.id === e.id)
+            (e) => !inputSet.has(e.id)
           );
         }
       }
@@ -340,6 +373,9 @@ export class Simulation {
 
     // Phase 4: Orders fertig?
     this.checkAndCompleteOrders(newState);
+
+    // Phase 5: update relationships
+    this.updateOrderRelationships(newState);
 
     return newState;
   }
@@ -357,17 +393,19 @@ export class Simulation {
         const success = this.reserveMaterialsForOrder(order, required, state);
         if (success) {
           order.status = "in_progress";
+          order.startedAt = new Date();
+          order.startedTick = this.frames.length;
           this.notificationsEnabled &&
             handleNotification(
               "Order Status",
-              `Order ${order.id} ist jetzt in Bearbeitung.`,
+              "Order ${order.id} ist jetzt in Bearbeitung.",
               "info"
             );
         } else {
           this.notificationsEnabled &&
             handleNotification(
               "Order Reservation",
-              `Order ${order.id}: Nicht genügend Materialien reserviert.`,
+              "Order ${order.id}: Nicht genügend Materialien reserviert.",
               "error"
             );
         }
@@ -462,16 +500,72 @@ export class Simulation {
       if (seats >= order.quantity) {
         order.status = "completed";
         order.completedAt = new Date();
-
+        order.completedTick = this.frames.length;
         this.notificationsEnabled &&
           handleNotification(
             "Order Completed",
-            `Order ${order.id} wurde abgeschlossen.`,
+            "Order ${order.id} wurde abgeschlossen.",
             "success"
           );
-        // console.log(`Order ${order.id} abgeschlossen.`);
+        // console.log(Order ${order.id} abgeschlossen.);
       }
     }
+  }
+
+  /**
+   * Phase 5: Rebuild the .orders arrays in each ProcessStep & TransportSystem
+   * based on what orderIds appear in their inventories.
+   */
+  private updateOrderRelationships(state: SimulationEntityState): void {
+    // 1) Build a fast map of orderId => Order
+    //    so we don't do repeated finds on this.orders
+    const orderMap = new Map<number, Order>();
+    for (const o of this.orders) {
+      orderMap.set(o.id, o);
+    }
+
+    // 2) For each ProcessStep:
+    for (const loc of state.locations) {
+      for (const ps of loc.processSteps) {
+        // gather all unique orderIds in ps.inventory
+        const stepOrderIds = new Set<number>(
+          ps.inventory.entries
+            .filter((entry) => entry.orderId != null)
+            .map((entry) => entry.orderId as number)
+        );
+
+        // Overwrite ps.orders with the actual Order objects
+        ps.orders = [...stepOrderIds]
+          .map((oid) => orderMap.get(oid))
+          .filter((o): o is Order => o != null);
+        // .filter(...) removes "undefined"
+
+        // 3) For each input TransportSystem
+        for (const inputTS of ps.inputs) {
+          const tsOrderIds = new Set<number>(
+            inputTS.inventory.entries
+              .filter((entry) => entry.orderId != null)
+              .map((entry) => entry.orderId as number)
+          );
+          inputTS.orders = [...tsOrderIds]
+            .map((oid) => orderMap.get(oid))
+            .filter((o): o is Order => o != null);
+        }
+
+        // 4) For each output TransportSystem
+        for (const outputTS of ps.outputs) {
+          const tsOrderIds = new Set<number>(
+            outputTS.inventory.entries
+              .filter((entry) => entry.orderId != null)
+              .map((entry) => entry.orderId as number)
+          );
+          outputTS.orders = [...tsOrderIds]
+            .map((oid) => orderMap.get(oid))
+            .filter((o): o is Order => o != null);
+        }
+      }
+    }
+    console.log("Order maps: ", state.locations);
   }
 
   private isSeatCompleted(material: string) {
@@ -485,6 +579,7 @@ export class Simulation {
   }
 
   private handleSimulationStop() {
+    this.isStopped = true;
     // Nur einmal Meldung
     this.notificationsEnabled &&
       handleNotification(

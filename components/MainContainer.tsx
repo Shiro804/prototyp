@@ -45,6 +45,7 @@ interface LinkDescription {
 const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
+  { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
   // {
   //   icon: IconBuildingFactory2,
   //   label: "Incoming Commodities",

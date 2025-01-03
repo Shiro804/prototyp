@@ -189,6 +189,9 @@ model Order {
     transportSystems TransportSystem[] @relation("OrderToTransportSystem") // Many-to-Many mit TransportSystem
 
     // Historische Informationen, z.B. für Logs
-    completedAt DateTime? // Wann der Auftrag abgeschlossen wurde
-    canceledAt  DateTime? // Wann der Auftrag abgebrochen wurde
+    startedAt     DateTime?
+    startedTick   Int?
+    completedTick Int?
+    completedAt   DateTime? // Wann der Auftrag abgeschlossen wurde
+    canceledAt    DateTime? // Wann der Auftrag abgebrochen wurde
 }
