@@ -87,7 +87,8 @@ async function createMockOrders(count: number) {
   const description = "Bestellung Komplettsitz";
 
   for (let i = 0; i < count; i++) {
-    const randomQuantity = randomBetween(1, 5);
+    // const randomQuantity = randomBetween(1, 5);
+    const randomQuantity = randomBetween(1, 2);
 
     await prisma.order.create({
       data: {
@@ -181,7 +182,7 @@ async function main() {
     },
   });
 
-  const materialQuantity = 500;
+  const materialQuantity = 100;
 
   // --- Locations & ProcessSteps ---
   const hall1 = await prisma.location.create({
