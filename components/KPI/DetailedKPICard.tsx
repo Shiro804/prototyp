@@ -44,7 +44,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
             <Text fw="bold" size="xl" mb="sm">
                 {name} - KPI Overview
             </Text>
-            <Text size="sm">Description: {description || "—"}</Text>
+            <Text size="sm">Description: {description || "-"}</Text>
             <Text size="sm">Created At: {new Date(createdAt).toLocaleString()}</Text>
             <Text size="sm" mb="md">
                 Updated At: {new Date(updatedAt).toLocaleString()}
@@ -100,6 +100,20 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                 </Text>
                                 <Text size="sm" mb="xs">
                                     {ps.inventory.entries.length}
+                                </Text>
+                                <Text fw={600} size="sm">
+                                    Current Orders
+                                </Text>
+                                <Text size="sm" mb="xs">
+                                    {ps.orders.length > 0 ?
+                                        ps.orders.map((o) => {
+                                            return <>{o.id}{ps.orders[ps.orders.length - 1] == o ? "" : ","} </>
+                                        })
+                                        :
+                                        <>
+                                            -
+                                        </>
+                                    }
                                 </Text>
 
                                 {ps.totalRecipeTransformations != null && (

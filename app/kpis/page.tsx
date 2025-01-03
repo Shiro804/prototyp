@@ -1,7 +1,7 @@
 // app/kpis/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
     Title,
     SimpleGrid,
@@ -33,7 +33,7 @@ export default function KpiPage() {
     const currentFrame = simulation.frames[frame];
     const locations = currentFrame.locations;
 
-    // For the DetailedLocationCard, we want to pick a Location. Default to first if available.
+    // KPI Location Selection
     const [kpiLocationId, setKpiLocationId] = useState<number | null>(
         locations.length > 0 ? locations[0].id : null
     );
@@ -42,51 +42,30 @@ export default function KpiPage() {
     // -----------------------------
     // 1) Basic KPI counts
     // -----------------------------
-    const pendingCount = orders.filter((o) => o.status === "pending").length;
-    const inProgressCount = orders.filter((o) => o.status === "in_progress").length;
-    const completedCount = orders.filter((o) => o.status === "completed").length;
+    const pendingCount = useMemo(() => orders.filter((o) => o.status === "pending").length, [orders]);
+    const inProgressCount = useMemo(() => orders.filter((o) => o.status === "in_progress").length, [orders]);
+    const completedCount = useMemo(() => orders.filter((o) => o.status === "completed").length, [orders]);
 
     // -----------------------------
-    // 2) Track "finished" Orders to compute average time
+    // 2) Compute average processing time directly from completed orders
     // -----------------------------
-    // We'll store the references of completed Orders in a local state array,
-    // so we can compute the average only among those that have startedTick + completedTick.
-    const [finishedOrders, setFinishedOrders] = useState<Order[]>([]);
-
-    // A useEffect to catch newly completed Orders and add them if not already in finishedOrders
-    useEffect(() => {
-        // find newly completed
-        const newlyCompleted = orders.filter(
+    const averageTimeSeconds = useMemo(() => {
+        const completedOrders = orders.filter(
             (o) =>
                 o.status === "completed" &&
                 o.startedTick != null &&
-                o.completedTick != null &&
-                // not yet in our local array
-                !finishedOrders.some((fo) => fo.id === o.id)
+                o.completedTick != null
         );
-        if (newlyCompleted.length > 0) {
-            setFinishedOrders((prev) => [...prev, ...newlyCompleted]);
-        }
-    }, [orders, finishedOrders]);
 
-    // Compute average with a useMemo
-    // average time in seconds = sum( (completedTick - startedTick) * speed ) / numberOfOrders
-    const averageTimeSeconds = useMemo(() => {
-        if (finishedOrders.length === 0) return 0;
+        if (completedOrders.length === 0) return 0;
 
-        let total = 0;
-        let count = 0;
-        for (const fo of finishedOrders) {
-            // Make sure we have both ticks
-            if (fo.startedTick != null && fo.completedTick != null) {
-                const durationTicks = fo.completedTick - fo.startedTick;
-                const durationSec = durationTicks * speed;
-                total += durationSec;
-                count++;
-            }
-        }
-        return count > 0 ? total / count : 0;
-    }, [finishedOrders, speed]);
+        const totalSeconds = completedOrders.reduce((acc, o) => {
+            const durationTicks = o.completedTick! - o.startedTick!;
+            return acc + durationTicks * speed;
+        }, 0);
+
+        return totalSeconds / completedOrders.length;
+    }, [orders, speed]);
 
     // Helper to determine background color for an Order based on status
     const getStatusColor = (status: string): string => {
@@ -281,6 +260,5 @@ export default function KpiPage() {
                     )}
                 </>
             )}
-        </>
-    );
+        </>)
 }
