@@ -2,196 +2,161 @@
 "use client";
 
 import {
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    Dispatch,
-    SetStateAction,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import { Simulation, SimulationRun, SimulationEntityState } from "@/lib/simulation/simulationNew";
 import { Order } from "@prisma/client";
-import { handleNotification } from "@/app/general-settings/page";
+import { handleNotification } from "@/app/notification-settings/page";
 
 /**
- * Die SimulationStateLive-Schnittstelle wurde angepasst,
- * um nur noch die SimulationEntityState ohne Orders zu enthalten.
+ * Schnittstelle: Rückgabe aus dem Kontext
  */
 export interface SimulationStateLive {
-    /** Die bisher berechneten Frames, inklusive Events. */
-    simulation?: SimulationRun;
+  simulation?: SimulationRun;
+  frame: number;
+  playing: boolean;
+  loading: boolean;
+  speed: number;
+  orders: Order[]; // <--- Neu: Alle Orders aus der Simulation
 
-    /** Der aktuelle Frame-Index, der auf dem Bildschirm angezeigt wird. */
-    frame: number;
-
-    /** Läuft die Simulation automatisch weiter? */
-    playing: boolean;
-
-    /** Wird gerade der Initialzustand geladen? */
-    loading: boolean;
-
-    /** Der Geschwindigkeitsfaktor (Sekunden pro Tick). */
-    speed: number;
-
-    /** Setzt den aktuellen Frame-Index (manuelles Springen). */
-    setFrame: Dispatch<SetStateAction<number>>;
-
-    /** Setzt die Geschwindigkeit (Sekunden pro Tick). */
-    setSpeed: Dispatch<SetStateAction<number>>;
-
-    /** Lädt den Initialzustand (optional einige Ticks ausführen). */
-    load: (ticks: number) => void;
-
-    /** Spielt die Simulation ab oder pausiert sie. */
-    toggle: () => void;
+  setFrame: Dispatch<SetStateAction<number>>;
+  setSpeed: Dispatch<SetStateAction<number>>;
+  load: (ticks: number) => void;
+  toggle: () => void;
 }
 
 /**
- * 1) Der tatsächliche Kontext
+ * Der Kontext
  */
 export const SimulationContextLive = createContext<SimulationStateLive>({
-    simulation: undefined,
-    frame: 0,
-    playing: false,
-    loading: false,
-    speed: 1,
-    setFrame: () => { },
-    setSpeed: () => { },
-    load: () => { },
-    toggle: () => { },
+  simulation: undefined,
+  frame: 0,
+  playing: false,
+  loading: false,
+  speed: 1,
+  orders: [],
+
+  setFrame: () => {},
+  setSpeed: () => {},
+  load: () => {},
+  toggle: () => {},
 });
 
 /**
  * useSimulationCoreLive:
- * Bietet eine "Live"-Simulation, die Ticks bei Bedarf berechnet,
- * ähnlich dem SimulationMock-Ansatz.
+ * - Timer läuft immer
+ * - Falls playing=true => sim.tickForward()
+ * - wir halten simulation + frame + orders aktuell
  */
 function useSimulationCoreLive(speedInput: number): SimulationStateLive {
-    // Die rohe "Simulation"-Instanz
-    const [simInstance, setSimInstance] = useState<Simulation | undefined>(
-        undefined
-    );
+  const [simInstance, setSimInstance] = useState<Simulation | undefined>();
+  const [simulation, setSimulation] = useState<SimulationRun | undefined>();
+  const [orders, setOrders] = useState<Order[]>([]); // <--- Neu
 
-    // Der aktuelle berechnete Lauf (Frames-Array + Events)
-    const [simulation, setSimulation] = useState<SimulationRun | undefined>(
-        undefined
-    );
+  const [playing, setPlaying] = useState(false);
+  const [frame, setFrame] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [speed, setSpeed] = useState(speedInput || 1);
 
-    // Wiedergabestatus
-    const [playing, setPlaying] = useState(false);
+  /**
+   * 1) Simulation laden (async)
+   */
+  const load = async (ticks: number) => {
+    console.log("[LIVE] Loading simulation...");
+    setLoading(true);
+    setFrame(0);
 
-    // Der "Slider" oder der aktuelle Frame-Index, der angezeigt wird
-    const [frame, setFrame] = useState(0);
+    try {
+      const resState = await fetch("/api/entity-state");
+      const initialState: SimulationEntityState = await resState.json();
 
-    // Wird gerade der Initialzustand geladen?
-    const [loading, setLoading] = useState(false);
+      const resOrders = await fetch("/api/orders");
+      const initialOrders: Order[] = await resOrders.json();
 
-    // Wie viele Sekunden pro Tick (1 = 1s pro Tick, 2 = 2s pro Tick, etc.)
-    const [speed, setSpeed] = useState(speedInput || 1);
+      console.log(`Geladene Orders: ${initialOrders.length}`);
 
-    // Debug optional
-    useEffect(() => {
-        console.log("[LIVE] Speed updated:", speed);
-    }, [speed]);
+      const sim = new Simulation(initialState, initialOrders);
+      sim.runNext(ticks);
 
-    /**
-     * 1) "Load" the simulation from the server,
-     *    create a Simulation instance, optionally run some ticks.
-     */
-    const load = async (ticks: number) => {
-        console.log("[LIVE] Loading simulation...");
-        setLoading(true);
-        setFrame(0);
+      setSimInstance(sim);
+      setSimulation(sim.getSimulationRun());
+      setOrders(sim.getAllOrders());
 
-        try {
-            // Laden der SimulationEntityState (nur Locations)
-            const resState = await fetch("/api/entity-state");
-            const initialState: SimulationEntityState = await resState.json();
+      setLoading(false);
+      setPlaying(true);
+    } catch (error) {
+      console.error("[LIVE] Fehler beim Laden:", error);
+      handleNotification(
+        "Ladefehler",
+        "Fehler beim Laden der Simulation.",
+        "error"
+      );
+      setLoading(false);
+    }
+  };
 
-            // Laden der initialen Orders separat
-            const resOrders = await fetch("/api/orders"); // Neuen API-Endpunkt für Orders erstellen
-            const initialOrders: Order[] = await resOrders.json();
+  /**
+   * 2) Interval: läuft permanent
+   * - wenn playing=true, tickForward()
+   * - danach simulation + orders updaten
+   */
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!simInstance) return;
+      if (playing) {
+        simInstance.tickForward();
 
-            // Debugging
-            console.log(`Geladene Orders: ${initialOrders.length}`);
+        // Nach dem Tick => aktualisiere den SimulationRun + orders
+        const newRun = simInstance.getSimulationRun();
+        setSimulation(newRun);
 
-            // Erstelle die neue Live-Simulation mit initialState und initialOrders
-            const sim = new Simulation(initialState, initialOrders);
+        const simOrders = simInstance.getAllOrders(); 
+        setOrders(simOrders);
 
-            // Optional einige Ticks vorab ausführen
-            sim.runNext(ticks);
+        setFrame(simInstance.getCurrentTick());
+      }
+    }, 1000 * speed);
 
-            // Jetzt haben wir Frames bis Tick=N
-            setSimInstance(sim);
-            setSimulation(sim.getSimulationRun());
+    return () => clearInterval(intervalId);
+  }, [simInstance, playing, speed]);
 
-            setLoading(false);
-            setPlaying(true); // Startet das automatische Weiterlaufen
-        } catch (error) {
-            console.error("[LIVE] Fehler beim Laden der Simulation:", error);
-            handleNotification(
-                "Ladefehler",
-                "Fehler beim Laden der Simulation.",
-                "error"
-            );
-            setLoading(false);
-        }
-    };
+  /**
+   * 3) Toggle
+   */
+  const toggle = () => {
+    console.log("[LIVE] Toggled play/pause");
+    setPlaying((prev) => !prev);
+  };
 
-    /**
-     * 2) Automatisches Weiterlaufen der Frames, wenn "playing" wahr ist:
-     *    - Alle [speed] Sekunden wird 1 TickForward auf der Simulation durchgeführt.
-     *    - Dann wird der SimulationRun + der Frame-Index im lokalen Zustand aktualisiert.
-     */
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            if (!simInstance || !playing) return;
-
-            // Bewege dich genau 1 Tick vorwärts
-            simInstance.tickForward();
-
-            // Jetzt haben wir einen neuen Frame
-            const newRun = simInstance.getSimulationRun();
-            setSimulation(newRun);
-
-            // Der aktuelle Tick-Index ist simInstance.getCurrentTick().
-            setFrame(simInstance.getCurrentTick());
-        }, 1000 * speed);
-
-        return () => clearInterval(intervalId);
-    }, [playing, speed, simInstance]);
-
-    /**
-     * 3) Umschalten von Play/Pause
-     */
-    const toggle = () => {
-        console.log("[LIVE] Toggled play/pause");
-        setPlaying((prev) => !prev);
-    };
-
-    return {
-        simulation,
-        frame,
-        playing,
-        loading,
-        speed,
-        setFrame,
-        setSpeed,
-        load,
-        toggle,
-    };
+  return {
+    simulation,
+    frame,
+    playing,
+    loading,
+    speed,
+    orders, // <--- Hier geben wir die Orders raus
+    setFrame,
+    setSpeed,
+    load,
+    toggle,
+  };
 }
 
 /**
- * 4) Bietet einen Wrapper, der den Hook aufruft
+ * Wrapper
  */
 export function useProvideSimulationLive(speedInput = 1) {
-    return useSimulationCoreLive(speedInput);
+  return useSimulationCoreLive(speedInput);
 }
 
 /**
- * 5) Consumer Hook
+ * Consumer Hook
  */
 export function useSimulationLive(): SimulationStateLive {
-    return useContext(SimulationContextLive);
+  return useContext(SimulationContextLive);
 }

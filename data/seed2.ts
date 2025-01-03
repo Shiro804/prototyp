@@ -181,6 +181,8 @@ async function main() {
     },
   });
 
+  const materialQuantity = 500;
+
   // --- Locations & ProcessSteps ---
   const hall1 = await prisma.location.create({
     data: {
@@ -197,7 +199,7 @@ async function main() {
                 type: "processStep",
                 limit: 1000,
                 entries: {
-                  create: Array(100)
+                  create: Array(materialQuantity)
                     .fill(0)
                     .flatMap(() => [
                       { material: "Seat Structures" },
@@ -232,9 +234,9 @@ async function main() {
             inventory: {
               create: {
                 type: "processStep",
-                limit: 500,
+                limit: 1000,
                 entries: {
-                  create: Array(100)
+                  create: Array(materialQuantity)
                     .fill(0)
                     .flatMap(() => [
                       { material: "Seat Covers" },
@@ -297,7 +299,7 @@ async function main() {
         create: [
           {
             name: "Pre-Assembly - Seat",
-            inputSpeed: 100,
+            inputSpeed: 10,
             outputSpeed: 5,
             status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeSeat.id } },
@@ -441,7 +443,7 @@ async function main() {
     hall5.processSteps.find((ps) => ps.name === "Shipping")!.id
   );
 
-  await createMockOrders(10);
+  await createMockOrders(20);
 
   // Prüfe, was wir haben:
   console.dir(
