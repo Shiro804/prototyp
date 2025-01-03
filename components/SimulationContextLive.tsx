@@ -2,161 +2,159 @@
 "use client";
 
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  Dispatch,
-  SetStateAction,
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    Dispatch,
+    SetStateAction,
 } from "react";
 import { Simulation, SimulationRun, SimulationEntityState } from "@/lib/simulation/simulationNew";
 import { Order } from "@prisma/client";
 import { handleNotification } from "@/app/notification-settings/page";
 
 /**
- * Schnittstelle: Rückgabe aus dem Kontext
+ * Interface: Return type from the context
  */
 export interface SimulationStateLive {
-  simulation?: SimulationRun;
-  frame: number;
-  playing: boolean;
-  loading: boolean;
-  speed: number;
-  orders: Order[]; // <--- Neu: Alle Orders aus der Simulation
+    simulation?: SimulationRun;
+    frame: number;
+    playing: boolean;
+    loading: boolean;
+    speed: number;
+    orders: Order[]; // Expose the Orders array to the UI
 
-  setFrame: Dispatch<SetStateAction<number>>;
-  setSpeed: Dispatch<SetStateAction<number>>;
-  load: (ticks: number) => void;
-  toggle: () => void;
+    setFrame: Dispatch<SetStateAction<number>>;
+    setSpeed: Dispatch<SetStateAction<number>>;
+    load: (ticks: number) => void;
+    toggle: () => void;
 }
 
 /**
- * Der Kontext
+ * The Context
  */
 export const SimulationContextLive = createContext<SimulationStateLive>({
-  simulation: undefined,
-  frame: 0,
-  playing: false,
-  loading: false,
-  speed: 1,
-  orders: [],
+    simulation: undefined,
+    frame: 0,
+    playing: false,
+    loading: false,
+    speed: 1,
+    orders: [],
 
-  setFrame: () => {},
-  setSpeed: () => {},
-  load: () => {},
-  toggle: () => {},
+    setFrame: () => { },
+    setSpeed: () => { },
+    load: () => { },
+    toggle: () => { },
 });
 
 /**
- * useSimulationCoreLive:
- * - Timer läuft immer
- * - Falls playing=true => sim.tickForward()
- * - wir halten simulation + frame + orders aktuell
+ * Hook: Core logic for live simulation
  */
 function useSimulationCoreLive(speedInput: number): SimulationStateLive {
-  const [simInstance, setSimInstance] = useState<Simulation | undefined>();
-  const [simulation, setSimulation] = useState<SimulationRun | undefined>();
-  const [orders, setOrders] = useState<Order[]>([]); // <--- Neu
+    const [simInstance, setSimInstance] = useState<Simulation | undefined>();
+    const [simulation, setSimulation] = useState<SimulationRun | undefined>();
+    const [orders, setOrders] = useState<Order[]>([]); // Exposed Orders
 
-  const [playing, setPlaying] = useState(false);
-  const [frame, setFrame] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [speed, setSpeed] = useState(speedInput || 1);
+    const [playing, setPlaying] = useState(false);
+    const [frame, setFrame] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [speed, setSpeed] = useState(speedInput || 1);
 
-  /**
-   * 1) Simulation laden (async)
-   */
-  const load = async (ticks: number) => {
-    console.log("[LIVE] Loading simulation...");
-    setLoading(true);
-    setFrame(0);
+    /**
+     * 1) Load the simulation
+     */
+    const load = async (ticks: number) => {
+        console.log("[LIVE] Loading simulation...");
+        setLoading(true);
+        setFrame(0);
 
-    try {
-      const resState = await fetch("/api/entity-state");
-      const initialState: SimulationEntityState = await resState.json();
+        try {
+            const resState = await fetch("/api/entity-state");
+            const initialState: SimulationEntityState = await resState.json();
 
-      const resOrders = await fetch("/api/orders");
-      const initialOrders: Order[] = await resOrders.json();
+            const resOrders = await fetch("/api/orders");
+            const initialOrders: Order[] = await resOrders.json();
 
-      console.log(`Geladene Orders: ${initialOrders.length}`);
+            console.log(`Loaded Orders: ${initialOrders.length}`);
 
-      const sim = new Simulation(initialState, initialOrders);
-      sim.runNext(ticks);
+            const sim = new Simulation(initialState, initialOrders);
+            sim.runNext(ticks);
 
-      setSimInstance(sim);
-      setSimulation(sim.getSimulationRun());
-      setOrders(sim.getAllOrders());
+            setSimInstance(sim);
+            setSimulation(sim.getSimulationRun());
+            setOrders(sim.getAllOrders().map(order => ({ ...order }))); // Clone orders
 
-      setLoading(false);
-      setPlaying(true);
-    } catch (error) {
-      console.error("[LIVE] Fehler beim Laden:", error);
-      handleNotification(
-        "Ladefehler",
-        "Fehler beim Laden der Simulation.",
-        "error"
-      );
-      setLoading(false);
-    }
-  };
+            setLoading(false);
+            setPlaying(true);
+        } catch (error) {
+            console.error("[LIVE] Error loading simulation:", error);
+            handleNotification(
+                "Load Error",
+                "Error loading the simulation.",
+                "error"
+            );
+            setLoading(false);
+        }
+    };
 
-  /**
-   * 2) Interval: läuft permanent
-   * - wenn playing=true, tickForward()
-   * - danach simulation + orders updaten
-   */
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!simInstance) return;
-      if (playing) {
-        simInstance.tickForward();
+    /**
+     * 2) Interval for ticks if playing = true
+    */
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (!simInstance) return;
+            if (playing) {
+                // Perform 1 tick
+                simInstance.tickForward();
 
-        // Nach dem Tick => aktualisiere den SimulationRun + orders
-        const newRun = simInstance.getSimulationRun();
-        setSimulation(newRun);
+                // Update the simulation run and orders
+                const newRun = simInstance.getSimulationRun();
+                setSimulation(newRun);
 
-        const simOrders = simInstance.getAllOrders(); 
-        setOrders(simOrders);
+                const updatedOrders = simInstance.getAllOrders();
 
-        setFrame(simInstance.getCurrentTick());
-      }
-    }, 1000 * speed);
+                // Clone orders to ensure a new array reference
+                setOrders(updatedOrders.map(order => ({ ...order })));
 
-    return () => clearInterval(intervalId);
-  }, [simInstance, playing, speed]);
+                setFrame(simInstance.getCurrentTick());
+            }
+        }, 1000 * speed);
 
-  /**
-   * 3) Toggle
-   */
-  const toggle = () => {
-    console.log("[LIVE] Toggled play/pause");
-    setPlaying((prev) => !prev);
-  };
+        return () => clearInterval(intervalId);
+    }, [simInstance, playing, speed]);
 
-  return {
-    simulation,
-    frame,
-    playing,
-    loading,
-    speed,
-    orders, // <--- Hier geben wir die Orders raus
-    setFrame,
-    setSpeed,
-    load,
-    toggle,
-  };
+    /**
+     * 3) Toggle play/pause
+     */
+    const toggle = () => {
+        console.log("[LIVE] Toggled play/pause");
+        setPlaying((prev) => !prev);
+    };
+
+    return {
+        simulation,
+        frame,
+        playing,
+        loading,
+        speed,
+        orders,
+        setFrame,
+        setSpeed,
+        load,
+        toggle,
+    };
 }
 
 /**
  * Wrapper
  */
 export function useProvideSimulationLive(speedInput = 1) {
-  return useSimulationCoreLive(speedInput);
+    return useSimulationCoreLive(speedInput);
 }
 
 /**
  * Consumer Hook
  */
 export function useSimulationLive(): SimulationStateLive {
-  return useContext(SimulationContextLive);
+    return useContext(SimulationContextLive);
 }
