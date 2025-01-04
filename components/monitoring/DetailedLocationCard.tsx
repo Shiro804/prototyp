@@ -1,4 +1,6 @@
-import { FC } from "react";
+"use client";
+
+import React, { FC } from "react";
 import {
     Accordion,
     Button,
@@ -12,9 +14,10 @@ import {
     Table,
     Text,
 } from "@mantine/core";
+import GaugeChart from "react-gauge-chart";
 import { LocationFull } from "@/lib/simulation/simulationNew";
 import { ProcessStep } from "@prisma/client";
-import GaugeChart from 'react-gauge-chart'
+import { GaugeSection } from "../custom/GaugeSection";
 
 interface DetailedLocationCardProps {
     location: LocationFull;
@@ -29,13 +32,14 @@ interface InventoryEntry {
     orderId: number | null;
 }
 
+
 /**
- * A "Detailed" view for a single location:
- * - shows location info
- * - big Accordion for each processStep
- * - sub-accordions for grouped material entries
- * - "Back to Overview" button
-*/
+ * "DetailedLocationCard" shows a more "accordion-based" view of a single Location:
+ * - location info
+ * - an accordion for each process step
+ * - a sub-accordion for grouped materials in the inventory
+ * - an optional "Back" button at the top
+ */
 export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
     location,
     onBack,
@@ -60,8 +64,6 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
         return Math.min(utilization, 1); // Ensure it doesn't exceed 100%
     }
 
-
-
     return (
         <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg="white">
             {/* Header */}
@@ -69,11 +71,11 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                 <Text fw="bold" size="xl">
                     {name} - Detailed View
                 </Text>
-                {onBack &&
+                {onBack && (
                     <Button variant="gradient" onClick={onBack}>
                         Back to Overview
                     </Button>
-                }
+                )}
             </Flex>
 
             {/* Location Info */}
@@ -86,120 +88,139 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
             <Text>Updated At: {new Date(updatedAt).toLocaleString()}</Text>
             {description && <Text>Description: {description}</Text>}
 
-            {/* If you want a debug dump */}
-            {/* <Code block mt="md">{JSON.stringify(location, null, 2)}</Code> */}
-
             {/* Big accordion: each processStep */}
             <Accordion multiple variant="separated" mt="lg">
-                {processSteps.map((ps) => (
-                    <Accordion.Item key={ps.id} value={`ps-${ps.id}`}>
-                        <Accordion.Control>
-                            {ps.name}
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                            <Divider mb={30} size="xs"></Divider>
-                            <Flex direction="row" align="center">
-                                <Flex direction="column">
-                                    <Flex direction="row" align="center" justify="center" ta="center">
-                                        <Flex direction="column" justify="center" align="center" maw={100} mr={50}>
-                                            <Text fw={700}>Process Step Details</Text>
-                                        </Flex>
-                                        <SimpleGrid cols={4}>
-                                            <Flex w="100%" direction="column" justify="center" align="center">
-                                                <Text fw={600}>Status</Text>
-                                                <Text>{ps.status}</Text>
-                                            </Flex>
-                                            <Flex w="100%" direction="column" justify="center" align="center">
-                                                <Text fw={600}>Input Speed</Text>
-                                                <Text>{ps.inputSpeed}</Text>
-                                            </Flex>
-                                            <Flex w="100%" direction="column" justify="center" align="center">
-                                                <Text fw={600}>Output Speed</Text>
-                                                <Text>{ps.outputSpeed}</Text>
-                                            </Flex>
-                                            <Flex w="100%" direction="column" justify="center" align="center">
-                                                <Text fw={600}>Recipe Rate</Text>
-                                                <Text>{ps.recipeRate}</Text>
-                                            </Flex>
-                                            {ps.totalRecipeTransformations &&
-                                                <Flex w="100%" direction="column">
-                                                    <Flex direction="column">
-                                                        <Text fw={600}>Transformations</Text>
-                                                        <Text ta="center">{ps.totalRecipeTransformations}</Text>
-                                                    </Flex>
-                                                </Flex>
-                                            }
+                {processSteps.map((ps) => {
+                    // Calculate gauge utilization
+                    const utilization = calculateInventoryUtilization(ps.inventory);
 
-                                        </SimpleGrid>
+                    return (
+                        <Accordion.Item key={ps.id} value={`ps-${ps.id}`}>
+                            <Accordion.Control>{ps.name}</Accordion.Control>
+                            <Accordion.Panel>
+                                <Divider mb={30} size="xs" />
+
+                                <Flex direction="row" align="center">
+                                    {/* Left Column: Basic Info */}
+                                    <Flex direction="column">
+                                        <Flex
+                                            direction="row"
+                                            align="center"
+                                            justify="center"
+                                            ta="center"
+                                        >
+                                            <Flex
+                                                direction="column"
+                                                justify="center"
+                                                align="center"
+                                                maw={100}
+                                                mr={50}
+                                            >
+                                                <Text fw={700}>Process Step Details</Text>
+                                            </Flex>
+                                            <SimpleGrid cols={4}>
+                                                <Flex
+                                                    w="100%"
+                                                    direction="column"
+                                                    justify="center"
+                                                    align="center"
+                                                >
+                                                    <Text fw={600}>Status</Text>
+                                                    <Text>{ps.status}</Text>
+                                                </Flex>
+                                                <Flex
+                                                    w="100%"
+                                                    direction="column"
+                                                    justify="center"
+                                                    align="center"
+                                                >
+                                                    <Text fw={600}>Input Speed</Text>
+                                                    <Text>{ps.inputSpeed}</Text>
+                                                </Flex>
+                                                <Flex
+                                                    w="100%"
+                                                    direction="column"
+                                                    justify="center"
+                                                    align="center"
+                                                >
+                                                    <Text fw={600}>Output Speed</Text>
+                                                    <Text>{ps.outputSpeed}</Text>
+                                                </Flex>
+                                                <Flex
+                                                    w="100%"
+                                                    direction="column"
+                                                    justify="center"
+                                                    align="center"
+                                                >
+                                                    <Text fw={600}>Recipe Rate</Text>
+                                                    <Text>{ps.recipeRate}</Text>
+                                                </Flex>
+                                                {ps.totalRecipeTransformations && (
+                                                    <Flex w="100%" direction="column">
+                                                        <Flex direction="column">
+                                                            <Text fw={600}>Transformations</Text>
+                                                            <Text ta="center">
+                                                                {ps.totalRecipeTransformations}
+                                                            </Text>
+                                                        </Flex>
+                                                    </Flex>
+                                                )}
+                                            </SimpleGrid>
+                                        </Flex>
+                                    </Flex>
+
+                                    {/* Right Column: Memoized Gauge */}
+                                    <Flex
+                                        direction="column"
+                                        align="center"
+                                        justify="center"
+                                        miw={300}
+                                        maw={500}
+                                        ml={50}
+                                    >
+                                        <GaugeSection
+                                            id={`gauge-ps-${ps.id}`}
+                                            percent={utilization}
+                                        />
                                     </Flex>
                                 </Flex>
-                                <Flex direction="column" align="center" justify="center" miw={300} maw={500} ml={50}>
-                                    <Text fz={14} ta="center">Inventory Utilization</Text>
-                                    <GaugeChart id="gauge-chart4"
-                                        nrOfLevels={100}
-                                        arcPadding={0}
-                                        cornerRadius={0}
-                                        colors={["#5991ff", "#ed375b"]}
-                                        percent={calculateInventoryUtilization(ps.inventory)}
-                                        style={{ width: "100%", borderRadius: "20px" }}
-                                        textColor="black"
-                                        needleColor="grey"
-                                        needleBaseColor="grey"
-                                        formatTextValue={(string) => string}
 
-                                    />
-                                </Flex>
-                                {/* <GaugeContainer value={calculateInventoryUtilization(ps.inventory)} valueMax={100} height={120} width={120} title="Auslastung" cornerRadius={2}>
-                                    <GaugeReferenceArc />
-                                    <GaugeValueArc />
-                                    <GaugeValueText
-                                    render={(value: number) =>
-                                    `${value.toFixed(1)}%` // Format to 1 decimal place and append '%'
-                                    }/>
-                                    </GaugeContainer>; */}
-                            </Flex>
-                            {/* Sub-Accordion for grouped materials */}
-                            <Accordion multiple variant="contained" mt="md">
-                                <Accordion.Item value={`inventory-ps-${ps.id}`}>
-                                    <Accordion.Control>
-                                        Materials ({ps.inventory.entries.length})
-                                    </Accordion.Control>
-                                    <Accordion.Panel>
-                                        {renderGroupedMaterials(ps.inventory.entries, processSteps)}
-                                    </Accordion.Panel>
-                                </Accordion.Item>
-                            </Accordion>
-
-                            {/* If you want "resources" or "machines" etc.:
-                ps.resources, ps.sensors, etc.
-              */}
-                        </Accordion.Panel>
-                    </Accordion.Item>
-                ))}
+                                {/* Sub-Accordion for grouped materials */}
+                                <Accordion multiple variant="contained" mt="md">
+                                    <Accordion.Item value={`inventory-ps-${ps.id}`}>
+                                        <Accordion.Control>
+                                            Materials ({ps.inventory.entries.length})
+                                        </Accordion.Control>
+                                        <Accordion.Panel>
+                                            {renderGroupedMaterials(
+                                                ps.inventory.entries,
+                                                processSteps
+                                            )}
+                                        </Accordion.Panel>
+                                    </Accordion.Item>
+                                </Accordion>
+                            </Accordion.Panel>
+                        </Accordion.Item>
+                    );
+                })}
             </Accordion>
         </Paper>
     );
 };
 
 /** Renders a sub-accordion for each material + a table of entries */
-function renderGroupedMaterials(entries: InventoryEntry[], processSteps?: ProcessStep[]) {
-    const grouped = entries.reduce<Record<string, InventoryEntry[]>>(
-        (acc, e) => {
-            if (!acc[e.material]) acc[e.material] = [];
-            acc[e.material].push(e);
-            return acc;
-        },
-        {},
-    );
+function renderGroupedMaterials(
+    entries: InventoryEntry[],
+    processSteps?: ProcessStep[]
+) {
+    const grouped = entries.reduce<Record<string, InventoryEntry[]>>((acc, e) => {
+        if (!acc[e.material]) acc[e.material] = [];
+        acc[e.material].push(e);
+        return acc;
+    }, {});
 
-    // // Map inventory IDs to process step names for lookup
-    // const inventoryIdToProcessStepName = processSteps.reduce<Record<number, string>>(
-    //     (acc, ps) => {
-    //         acc[ps.inventoryId] = ps.name;
-    //         return acc;
-    //     },
-    //     {},
-    // );
+    // If you needed to map inventoryId -> processStepName, you can do so here
+    // const inventoryIdToProcessStepName = processSteps?.reduce(...);
 
     const materials = Object.keys(grouped).sort();
 

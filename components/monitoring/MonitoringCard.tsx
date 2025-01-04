@@ -3,7 +3,7 @@ import { Paper, Table, Flex, Text, Button, Switch, Container, Divider } from "@m
 import { LocationFull } from "@/lib/simulation/simulationNew";
 import { groupInventory } from "@/app/incoming-goods/helpers";
 import { TransportSystem } from "@prisma/client";
-import { useSimulationMock } from "../SimulationContextMock";
+import { useSimulationMock } from "../context/SimulationContextMock";
 
 /**
  * Minimal interface: we take a `LocationFull` and an optional `onDetailsClick`.

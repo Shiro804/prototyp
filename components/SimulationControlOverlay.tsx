@@ -1,3 +1,5 @@
+// SimulationControlOverlay.tsx
+
 import {
   Button,
   Flex,
@@ -15,13 +17,13 @@ import {
   IconArrowRight,
 } from "@tabler/icons-react";
 import { FunctionComponent, useState } from "react";
-import { useSimulationMock } from "./SimulationContextMock";
+import { useSimulationMock } from "./context/SimulationContextMock";
 import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
 
 const SimulationControlOverlay: FunctionComponent = () => {
   const {
     playing,
-    loadingMock,
+    loading,
     simulation,
     frame,
     simInstance,
@@ -36,8 +38,6 @@ const SimulationControlOverlay: FunctionComponent = () => {
   // Wir nennen den State jetzt "targetTick", weil wir gezielt zu *diesem* Tick springen.
   const [targetTick, setTargetTick] = useState<number>(0);
 
-
-
   return (
     <Flex align="center" gap="md" wrap="nowrap" style={{ padding: "1rem" }}>
       <Text size="md" fw={700}>
@@ -46,7 +46,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Button: Calculate/Reload Simulation (precompute 1 tick, for instance) */}
       <Tooltip label="Calculate Simulation" position="bottom" withArrow>
-        <Button color="indigo" onClick={() => load(1)} loading={loadingMock}>
+        <Button color="indigo" onClick={() => load(1)} loading={loading}>
           <IconReload />
         </Button>
       </Tooltip>
@@ -61,7 +61,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
           color="indigo"
           disabled={!simulation}
           onClick={toggle}
-          loading={loadingMock}
+          loading={loading}
         >
           {playing ? <IconPause /> : <IconPlay />}
         </Button>
@@ -109,7 +109,6 @@ const SimulationControlOverlay: FunctionComponent = () => {
         <IconArrowRight />
       </ActionIcon>
 
-
       {/* Number Input: "Target Tick" */}
       <NumberInput
         placeholder="Tick #"
@@ -122,12 +121,11 @@ const SimulationControlOverlay: FunctionComponent = () => {
         styles={{ input: { width: 60 } }}
       />
 
-
       {/* Button: Jump to that Tick */}
       <Button
         color="indigo"
         variant="outline"
-        disabled={!simulation || targetTick < 0}
+        disabled={!simulation || targetTick < 0 || targetTick >= (simulation ? simulation.frames.length : 0)}
         onClick={() => handleJumpToTick(targetTick)}
       >
         Jump to Tick

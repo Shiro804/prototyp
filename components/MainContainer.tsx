@@ -1,3 +1,4 @@
+// MainContainer.tsx
 "use client";
 
 import {
@@ -32,9 +33,10 @@ import { ExoticComponent, ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
-import { SimulationContextLive, useProvideSimulationLive } from "./SimulationContextLive";
-import { SimulationContextMock, useProvideSimulationMock } from "./SimulationContextMock";
+
 import SimulationControlOverlay from "./SimulationControlOverlay";
+import { SimulationProviderMock, useSimulationMock } from "./context/SimulationContextMock";
+import { SimulationProviderLive, useSimulationLive } from "./context/SimulationContextLive";
 
 interface LinkDescription {
   icon: ExoticComponent;
@@ -46,31 +48,13 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
-  // {
-  //   icon: IconBuildingFactory2,
-  //   label: "Incoming Commodities",
-  //   href: "/incoming-goods",
-  // },
-  // {
-  //   icon: IconPackages,
-  //   label: "Commodity Monitoring",
-  //   href: "/commodities-monitoring",
-  // },
+  // Additional links...
 ];
 
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
-  // {
-  //   icon: IconBuildingFactory2,
-  //   label: "Incoming Commodities",
-  //   href: "/mock-incoming-goods",
-  // },
-  // {
-  //   icon: IconPackages,
-  //   label: "Commodity Monitoring",
-  //   href: "/commodities-monitoring",
-  // },
+  // Additional links...
 ];
 
 const crudLinks: LinkDescription[] = [
@@ -136,23 +120,25 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  const simulationContextMock = useProvideSimulationMock(1);
-  const simulationContextLive = useProvideSimulationLive(1);
-
+  // Initialize both simulation contexts
+  const simulationContextMock = useSimulationMock();
+  const simulationContextLive = useSimulationLive();
 
   useEffect(() => {
-    simulationContextLive.load(1)
-  }, [])
-
+    // Load both simulations if needed
+    // Assuming you want to load both Mock and Live simulations on mount
+    simulationContextMock.load(1);
+    simulationContextLive.load(1);
+  }, []);
 
   return (
-    <AppShell
-      header={{ height: 60 }}
-      navbar={{ width: 300, breakpoint: "sm", collapsed: { mobile: !opened } }}
-      padding="md"
-    >
-      <SimulationContextMock.Provider value={simulationContextMock}>
-        <SimulationContextLive.Provider value={simulationContextLive}>
+    <SimulationProviderMock>
+      <SimulationProviderLive>
+        <AppShell
+          header={{ height: 60 }}
+          navbar={{ width: 300, breakpoint: "sm", collapsed: { mobile: !opened } }}
+          padding="md"
+        >
           <AppShell.Header>
             <Flex
               h="100%"
@@ -214,8 +200,8 @@ export default function MainContainer({
           </AppShell.Navbar>
           <AppShell.Main m="lg">{children}</AppShell.Main>
           <Notifications />
-        </SimulationContextLive.Provider>
-      </SimulationContextMock.Provider>
-    </AppShell >
+        </AppShell>
+      </SimulationProviderLive>
+    </SimulationProviderMock>
   );
 }

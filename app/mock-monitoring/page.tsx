@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Title, SimpleGrid, Text } from "@mantine/core";
-import { useSimulationMock } from "@/components/SimulationContextMock";
+import { Title, SimpleGrid, Text, Paper, Flex, Badge, Stack } from "@mantine/core";
+import { useSimulationMock } from "@/components/context/SimulationContextMock";
 import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
 import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
-import { LocationFull } from "@/lib/simulation/simulationMock";
-import { TransportSystem } from "@prisma/client";
+import { LocationFull } from "@/lib/simulation/Simulation";
+import { Order, TransportSystem } from "@prisma/client";
 
 export default function Monitoring() {
   const { simulation, frame } = useSimulationMock();
@@ -17,6 +17,22 @@ export default function Monitoring() {
   }
 
   const currentFrame = simulation.frames[frame];
+
+  /**
+ * Funktion zur Bestimmung der Hintergrundfarbe basierend auf dem Order-Status.
+ */
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case "completed":
+        return "#2ECC40";
+      case "pending":
+        return "#9B59B6";
+      case "in_progress":
+        return "#4263eb";
+      default:
+        return "#95A5A6";
+    }
+  };
 
   function getTransportSystemsForLocation(
     location: LocationFull
@@ -52,6 +68,41 @@ export default function Monitoring() {
   return (
     <>
       <Title>Monitoring</Title>
+      {/* SimpleGrid für ALLE Orders der Simulation */}
+      {/* <Title order={4} mb="sm">Orders</Title> */}
+      <SimpleGrid cols={10} spacing="xs" mb="xl">
+        {simulation.frames[frame].orders.map((order: Order) => (
+          <Paper
+            key={order.id}
+            shadow="md"
+            p="md"
+            pt="xs"
+            withBorder
+            style={{
+              backgroundColor: getStatusColor(order.status),
+              color: "white",
+            }}
+          >
+            <Flex direction="column-reverse">
+              <Text fw={500} size="xs">Order-ID: {order.id}</Text>
+              <Flex justify="center" align="center">
+                <Badge color="white" variant="light" fz={8} mb="xs">
+                  {order.status}
+                </Badge>
+              </Flex>
+            </Flex>
+
+            <Stack gap={5}>
+              <Text size="xs">Quantity: {order.quantity}</Text>
+              {order.completedAt && (
+                <Text size="xs">
+                  Completed At: {new Date(order.completedAt).toLocaleString()}
+                </Text>
+              )}
+            </Stack>
+          </Paper>
+        ))}
+      </SimpleGrid>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         {simulation?.frames[frame]?.state.locations.map((loc) => {
           const locationTS = getTransportSystemsForLocation(loc);

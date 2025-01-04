@@ -1,38 +1,41 @@
 // DetailedKPICard.tsx
 "use client";
 
-import { FC, useEffect } from "react";
+import React, { FC, useEffect } from "react";
 import { Paper, Text, Flex, SimpleGrid, Divider, Box } from "@mantine/core";
 import GaugeChart from "react-gauge-chart";
 import { LocationFull } from "@/lib/simulation/simulationNew";
 import { ProcessStep } from "@prisma/client";
+import { GaugeSection } from "../custom/GaugeSection";
 
+/**
+ * Interface for DetailedKPICard Props
+ */
 interface DetailedKPICardProps {
     location: LocationFull;
 }
 
+
 /**
- * "DetailedKPICard" shows a KPI-oriented layout for a single Location:
- * - Basic Location info (name, date, etc.)
- * - A grid of ProcessSteps, each as a Paper with KPI details
- * - No accordions
+ * DetailedKPICard Component
+ * Displays KPI details for a single location, including process steps and their metrics.
  */
 export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
     const { name, description, processSteps, createdAt, updatedAt } = location;
 
     useEffect(() => {
-        console.log("Re-Render")
-    })
+        console.log("DetailedKPICard Rendered");
+    }, [location]);
 
     /**
      * Calculates the inventory utilization of a process step.
      * @param inventory The inventory object containing the limit and entries.
      * @returns The utilization as a percentage (0 to 1).
      */
-    function calculateInventoryUtilization(inventory: {
+    const calculateInventoryUtilization = (inventory: {
         limit: number;
         entries: { id: number }[];
-    }): number {
+    }): number => {
         if (!inventory || inventory.limit <= 0) {
             return 0;
         }
@@ -40,7 +43,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
         const currentCount = inventory.entries.length;
         const utilization = currentCount / inventory.limit;
         return Math.min(utilization, 1);
-    }
+    };
 
     return (
         <Paper shadow="md" p="lg" mb="xl" withBorder bg="white">
@@ -56,105 +59,93 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
             <Divider mb="lg" />
 
             {/* PROCESS STEPS GRID */}
-            <SimpleGrid
-                cols={2}
-                spacing="md"
-            >
-                {processSteps.map((ps) => (
-                    <Paper key={ps.id} shadow="xs" p="md" withBorder bg="white" c="black" miw={500} maw={700}>
-                        {/* bg="#4263eb"  */}
-                        <Text fw="bold" size="md" mb="xs">
-                            {ps.name}
-                        </Text>
-                        <Divider mb="sm" />
+            <SimpleGrid cols={2} spacing="md">
+                {processSteps.map((ps) => {
+                    const utilization = calculateInventoryUtilization(ps.inventory);
+                    return (
+                        <Paper
+                            key={ps.id}
+                            shadow="xs"
+                            p="md"
+                            withBorder
+                            bg="white"
+                            miw={500}
+                            maw={700}
+                        >
+                            <Text fw="bold" size="md" mb="xs">
+                                {ps.name}
+                            </Text>
+                            <Divider mb="sm" />
 
-                        {/* KPIs */}
-                        <SimpleGrid cols={2}>
-                            {/* Left column: textual details */}
-                            <Box>
-                                <Text fw={600} size="sm">
-                                    Status
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.status}
-                                </Text>
+                            {/* KPIs */}
+                            <SimpleGrid cols={2}>
+                                {/* Left column: textual details */}
+                                <Box>
+                                    <Text fw={600} size="sm">
+                                        Status
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.status}
+                                    </Text>
 
-                                <Text fw={600} size="sm">
-                                    Input Speed
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.inputSpeed}
-                                </Text>
+                                    <Text fw={600} size="sm">
+                                        Input Speed
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.inputSpeed}
+                                    </Text>
 
-                                <Text fw={600} size="sm">
-                                    Output Speed
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.outputSpeed}
-                                </Text>
+                                    <Text fw={600} size="sm">
+                                        Output Speed
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.outputSpeed}
+                                    </Text>
 
-                                <Text fw={600} size="sm">
-                                    Recipe Rate
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.recipeRate}
-                                </Text>
-                                <Text fw={600} size="sm">
-                                    Materials
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.inventory.entries.length}
-                                </Text>
-                                <Text fw={600} size="sm">
-                                    Current Orders
-                                </Text>
-                                <Text size="sm" mb="xs">
-                                    {ps.orders.length > 0 ?
-                                        ps.orders.map((o) => {
-                                            return <>{o.id}{ps.orders[ps.orders.length - 1] == o ? "" : ","} </>
-                                        })
-                                        :
+                                    <Text fw={600} size="sm">
+                                        Recipe Rate
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.recipeRate}
+                                    </Text>
+                                    <Text fw={600} size="sm">
+                                        Materials
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.inventory.entries.length}
+                                    </Text>
+                                    <Text fw={600} size="sm">
+                                        Current Orders
+                                    </Text>
+                                    <Text size="sm" mb="xs">
+                                        {ps.orders.length > 0
+                                            ? ps.orders.map((o, index) => (
+                                                <React.Fragment key={o.id}>
+                                                    {o.id}
+                                                    {index < ps.orders.length - 1 && ", "}
+                                                </React.Fragment>
+                                            ))
+                                            : "-"}
+                                    </Text>
+
+                                    {ps.totalRecipeTransformations != null && (
                                         <>
-                                            -
+                                            <Text fw={600} size="sm">
+                                                Transformations
+                                            </Text>
+                                            <Text size="sm" mb="xs">
+                                                {ps.totalRecipeTransformations}
+                                            </Text>
                                         </>
-                                    }
-                                </Text>
+                                    )}
+                                </Box>
 
-                                {ps.totalRecipeTransformations != null && (
-                                    <>
-                                        <Text fw={600} size="sm">
-                                            Transformations
-                                        </Text>
-                                        <Text size="sm" mb="xs">
-                                            {ps.totalRecipeTransformations}
-                                        </Text>
-                                    </>
-                                )}
-                            </Box>
-
-                            {/* Right column: Gauge for inventory utilization */}
-                            <Flex direction="column" align="center" justify="center">
-                                <Text fz={14} ta="center" mb="xs">
-                                    Inventory Utilization
-                                </Text>
-                                <GaugeChart
-                                    id={`gauge-ps-${ps.id}`}
-                                    nrOfLevels={100}
-                                    arcPadding={0}
-                                    cornerRadius={0}
-                                    colors={["#2ecc40", "#ed375b"]}
-                                    percent={calculateInventoryUtilization(ps.inventory)}
-                                    style={{ width: "100%" }}
-                                    // textColor="white"
-                                    textColor="black"
-                                    needleColor="grey"
-                                    needleBaseColor="grey"
-                                    formatTextValue={(val) => val} // or a custom format
-                                />
-                            </Flex>
-                        </SimpleGrid>
-                    </Paper>
-                ))}
+                                {/* Right column: Memoized Gauge for inventory utilization */}
+                                <GaugeSection id={`gauge-ps-${ps.id}`} percent={utilization} />
+                            </SimpleGrid>
+                        </Paper>
+                    );
+                })}
             </SimpleGrid>
         </Paper>
     );

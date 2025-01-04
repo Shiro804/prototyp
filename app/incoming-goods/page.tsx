@@ -4,7 +4,7 @@ import { Button, Divider, Paper, SimpleGrid, Table, Text, Title } from "@mantine
 import { FC, ReactNode, useState } from "react";
 import { getIncomingCommodities, getTotalCommodities, groupInventory } from "./helpers";
 import { InventoryEntry, ProcessStep } from "@prisma/client";
-import { useSimulationLive } from "@/components/SimulationContextLive";
+import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { LocationTreeView } from "@/components/custom/LocationTreeView";
 
 interface LocationCardProps {

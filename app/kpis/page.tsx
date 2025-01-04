@@ -1,7 +1,7 @@
 // app/kpis/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Title,
     SimpleGrid,
@@ -11,13 +11,11 @@ import {
     Flex,
     Select,
     Button,
-    Tooltip
+    Tooltip,
 } from "@mantine/core";
-import { useSimulationLive } from "@/components/SimulationContextLive";
-import { DetailedKPICard } from "@/components/KPI/DetailedKPICard";
-import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
+import { useSimulationLive } from "@/components/context/SimulationContextLive";
+import { DetailedKPICard } from "@/components/kpi/DetailedKPICard";
 import { Order } from "@prisma/client";
-import { LocationFull } from "@/lib/simulation/simulationNew";
 import { IconInfoCircleFilled } from "@tabler/icons-react";
 
 export default function KpiPage() {
@@ -31,7 +29,7 @@ export default function KpiPage() {
 
     // The current "frame" (i.e., current simulation state)
     const currentFrame = simulation.frames[frame];
-    const locations = currentFrame.locations;
+    const locations = currentFrame.state.locations;
 
     // KPI Location Selection
     const [kpiLocationId, setKpiLocationId] = useState<number | null>(
@@ -39,17 +37,26 @@ export default function KpiPage() {
     );
     const kpiLocation = locations.find((loc) => loc.id === kpiLocationId);
 
-    const kpiOverviewPaperWidth = 300
-    const kpiOverviewPaperHeight = 80
-    const kpiOverviewPaperPadding = "md"
+    // Define consistent styles
+    const kpiOverviewPaperHeight = 80;
+    const kpiOverviewPaperPadding = "md";
 
     // -----------------------------
     // 1) Basic KPI counts
     // -----------------------------
-    const pendingCount = useMemo(() => orders.filter((o) => o.status === "pending").length, [orders]);
-    const inProgressCount = useMemo(() => orders.filter((o) => o.status === "in_progress").length, [orders]);
-    const completedCount = useMemo(() => orders.filter((o) => o.status === "completed").length, [orders]);
-        
+    const pendingCount = useMemo(
+        () => orders.filter((o) => o.status === "pending").length,
+        [orders]
+    );
+    const inProgressCount = useMemo(
+        () => orders.filter((o) => o.status === "in_progress").length,
+        [orders]
+    );
+    const completedCount = useMemo(
+        () => orders.filter((o) => o.status === "completed").length,
+        [orders]
+    );
+
     // -----------------------------
     // 2) Compute completedSeatsCount with dynamic access
     // -----------------------------
@@ -73,8 +80,6 @@ export default function KpiPage() {
 
         return completeSeatCount;
     }, [locations]);
-
-
 
     // -----------------------------
     // 3) Compute average processing time directly from completed orders
@@ -117,12 +122,12 @@ export default function KpiPage() {
                 KPIs
             </Title>
 
-            {/* 1) KPIs Overview: 4 Paper placeholders */}
+            {/* 1) KPIs Overview: 5 Paper placeholders */}
             <Title order={4} mb="sm">
                 KPIs Overview
             </Title>
             <SimpleGrid cols={5} spacing="md" mb="xl">
-                {/* 1) Offene Aufträge (pending) */}
+                {/* 1) Open Orders */}
                 <Paper
                     shadow="md"
                     p={kpiOverviewPaperPadding}
@@ -136,7 +141,7 @@ export default function KpiPage() {
                     <Text size="lg">{pendingCount}</Text>
                 </Paper>
 
-                {/* 2) Laufende Aufträge (in_progress) */}
+                {/* 2) Running Orders */}
                 <Paper
                     shadow="md"
                     p={kpiOverviewPaperPadding}
@@ -150,7 +155,7 @@ export default function KpiPage() {
                     <Text size="lg">{inProgressCount}</Text>
                 </Paper>
 
-                {/* 3) Abgeschlossene Aufträge (completed) */}
+                {/* 3) Completed Orders */}
                 <Paper
                     shadow="md"
                     p={kpiOverviewPaperPadding}
@@ -164,7 +169,7 @@ export default function KpiPage() {
                     <Text size="lg">{completedCount}</Text>
                 </Paper>
 
-                {/* 3) Abgeschlossene Aufträge (completed) */}
+                {/* 4) Completed Seats */}
                 <Paper
                     shadow="md"
                     p={kpiOverviewPaperPadding}
@@ -178,7 +183,7 @@ export default function KpiPage() {
                     <Text size="lg">{completedSeatsCount}</Text>
                 </Paper>
 
-                {/* 4) Average Time KPI */}
+                {/* 5) Average Order Processing Time */}
                 <Paper
                     shadow="md"
                     p={kpiOverviewPaperPadding}
@@ -188,7 +193,7 @@ export default function KpiPage() {
                         height: kpiOverviewPaperHeight,
                     }}
                 >
-                    <Text fw="bold">Ø Order Processing Time (Min.)</Text>
+                    <Text fw="bold">Avg Processing Time (Min.)</Text>
                     <Text size="lg">
                         {(averageTimeSeconds / 60).toFixed(2)}
                     </Text>
@@ -212,7 +217,11 @@ export default function KpiPage() {
                             color: "white",
                         }}
                     >
-                        <Flex direction="column-reverse" align="center" justify="center">
+                        <Flex
+                            direction="column-reverse"
+                            align="center"
+                            justify="center"
+                        >
                             <Badge color="white" variant="light" fz={8} mb="xs">
                                 {order.status}
                             </Badge>
@@ -238,16 +247,14 @@ export default function KpiPage() {
                                         label={
                                             <Flex direction="column" gap={10}>
                                                 {Object.entries(order).map(
-                                                    ([key, value]) => {
-                                                        return (
-                                                            <Text key={key} size="xs">
-                                                                {key}:{" "}
-                                                                {value
-                                                                    ? value?.toString()
-                                                                    : "-"}
-                                                            </Text>
-                                                        );
-                                                    }
+                                                    ([key, value]) => (
+                                                        <Text key={key} size="xs">
+                                                            {key}:{" "}
+                                                            {value
+                                                                ? value.toString()
+                                                                : "-"}
+                                                        </Text>
+                                                    )
                                                 )}
                                             </Flex>
                                         }
@@ -259,7 +266,7 @@ export default function KpiPage() {
                                             p={0}
                                             size="xs"
                                             variant="transparent"
-                                            c="white"
+                                            color="white"
                                         >
                                             <IconInfoCircleFilled />
                                         </Button>
@@ -304,5 +311,6 @@ export default function KpiPage() {
                     )}
                 </>
             )}
-        </>)
+        </>
+    );
 }

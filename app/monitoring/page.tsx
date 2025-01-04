@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Title, SimpleGrid, Text, Paper, Badge, Group, Stack, Flex, Container } from "@mantine/core";
-import { useSimulationLive } from "@/components/SimulationContextLive";
+import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
 import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
 import { Order } from "@prisma/client";
@@ -36,7 +36,7 @@ export default function Monitoring() {
 
   // Detaillierte Ansicht einer Location
   if (selectedLocationId !== null) {
-    const location = currentFrame.locations.find((l) => l.id === selectedLocationId);
+    const location = currentFrame.state.locations.find((l) => l.id === selectedLocationId);
     if (!location) return <Text>Error: Location not found</Text>;
 
     return (
@@ -89,7 +89,7 @@ export default function Monitoring() {
 
       {/* Bisherige Locations */}
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-        {currentFrame.locations.map((loc) => (
+        {currentFrame.state.locations.map((loc) => (
           <MonitoringCard
             key={loc.id}
             location={loc}
