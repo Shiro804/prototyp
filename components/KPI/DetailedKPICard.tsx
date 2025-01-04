@@ -1,7 +1,7 @@
 // DetailedKPICard.tsx
 "use client";
 
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { Paper, Text, Flex, SimpleGrid, Divider, Box } from "@mantine/core";
 import GaugeChart from "react-gauge-chart";
 import { LocationFull } from "@/lib/simulation/simulationNew";
@@ -19,6 +19,10 @@ interface DetailedKPICardProps {
  */
 export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
     const { name, description, processSteps, createdAt, updatedAt } = location;
+
+    useEffect(() => {
+        console.log("Re-Render")
+    })
 
     /**
      * Calculates the inventory utilization of a process step.

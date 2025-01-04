@@ -39,15 +39,45 @@ export default function KpiPage() {
     );
     const kpiLocation = locations.find((loc) => loc.id === kpiLocationId);
 
+    const kpiOverviewPaperWidth = 300
+    const kpiOverviewPaperHeight = 80
+    const kpiOverviewPaperPadding = "md"
+
     // -----------------------------
     // 1) Basic KPI counts
     // -----------------------------
     const pendingCount = useMemo(() => orders.filter((o) => o.status === "pending").length, [orders]);
     const inProgressCount = useMemo(() => orders.filter((o) => o.status === "in_progress").length, [orders]);
     const completedCount = useMemo(() => orders.filter((o) => o.status === "completed").length, [orders]);
+        
+    // -----------------------------
+    // 2) Compute completedSeatsCount with dynamic access
+    // -----------------------------
+    const completedSeatsCount = useMemo(() => {
+        // Step 1: Find all process steps named "Shipping" across all locations
+        const shippingProcessSteps = locations.flatMap((loc) =>
+            loc.processSteps.filter((ps) => ps.name === "Shipping")
+        );
+
+        // Step 2: Count "Complete Seat" materials in their inventories
+        const completeSeatCount = shippingProcessSteps.reduce((count, ps) => {
+            if (ps.inventory && ps.inventory.entries) {
+                return (
+                    count +
+                    ps.inventory.entries.filter((e) => e.material === "Complete Seat")
+                        .length
+                );
+            }
+            return count;
+        }, 0);
+
+        return completeSeatCount;
+    }, [locations]);
+
+
 
     // -----------------------------
-    // 2) Compute average processing time directly from completed orders
+    // 3) Compute average processing time directly from completed orders
     // -----------------------------
     const averageTimeSeconds = useMemo(() => {
         const completedOrders = orders.filter(
@@ -91,62 +121,76 @@ export default function KpiPage() {
             <Title order={4} mb="sm">
                 KPIs Overview
             </Title>
-            <SimpleGrid cols={4} spacing="md" mb="xl">
+            <SimpleGrid cols={5} spacing="md" mb="xl">
                 {/* 1) Offene Aufträge (pending) */}
                 <Paper
                     shadow="md"
-                    p="lg"
+                    p={kpiOverviewPaperPadding}
                     style={{
                         backgroundColor: "#4263eb",
                         color: "white",
-                        height: 80,
+                        height: kpiOverviewPaperHeight,
                     }}
                 >
-                    <Text fw="bold">Offene Aufträge</Text>
+                    <Text fw="bold">Open Orders</Text>
                     <Text size="lg">{pendingCount}</Text>
                 </Paper>
 
                 {/* 2) Laufende Aufträge (in_progress) */}
                 <Paper
                     shadow="md"
-                    p="lg"
+                    p={kpiOverviewPaperPadding}
                     style={{
                         backgroundColor: "#4263eb",
                         color: "white",
-                        height: 80,
+                        height: kpiOverviewPaperHeight,
                     }}
                 >
-                    <Text fw="bold">Laufende Aufträge</Text>
+                    <Text fw="bold">Running Orders</Text>
                     <Text size="lg">{inProgressCount}</Text>
                 </Paper>
 
                 {/* 3) Abgeschlossene Aufträge (completed) */}
                 <Paper
                     shadow="md"
-                    p="lg"
+                    p={kpiOverviewPaperPadding}
                     style={{
                         backgroundColor: "#4263eb",
                         color: "white",
-                        height: 80,
+                        height: kpiOverviewPaperHeight,
                     }}
                 >
-                    <Text fw="bold">Abgeschlossene Aufträge</Text>
+                    <Text fw="bold">Completed Orders</Text>
                     <Text size="lg">{completedCount}</Text>
+                </Paper>
+
+                {/* 3) Abgeschlossene Aufträge (completed) */}
+                <Paper
+                    shadow="md"
+                    p={kpiOverviewPaperPadding}
+                    style={{
+                        backgroundColor: "#4263eb",
+                        color: "white",
+                        height: kpiOverviewPaperHeight,
+                    }}
+                >
+                    <Text fw="bold">Completed Seats</Text>
+                    <Text size="lg">{completedSeatsCount}</Text>
                 </Paper>
 
                 {/* 4) Average Time KPI */}
                 <Paper
                     shadow="md"
-                    p="lg"
+                    p={kpiOverviewPaperPadding}
                     style={{
                         backgroundColor: "#4263eb",
                         color: "white",
-                        height: 80,
+                        height: kpiOverviewPaperHeight,
                     }}
                 >
-                    <Text fw="bold">Ø Bearbeitungszeit (Sek.)</Text>
+                    <Text fw="bold">Ø Order Processing Time (Min.)</Text>
                     <Text size="lg">
-                        {averageTimeSeconds.toFixed(1)}
+                        {(averageTimeSeconds / 60).toFixed(2)}
                     </Text>
                 </Paper>
             </SimpleGrid>
