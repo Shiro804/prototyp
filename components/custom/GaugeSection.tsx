@@ -22,7 +22,7 @@ export const GaugeSection = React.memo(
                 </Text>
                 <GaugeChart
                     id={id}
-                    nrOfLevels={100}
+                    nrOfLevels={10}
                     arcPadding={0}
                     cornerRadius={0}
                     colors={["#5991ff", "#ed375b"]}
@@ -31,11 +31,10 @@ export const GaugeSection = React.memo(
                     textColor="black"
                     needleColor="grey"
                     needleBaseColor="grey"
-                    // Annotate the parameter as number to allow .toFixed, etc.
                     formatTextValue={(val) => `${(+val).toFixed(1)}%`}
                 />
             </Flex>
         );
     },
-    (prev, next) => prev.percent === next.percent
+    (prev, next) => prev.percent === next.percent && prev.id === next.id
 );
