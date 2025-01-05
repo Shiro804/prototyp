@@ -1,6 +1,20 @@
 import prisma from "@/data/db";
+import { TransportSystemFull } from "@/lib/simulation/Simulation";
 import { LocationFull } from "@/lib/simulation/simulationNew";
-import { InventoryEntry, Prisma } from "@prisma/client";
+import { InventoryEntry, Prisma, TransportSystem } from "@prisma/client";
+
+export function getTransportSystemsForLocation(
+  location: LocationFull
+): TransportSystemFull[] {
+  const tsSet = new Map<number, TransportSystemFull>();
+
+  for (const ps of location.processSteps) {
+    // ps.inputs.forEach((ts) => tsSet.set(ts.id, ts)); // (if relevant)
+    ps.outputs.forEach((ts) => tsSet.set(ts.id, ts));
+  }
+
+  return Array.from(tsSet.values());
+}
 
 export function getIncomingCommodities(
   location: LocationFull
@@ -37,4 +51,3 @@ export function groupInventory(
 
   return sortedGrouped;
 }
-
