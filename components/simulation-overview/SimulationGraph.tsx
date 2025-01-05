@@ -16,7 +16,7 @@ import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useState } from "react";
 
 import { getLayoutedElements } from "./layout";
-import { SimulationEntityState } from "@/lib/simulation/simulationNew";
+import { SimulationEntityState } from "@/lib/simulation/Simulation";
 import {
   NodeType,
   NodeTypes,
@@ -26,9 +26,9 @@ import {
 } from "./nodes";
 import { EntityInfo } from "./EntityInfo";
 
-export interface SimulationGraphProps {}
+export interface SimulationGraphProps { }
 
-export function SimulationGraph({}: Readonly<SimulationGraphProps>) {
+export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeType>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -123,12 +123,12 @@ export function SimulationGraph({}: Readonly<SimulationGraphProps>) {
   const layoutedGraph =
     nodes.length > 0 && edges.length > 0
       ? getLayoutedElements(nodes, edges, {
-          direction: layout,
-        })
+        direction: layout,
+      })
       : { nodes: [], edges: [] };
 
   return (
-    <Box w="100%" h={400}>
+    <Box w="100%" h={700}>
       <LoadingOverlay
         visible={layoutedGraph.nodes.length === 0}
         zIndex={1000}
