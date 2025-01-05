@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, FC } from "react";
 import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
-import { useSimulationCore, SimulationCoreState } from "./hooks/useSimulationCore";
+import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCore";
 
 /**
  * Extended Interface for Mock Simulation State
@@ -21,17 +21,16 @@ export const SimulationContextMock = createContext<SimulationStateMock>({
   playing: false,
   speed: 1,
   loading: false,
-  orders: [],
 
-  setSimulation: () => {},
-  setFrame: () => {},
-  setSpeed: () => {},
-  load: () => {},
-  toggle: () => {},
-  moveFrame: () => {},
-  handleJumpToTick: () => {},
+  setSimulation: () => { },
+  setFrame: () => { },
+  setSpeed: () => { },
+  load: () => { },
+  toggle: () => { },
+  moveFrame: () => { },
+  handleJumpToTick: () => { },
 
-  toggleTransportSystem: () => {},
+  toggleTransportSystem: () => { },
 });
 
 /**

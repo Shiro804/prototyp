@@ -1,6 +1,6 @@
 // SimulationContextLive.tsx
 import { createContext, useContext, useEffect } from "react";
-import { SimulationCoreState, useSimulationCore } from "./hooks/useSimulationCore"; // Path to the shared hook
+import { SimulationCoreState, useSimulationCore } from "../hooks/useSimulationCore"; // Path to the shared hook
 import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 
 /**
@@ -18,7 +18,6 @@ export const SimulationContextLive = createContext<SimulationStateLive>({
     playing: false,
     speed: 1,
     loading: false,
-    orders: [],
 
     setSimulation: () => { },
     setFrame: () => { },
