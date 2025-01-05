@@ -23,6 +23,7 @@ import { LocationFull } from "@/lib/simulation/Simulation";
 // Depending on the "mode" we either import the mock context or the live context
 import { useSimulationMock } from "@/components/context/SimulationContextMock";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
+import { getTransportSystemsForLocation } from "@/app/incoming-goods/helpers";
 
 /**
  * A type to define whether we want the "mock" or "live" mode.
@@ -78,22 +79,6 @@ export function Monitoring({ mode }: MonitoringProps) {
         }
     };
 
-    /**
-     * This function only makes sense in "mock" mode, 
-     * so you can either:
-     * - implement it for both modes
-     * - or conditionally define it or call it only if mode==="mock"
-     */
-    function getTransportSystemsForLocation(location: LocationFull): TransportSystem[] {
-        const tsSet = new Map<number, TransportSystem>();
-
-        for (const ps of location.processSteps) {
-            // ps.inputs.forEach((ts) => tsSet.set(ts.id, ts)); // (if relevant)
-            ps.outputs.forEach((ts) => tsSet.set(ts.id, ts));
-        }
-
-        return Array.from(tsSet.values());
-    }
 
     // If a location is selected, show the Detailed View
     if (selectedLocationId !== null) {
