@@ -125,7 +125,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
       <Button
         color="indigo"
         variant="outline"
-        disabled={!simulation || targetTick < 0 || targetTick >= (simulation ? simulation.frames.length : 0)}
+        disabled={!simulation || targetTick < 0}
         onClick={() => handleJumpToTick(targetTick)}
       >
         Jump to Tick
