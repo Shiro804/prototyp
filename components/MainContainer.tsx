@@ -69,24 +69,29 @@ const crudLinks: LinkDescription[] = [
 const reportsAndAnalytics: LinkDescription[] = [
   {
     icon: IconGraph,
-    label: "Simulation Graph Overview",
+    label: "Process Graph",
     href: "/simulation-overview",
   },
   {
-    icon: IconChartInfographic,
-    label: "Operational Efficiency Reports",
-    href: "/placeholder1",
+    icon: IconGraph,
+    label: "Material Flow Graph",
+    href: "/material-flow-graph",
   },
-  {
-    icon: IconReportSearch,
-    label: "Inventory and Stock Reports",
-    href: "/placeholder2",
-  },
-  {
-    icon: IconReportAnalytics,
-    label: "Quality Control & Compliance Reports",
-    href: "/placeholder3",
-  },
+  //   {
+  //     icon: IconChartInfographic,
+  //     label: "Operational Efficiency Reports",
+  //     href: "/placeholder1",
+  //   },
+  //   {
+  //     icon: IconReportSearch,
+  //     label: "Inventory and Stock Reports",
+  //     href: "/placeholder2",
+  //   },
+  //   {
+  //     icon: IconReportAnalytics,
+  //     label: "Quality Control & Compliance Reports",
+  //     href: "/placeholder3",
+  //   },
 ];
 
 const settingsLinks: LinkDescription[] = [
