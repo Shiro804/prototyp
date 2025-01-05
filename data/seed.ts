@@ -33,7 +33,7 @@ async function createTransportSystemWithFilter(
       name,
       inputSpeed: 2,
       outputSpeed: 2,
-      inventory: { create: { type: "transportSystem", limit: 1000 } },
+      inventory: { create: { type: "transportSystem", limit: 10 } },
       startStep: { connect: { id: fromStepId } },
       endStep: { connect: { id: toStepId } },
     },
@@ -128,7 +128,7 @@ async function main() {
       inputs: {
         create: [
           { material: "Headrest", quantity: 1 },
-          { material: "Backrest Structures", quantity: 1 },
+          { material: "Backrest Structure", quantity: 1 },
         ],
       },
       outputs: {
@@ -204,7 +204,7 @@ async function main() {
                     .fill(0)
                     .flatMap(() => [
                       { material: "Seat Structure" },
-                      { material: "Backrest Structures" },
+                      { material: "Backrest Structure" },
                       { material: "Seat Foam" },
                       { material: "Headrest" },
                       { material: "Airbags" },

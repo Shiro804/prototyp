@@ -508,7 +508,7 @@ export class Simulation {
     if (!order.quantity || order.quantity < 1) return null;
     const baseMaterials = [
       "Seat Structure",
-      "Backrest Structures",
+      "Backrest Structure",
       "Seat Foam",
       "Headrest",
       "Airbags",
