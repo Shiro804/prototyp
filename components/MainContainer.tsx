@@ -54,6 +54,7 @@ const overviewLinks: LinkDescription[] = [
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
+  { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
   // Additional links...
 ];
 
