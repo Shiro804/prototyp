@@ -139,12 +139,16 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                 <Accordion key={ts.id} multiple variant="separated" mb="md">
                                                     <Accordion.Item value={`ts-${ts.id}`}>
                                                         <Accordion.Control>
-                                                            {`Transport System: ${ts.id} - ${ts.name}`}
+                                                            {`${ts.name}`}
                                                         </Accordion.Control>
                                                         <Accordion.Panel>
-                                                            <Flex w={"100%"} align="center" justify="flex-start">
-                                                                <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} />
-                                                                <GaugeSection id={`gauge-ts-${ts.id}`} percent={ts.inventory.entries.length / ts.inventory.limit} width="30%"></GaugeSection>
+                                                            <Flex w={"100%"} align="center" justify="space-between" p={"sm"}>
+                                                                <Flex direction="column" w="60%">
+                                                                    <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} />
+                                                                </Flex>
+                                                                <Flex w="30%">
+                                                                    <GaugeSection id={`gauge-ts-${ts.id}`} percent={ts.inventory.entries.length / ts.inventory.limit} width="80%"></GaugeSection>
+                                                                </Flex>
                                                             </Flex>
                                                         </Accordion.Panel>
                                                     </Accordion.Item>
