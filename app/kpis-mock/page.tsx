@@ -13,20 +13,20 @@ import {
     Button,
     Tooltip,
 } from "@mantine/core";
-import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { DetailedKPICard } from "@/components/kpi/DetailedKPICard";
 import { Order } from "@prisma/client";
 import { IconInfoCircleFilled } from "@tabler/icons-react";
 import { useKPIs } from "@/components/hooks/useKPIs";
 import { KPIsOverview } from "@/components/kpi/KPIsOverview";
+import { useSimulationMock } from "@/components/context/SimulationContextMock";
 
 export default function KpiPage() {
     // Grab the needed data (simulation, frame, orders, speed) from context
-    const { simulation, frame, speed } = useSimulationLive();
+    const { simulation, frame, speed } = useSimulationMock();
 
     // If the simulation is not loaded yet
     if (!simulation) {
-        return <Text>Loading...</Text>;
+        return <Text>Please calculate the simulation...</Text>;
     }
 
     // The current "frame" (i.e., current simulation state)
