@@ -9,6 +9,22 @@
   text-align: center;
 }
 
+.react-flow__node-material {
+  border-radius: 50%;
+  padding: 10px;
+  background-color: var(--mantine-color-red-2);
+  border: 2px solid var(--mantine-color-red-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.react-flow__node-material.selected {
+  border-width: 4px;
+  background-color: var(--mantine-color-red-3);
+}
+
 .react-flow__node-processStep.selected {
   border-width: 4px;
   background-color: var(--mantine-color-blue-3);
