@@ -11,37 +11,34 @@ import { InventoryEntry } from '@prisma/client';
 
 interface MaterialEntriesTableProps {
     entries: InventoryEntry[];
+    w?: string;
     // Falls du eine erweiterte Version von InventoryEntry verwendest:
     // entries: InventoryEntryWithDelay[];
 }
 
-export const MaterialEntriesTable: React.FC<MaterialEntriesTableProps> = ({ entries }) => {
+export const MaterialEntriesTable: React.FC<MaterialEntriesTableProps> = ({ entries, w }) => {
     return (
         <>
-            {entries.length === 0 ? (
-                <Text>Noch keine Einträge vorhanden.</Text>
-            ) : (
-                <Table striped highlightOnHover>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>ID</Table.Th>
-                            <Table.Th>Added At</Table.Th>
-                            <Table.Th>Order ID</Table.Th>
-                            <Table.Th>Inventory ID</Table.Th>
+            <Table striped highlightOnHover w={w}>
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th>ID</Table.Th>
+                        <Table.Th>Added At</Table.Th>
+                        <Table.Th>Order ID</Table.Th>
+                        <Table.Th>Inventory ID</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                    {entries.map((item) => (
+                        <Table.Tr key={item.id}>
+                            <Table.Td>{item.id}</Table.Td>
+                            <Table.Td>{new Date(item.addedAt).toLocaleString()}</Table.Td>
+                            <Table.Td>{item.orderId ?? '-'}</Table.Td>
+                            <Table.Td>{item.inventoryId}</Table.Td>
                         </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {entries.map((item) => (
-                            <Table.Tr key={item.id}>
-                                <Table.Td>{item.id}</Table.Td>
-                                <Table.Td>{new Date(item.addedAt).toLocaleString()}</Table.Td>
-                                <Table.Td>{item.orderId ?? '-'}</Table.Td>
-                                <Table.Td>{item.inventoryId}</Table.Td>
-                            </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
-            )}
+                    ))}
+                </Table.Tbody>
+            </Table>
         </>
     );
 };

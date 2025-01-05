@@ -6,13 +6,14 @@ import React, { FC } from "react";
 import {
     Accordion,
     Button,
+    Center,
     Divider,
     Flex,
     Paper,
     SimpleGrid,
     Text,
 } from "@mantine/core";
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { Order, ProcessStep, TransportSystem, InventoryEntry } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
 import { getTransportSystemsForLocation } from "@/app/incoming-goods/helpers";
@@ -109,7 +110,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                     <Text fw={600}>Recipe Rate</Text>
                                                     <Text>{ps.recipeRate}</Text>
                                                 </Flex>
-                                                {ps.totalRecipeTransformations !== undefined && (
+                                                {ps.totalRecipeTransformations !== null && (
                                                     <Flex w="100%" direction="column">
                                                         <Flex direction="column">
                                                             <Text fw={600}>Transformations</Text>
@@ -138,10 +139,13 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                 <Accordion key={ts.id} multiple variant="separated" mb="md">
                                                     <Accordion.Item value={`ts-${ts.id}`}>
                                                         <Accordion.Control>
-                                                            {`Transport System ID: ${ts.id} - ${ts.name}`}
+                                                            {`Transport System: ${ts.id} - ${ts.name}`}
                                                         </Accordion.Control>
                                                         <Accordion.Panel>
-                                                            <MaterialEntriesTable entries={ts.inventory.entries} />
+                                                            <Flex w={"100%"} align="center" justify="flex-start">
+                                                                <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} />
+                                                                <GaugeSection id={`gauge-ts-${ts.id}`} percent={ts.inventory.entries.length / ts.inventory.limit} width="30%"></GaugeSection>
+                                                            </Flex>
                                                         </Accordion.Panel>
                                                     </Accordion.Item>
                                                 </Accordion>

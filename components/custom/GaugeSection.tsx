@@ -11,9 +11,11 @@ export const GaugeSection = React.memo(
     ({
         id,
         percent,
+        width
     }: {
         id: string;
         percent: number;
+        width?: string;
     }) => {
         return (
             <Flex direction="column" align="center" justify="center" style={{ width: "100%" }}>
@@ -27,7 +29,7 @@ export const GaugeSection = React.memo(
                     cornerRadius={0}
                     colors={["#5991ff", "#ed375b"]}
                     percent={percent}
-                    style={{ width: "100%", borderRadius: "20px" }}
+                    style={{ width: width ? width : "100%", borderRadius: "20px" }}
                     textColor="black"
                     needleColor="grey"
                     needleBaseColor="grey"

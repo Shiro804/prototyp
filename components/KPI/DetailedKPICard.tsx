@@ -4,7 +4,7 @@
 import React, { FC, useEffect } from "react";
 import { Paper, Text, Flex, SimpleGrid, Divider, Box } from "@mantine/core";
 import GaugeChart from "react-gauge-chart";
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { ProcessStep } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
 
