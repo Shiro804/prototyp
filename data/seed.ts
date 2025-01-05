@@ -111,7 +111,7 @@ async function main() {
       inputs: {
         create: [
           { material: "Seat Foam", quantity: 1 },
-          { material: "Seat Structures", quantity: 1 },
+          { material: "Seat Structure", quantity: 1 },
           { material: "Airbags", quantity: 1 },
           { material: "Small Parts", quantity: 1 },
         ],
@@ -203,7 +203,7 @@ async function main() {
                   create: Array(materialQuantity)
                     .fill(0)
                     .flatMap(() => [
-                      { material: "Seat Structures" },
+                      { material: "Seat Structure" },
                       { material: "Backrest Structures" },
                       { material: "Seat Foam" },
                       { material: "Headrest" },
