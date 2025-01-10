@@ -19,6 +19,9 @@ async function createTransportSystemWithFilter(
   name: string,
   fromStepId: number,
   toStepId: number,
+  type: string,
+  minQuantity?: number,
+  transportDelay?: number,
   options?: {
     // materials, die manuell eingetragen werden sollen (statt der Recipe-Inputs).
     // Falls wir beides wollen (Recipe + overrides), könnten wir eine zweite Liste einführen
@@ -33,9 +36,12 @@ async function createTransportSystemWithFilter(
       name,
       inputSpeed: 2,
       outputSpeed: 2,
+      type: type,
       inventory: { create: { type: "transportSystem", limit: 10 } },
       startStep: { connect: { id: fromStepId } },
       endStep: { connect: { id: toStepId } },
+      transportDelay,
+      minQuantity,
     },
   });
 
@@ -112,8 +118,8 @@ async function main() {
         create: [
           { material: "Seat Foam", quantity: 1 },
           { material: "Seat Structure", quantity: 1 },
-          { material: "Airbags", quantity: 1 },
-          { material: "Small Parts", quantity: 1 },
+          { material: "Airbag", quantity: 1 },
+          { material: "Small Part", quantity: 1 },
         ],
       },
       outputs: {
@@ -143,7 +149,7 @@ async function main() {
       inputs: {
         create: [
           { material: "Pre-Assembled Seat", quantity: 1 },
-          { material: "Seat Covers", quantity: 1 },
+          { material: "Seat Cover", quantity: 1 },
         ],
       },
       outputs: {
@@ -158,7 +164,7 @@ async function main() {
       inputs: {
         create: [
           { material: "Pre-Assembled Backrest", quantity: 1 },
-          { material: "Backrest Covers", quantity: 1 },
+          { material: "Backrest Cover", quantity: 1 },
         ],
       },
       outputs: {
@@ -207,8 +213,8 @@ async function main() {
                       { material: "Backrest Structure" },
                       { material: "Seat Foam" },
                       { material: "Headrest" },
-                      { material: "Airbags" },
-                      { material: "Small Parts" },
+                      { material: "Airbag" },
+                      { material: "Small Part" },
                     ]),
                 },
               },
@@ -230,18 +236,18 @@ async function main() {
           {
             name: "Covers Entry Point",
             inputSpeed: 5,
-            outputSpeed: 5,
+            outputSpeed: 2,
             status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
-                limit: 1000,
+                limit: 400,
                 entries: {
                   create: Array(materialQuantity)
                     .fill(0)
                     .flatMap(() => [
-                      { material: "Seat Covers" },
-                      { material: "Backrest Covers" },
+                      { material: "Seat Cover" },
+                      { material: "Backrest Cover" },
                     ]),
                 },
               },
@@ -275,12 +281,12 @@ async function main() {
           {
             name: "Storage Rack",
             inputSpeed: 5,
-            outputSpeed: 5,
+            outputSpeed: 4,
             status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
-                limit: 500,
+                limit: 100,
               },
             },
           },
@@ -300,35 +306,35 @@ async function main() {
         create: [
           {
             name: "Pre-Assembly - Seat",
-            inputSpeed: 10,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeSeat.id } },
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 10 } },
           },
           {
             name: "Pre-Assembly - Backrest",
-            inputSpeed: 5,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeBackrest.id } },
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 10 } },
           },
           {
             name: "Upholstery - Seat",
-            inputSpeed: 5,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
             recipe: { connect: { id: upholsterySeatRecipe.id } },
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 10 } },
           },
           {
             name: "Upholstery - Backrest",
-            inputSpeed: 5,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
             recipe: { connect: { id: upholsteryBackrestRecipe.id } },
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 10 } },
           },
         ],
       },
@@ -343,18 +349,18 @@ async function main() {
         create: [
           {
             name: "Assembling",
-            inputSpeed: 5,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 5 } },
             recipe: { connect: { id: assemblingRecipe.id } },
           },
           {
             name: "End of Line Check",
-            inputSpeed: 5,
-            outputSpeed: 5,
+            inputSpeed: 2,
+            outputSpeed: 1,
             status: "PROCEEDING",
-            inventory: { create: { type: "processStep", limit: 500 } },
+            inventory: { create: { type: "processStep", limit: 5 } },
           },
         ],
       },
@@ -372,67 +378,100 @@ async function main() {
   await createTransportSystemWithFilter(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
     hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!.id,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    "Forklift",
+    5,
+    2
   );
 
   await createTransportSystemWithFilter(
-    "Forklift - Hall 5 to Hall 2 (Covers)",
+    "DTS - Hall 5 to Hall 2 (Covers)",
     hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!.id,
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id
+    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+    "DTS",
+    3,
+    2
   );
 
   await createTransportSystemWithFilter(
     "DTS - Hall 2 (Storage Rack) to Pre-Assembly (Seat)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id,
+    "DTS",
+    2,
+    2
   );
 
   await createTransportSystemWithFilter(
-    "Roller - Hall 2 (Storage Rack) to Pre-Assembly (Backrest)",
+    "DTS - Hall 2 (Storage Rack) to Pre-Assembly (Backrest)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id,
+    "DTS",
+    2,
+    2
   );
 
   await createTransportSystemWithFilter(
     "Roller - Pre-Assembly (Seat) to Upholstery (Seat)",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Seat")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
+    "Roller",
+    1,
+    1
   );
 
   await createTransportSystemWithFilter(
     "Roller - Pre-Assembly (Backrest) to Upholstery (Backrest)",
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly - Backrest")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
+    "Roller",
+    1,
+    1
   );
 
   await createTransportSystemWithFilter(
     "Roller - Storage Rack to Upholstery (Backrest)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
+    "Roller",
+    2,
+    2
   );
 
   await createTransportSystemWithFilter(
     "Roller - Storage Rack to Upholstery (Seat)",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id
+    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
+    "Roller",
+    2,
+    2
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Upholstery (Seat) to Assembling",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat")!.id,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
+    "Conveyor",
+    1,
+    2
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Upholstery (Backrest) to Assembling",
     hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest")!.id,
-    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id
+    hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
+    "Conveyor",
+    1,
+    2
   );
 
   await createTransportSystemWithFilter(
     "Conveyor - Assembling to End of Line Check",
     hall4.processSteps.find((ps) => ps.name === "Assembling")!.id,
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
+    "Conveyor",
+    1,
+    3,
     {
       overrideMaterials: ["Complete Seat"],
     }
@@ -441,7 +480,10 @@ async function main() {
   await createTransportSystemWithFilter(
     "Forklift - Hall 4 (EOL) to Hall 5 (Shipping)",
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
-    hall5.processSteps.find((ps) => ps.name === "Shipping")!.id
+    hall5.processSteps.find((ps) => ps.name === "Shipping")!.id,
+    "Forklift",
+    1,
+    2
   );
 
   await createMockOrders(10);
