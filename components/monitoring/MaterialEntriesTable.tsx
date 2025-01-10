@@ -12,17 +12,21 @@ import { InventoryEntry } from '@prisma/client';
 interface MaterialEntriesTableProps {
     entries: InventoryEntry[];
     w?: string;
+    showMaterialName?: boolean
     // Falls du eine erweiterte Version von InventoryEntry verwendest:
     // entries: InventoryEntryWithDelay[];
 }
 
-export const MaterialEntriesTable: React.FC<MaterialEntriesTableProps> = ({ entries, w }) => {
+export const MaterialEntriesTable: React.FC<MaterialEntriesTableProps> = ({ entries, w, showMaterialName }) => {
     return (
         <>
             <Table striped highlightOnHover w={w}>
                 <Table.Thead>
                     <Table.Tr>
                         <Table.Th>ID</Table.Th>
+                        {showMaterialName && (
+                            <Table.Th>Type</Table.Th>
+                        )}
                         <Table.Th>Added At</Table.Th>
                         <Table.Th>Order ID</Table.Th>
                         <Table.Th>Inventory ID</Table.Th>
@@ -32,6 +36,9 @@ export const MaterialEntriesTable: React.FC<MaterialEntriesTableProps> = ({ entr
                     {entries.map((item) => (
                         <Table.Tr key={item.id}>
                             <Table.Td>{item.id}</Table.Td>
+                            {showMaterialName && (
+                                <Table.Td>{item.material}</Table.Td>
+                            )}
                             <Table.Td>{new Date(item.addedAt).toLocaleString()}</Table.Td>
                             <Table.Td>{item.orderId ?? '-'}</Table.Td>
                             <Table.Td>{item.inventoryId}</Table.Td>
