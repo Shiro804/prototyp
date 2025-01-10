@@ -46,15 +46,15 @@ interface LinkDescription {
 
 const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
-  { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
+  { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
   // Additional links...
 ];
 
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
-  { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
+  { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
   // Additional links...
 ];
 

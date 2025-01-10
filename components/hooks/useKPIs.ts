@@ -25,6 +25,12 @@ interface KPIs {
   completedSeatsPerMinute: number;
   averageOrdersPerMinute: number;
   openAssemblies: number;
+  transportTypeDurations: Record<string, TransportTypeStats>;
+}
+
+interface TransportTypeStats {
+  durations: number[];
+  average: number;
 }
 
 // Method to check if all orders are completed
@@ -170,6 +176,41 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
     );
   }, [simulation.frames, frame]);
 
+  const transportTypeDurations = useMemo(() => {
+    // Combine all durations from frames[0..frame]
+    const aggregator: Record<string, number[]> = {};
+
+    // Collect durations
+    for (let i = 0; i <= frame; i++) {
+      const fr = simulation.frames[i];
+      if (fr.tsTypeDurations) {
+        for (const [tsType, durationsArr] of Object.entries(
+          fr.tsTypeDurations
+        )) {
+          aggregator[tsType] = aggregator[tsType] || [];
+          aggregator[tsType].push(...durationsArr);
+        }
+      }
+    }
+
+    // Compute stats
+    const results: Record<string, TransportTypeStats> = {};
+    for (const [tsType, arr] of Object.entries(aggregator)) {
+      const count = arr.length;
+      if (count === 0) {
+        results[tsType] = { durations: [], average: 0 };
+      } else {
+        const total = arr.reduce((acc, n) => acc + n, 0);
+        const avg = total / count;
+        results[tsType] = {
+          durations: arr,
+          average: avg,
+        };
+      }
+    }
+    return results;
+  }, [simulation.frames, frame]);
+
   const openAssemblies = useMemo(() => {
     const open = totalSeatsRequired - completedSeatsCount;
     return open >= 0 ? open : 0;
@@ -183,6 +224,7 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
     averageTimeMinutes,
     completedSeatsPerMinute,
     averageOrdersPerMinute,
-    openAssemblies
+    openAssemblies,
+    transportTypeDurations,
   };
 };
