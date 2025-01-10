@@ -20,9 +20,9 @@ import { MaterialFlowNodeTypes, MaterialNodeType } from "./nodesMaterial";
 import { MaterialSelectedEntity } from "./nodesMaterial";
 import { getLayoutedElements } from "../simulation-overview/layout";
 import { EntityInfo } from "../simulation-overview/EntityInfo";
+import { useSimulationMock } from "../context/SimulationContextMock";
 
 // Import your live simulation context hook
-import { useSimulationLive } from "@/components/context/SimulationContextLive";
 
 /**
  * A new Graph that includes materials as nodes, in addition to process steps & transport systems.
@@ -37,7 +37,7 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
     const [layout, setLayout] = useState<"TB" | "LR">("TB");
 
     // Access the live simulation from context
-    const { simulation, frame } = useSimulationLive();
+    const { simulation, frame } = useSimulationMock();
 
     useEffect(() => {
         if (!simulation) return; // If simulation not loaded yet, do nothing
