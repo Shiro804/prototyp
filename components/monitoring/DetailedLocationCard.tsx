@@ -5,6 +5,7 @@
 import React, { FC } from "react";
 import {
     Accordion,
+    Box,
     Button,
     Center,
     Divider,
@@ -12,12 +13,13 @@ import {
     Paper,
     SimpleGrid,
     Text,
+    Title,
 } from "@mantine/core";
-import { LocationFull } from "@/lib/simulation/Simulation";
+import { LocationFull, TransportSystemFull } from "@/lib/simulation/Simulation";
 import { Order, ProcessStep, TransportSystem, InventoryEntry } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
-import { getTransportSystemsForLocation } from "@/app/incoming-goods/helpers";
 import MaterialEntriesTable from "./MaterialEntriesTable"; // Passe den Pfad entsprechend an
+import { getTransportSystemsForProcessStep } from "../helpers";
 
 interface DetailedLocationCardProps {
     location: LocationFull;
@@ -55,6 +57,15 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
         return Math.min(utilization, 1); // Stelle sicher, dass es 100% nicht überschreitet
     }
 
+    const LocationStat = (title: string, value: any) => {
+        return (
+            <Flex w="100%" direction="column" justify="center" align="center">
+                <Text fw={600}>{title}</Text>
+                <Text>{typeof value === "number" ? value : "" + value}</Text>
+            </Flex>
+        )
+    }
+
     return (
         <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg="white">
             {/* Header */}
@@ -81,23 +92,20 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                     const utilization = calculateInventoryUtilization(ps.inventory);
 
                     return (
-                        <Accordion.Item key={ps.id} value={`ps-${ps.id}`}>
-                            <Accordion.Control>{ps.name}</Accordion.Control>
+                        <Accordion.Item variant="contained" key={ps.id} value={`ps-${ps.id}`}>
+                            <Accordion.Control >{ps.name}</Accordion.Control>
                             <Accordion.Panel>
                                 <Divider mb={30} size="xs" />
 
-                                <Flex direction="row" align="center">
+                                <Flex direction="row" align="center" h={"100%"}>
                                     {/* Linke Spalte: Basisinformationen */}
-                                    <Flex direction="column">
-                                        <Flex direction="row" align="center" justify="center" ta="center">
-                                            <Flex direction="column" justify="center" align="center" maw={100} mr={50}>
-                                                <Text fw={700}>Process Step Details</Text>
+                                    <Flex direction="column" h={200} w={"50%"}>
+                                        <Flex direction="column" justify="flex-start" h={"100%"}>
+                                            <Flex direction="row" justify="center" align="center">
+                                                <Text mb={20} fw={700}>Process Step Details</Text>
                                             </Flex>
                                             <SimpleGrid cols={4}>
-                                                <Flex w="100%" direction="column" justify="center" align="center">
-                                                    <Text fw={600}>Status</Text>
-                                                    <Text>{ps.status}</Text>
-                                                </Flex>
+                                                {LocationStat("Status", ps.status)}
                                                 <Flex w="100%" direction="column" justify="center" align="center">
                                                     <Text fw={600}>Input Speed</Text>
                                                     <Text>{ps.inputSpeed}</Text>
@@ -110,13 +118,14 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                     <Text fw={600}>Recipe Rate</Text>
                                                     <Text>{ps.recipeRate}</Text>
                                                 </Flex>
-                                                {ps.totalRecipeTransformations !== null && (
-                                                    <Flex w="100%" direction="column">
-                                                        <Flex direction="column">
-                                                            <Text fw={600}>Transformations</Text>
-                                                            <Text ta="center">{ps.totalRecipeTransformations}</Text>
-                                                        </Flex>
+                                                {ps.recipe && (
+                                                    <Flex w="100%" direction="column" justify="center" align="center">
+                                                        <Text fw={600}>Recipe</Text>
+                                                        <Text>{ps.recipe?.inputs.map(i => { return <>i.material</> })}</Text>
                                                     </Flex>
+                                                )}
+                                                {ps.totalRecipeTransformations !== null && (
+                                                    LocationStat("Transformations", ps.totalRecipeTransformations)
                                                 )}
                                             </SimpleGrid>
                                         </Flex>
@@ -124,30 +133,33 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
 
                                     {/* Rechte Spalte: Memoized Gauge */}
                                     <Flex direction="column" align="center" justify="center" miw={300} maw={500} ml={50}>
-                                        <GaugeSection id={`gauge-ps-${ps.id}`} percent={utilization} />
+                                        <GaugeSection percent={utilization} />
                                     </Flex>
                                 </Flex>
 
                                 {/* Sub-Accordion für Transport Systems */}
-                                <Accordion multiple variant="contained" mt="md">
+                                <Accordion multiple variant="contained" mt="md" w={"100%"}>
                                     <Accordion.Item value={`transport-ps-${ps.id}`}>
                                         <Accordion.Control>
                                             Transport Systems ({ps.outputs.length})
                                         </Accordion.Control>
-                                        <Accordion.Panel>
-                                            {getTransportSystemsForLocation(location).map((ts) => (
-                                                <Accordion key={ts.id} multiple variant="separated" mb="md">
-                                                    <Accordion.Item value={`ts-${ts.id}`}>
+                                        <Accordion.Panel w={"100%"}>
+                                            {getTransportSystemsForProcessStep(ps).map((ts: TransportSystemFull) => (
+                                                <Accordion key={ts.id} multiple variant="separated" mb="md" w={"100%"}>
+                                                    <Accordion.Item value={`ts-${ts.id}`} w={"100%"}>
                                                         <Accordion.Control>
                                                             {`${ts.name}`}
                                                         </Accordion.Control>
-                                                        <Accordion.Panel>
-                                                            <Flex w={"100%"} align="center" justify="space-between" p={"sm"}>
-                                                                <Flex direction="column" w="60%">
-                                                                    <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} />
+                                                        <Accordion.Panel w={"100%"}>
+                                                            <Flex w={"100%"} align="flex-start" p={"sm"}>
+                                                                <Flex direction={"column"} w={"50%"} h={"100%"} align={"flex-start"} justify={"flex-start"} mr={"113"}>
+                                                                    <Title order={6}>Materials within the Transport System</Title>
+                                                                    <Flex direction="column" w="100%">
+                                                                        <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} showMaterialName/>
+                                                                    </Flex>
                                                                 </Flex>
-                                                                <Flex w="30%">
-                                                                    <GaugeSection id={`gauge-ts-${ts.id}`} percent={ts.inventory.entries.length / ts.inventory.limit} width="80%"></GaugeSection>
+                                                                <Flex>
+                                                                    <GaugeSection percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green"></GaugeSection>
                                                                 </Flex>
                                                             </Flex>
                                                         </Accordion.Panel>

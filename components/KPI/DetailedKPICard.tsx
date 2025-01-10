@@ -2,11 +2,12 @@
 "use client";
 
 import React, { FC, useEffect } from "react";
-import { Paper, Text, Flex, SimpleGrid, Divider, Box } from "@mantine/core";
+import { Paper, Text, Flex, SimpleGrid, Divider, Box, Title, MantineStyleProp, StyleProp } from "@mantine/core";
 import GaugeChart from "react-gauge-chart";
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { ProcessStep } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
+import { getTransportSystemsForProcessStep } from "../helpers";
 
 /**
  * Interface for DetailedKPICard Props
@@ -45,6 +46,19 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
         return Math.min(utilization, 1);
     };
 
+    const KPI = (header: string, value: any) => {
+        return (
+            <Flex direction={"column"}>
+                <Text fw={600} size="sm">
+                    {header}
+                </Text>
+                <Text size="sm" mb="xs">
+                    {(typeof value === "number") ? "" + value : value}
+                </Text>
+            </Flex>
+        )
+    }
+
     return (
         <Paper shadow="md" p="lg" mb="xl" withBorder bg="white">
             {/* LOCATION INFO */}
@@ -65,84 +79,87 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                     return (
                         <Paper
                             key={ps.id}
-                            shadow="xs"
+                            shadow="xl"
                             p="md"
                             withBorder
                             bg="white"
                             miw={500}
                             maw={700}
                         >
-                            <Text fw="bold" size="md" mb="xs">
-                                {ps.name}
-                            </Text>
-                            <Divider mb="sm" />
-
-                            {/* KPIs */}
-                            <SimpleGrid cols={2}>
-                                {/* Left column: textual details */}
+                            <Flex direction={"column"}>
                                 <Box>
-                                    <Text fw={600} size="sm">
-                                        Status
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.status}
-                                    </Text>
-
-                                    <Text fw={600} size="sm">
-                                        Input Speed
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.inputSpeed}
-                                    </Text>
-
-                                    <Text fw={600} size="sm">
-                                        Output Speed
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.outputSpeed}
-                                    </Text>
-
-                                    <Text fw={600} size="sm">
-                                        Recipe Rate
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.recipeRate}
-                                    </Text>
-                                    <Text fw={600} size="sm">
-                                        Materials
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.inventory.entries.length}
-                                    </Text>
-                                    <Text fw={600} size="sm">
-                                        Current Orders
-                                    </Text>
-                                    <Text size="sm" mb="xs">
-                                        {ps.orders.length > 0
-                                            ? ps.orders.map((o, index) => (
-                                                <React.Fragment key={o.id}>
-                                                    {o.id}
-                                                    {index < ps.orders.length - 1 && ", "}
-                                                </React.Fragment>
-                                            ))
-                                            : "-"}
-                                    </Text>
-
-                                    {ps.totalRecipeTransformations != null && (
-                                        <>
-                                            <Text fw={600} size="sm">
-                                                Transformations
-                                            </Text>
-                                            <Text size="sm" mb="xs">
-                                                {ps.totalRecipeTransformations}
-                                            </Text>
-                                        </>
-                                    )}
+                                    <Title order={4} fw="bold" size="md" mb="xs">
+                                        {ps.name}
+                                    </Title>
+                                    <Divider mb="sm" />
                                 </Box>
+                                <Flex direction={"column"}>
+                                    <Flex justify={"space-between"} p={20} pr={40}>
+                                        {/* KPIs */}
+                                        <SimpleGrid cols={{ base: 2, sm: 2, lg: 2 }}>
+                                            {/* Left column: textual details */}
+                                            {KPI("Status", ps.status)}
+                                            {KPI("Input Speed", ps.inputSpeed)}
+                                            {KPI("Output Speed", ps.outputSpeed)}
+                                            {KPI("Recipe Rate", ps.recipeRate)}
+                                            {KPI("Materials", ps.inventory.entries.length)}
 
-                                {/* Right column: Memoized Gauge for inventory utilization */}
-                                <GaugeSection id={`gauge-ps-${ps.id}`} percent={utilization} />
-                            </SimpleGrid>
+                                            {KPI("Order IDs",
+                                                ps.orders.length > 0
+                                                    ? ps.orders.map((o, index) => (
+                                                        <React.Fragment key={o.id}>
+                                                            {o.id}
+                                                            {index < ps.orders.length - 1 && ", "}
+                                                        </React.Fragment>
+                                                    ))
+                                                    : "-"
+                                            )}
+
+                                            {ps.totalRecipeTransformations != null && (
+                                                <>
+                                                    {KPI("Transformations", ps.totalRecipeTransformations)}
+                                                </>
+                                            )}
+
+                                            {/* Right column: Memoized Gauge for inventory utilization */}
+                                        </SimpleGrid>
+                                        <GaugeSection percent={utilization} width={170} />
+                                    </Flex>
+                                    <Flex direction={"column"} w={"100%"}>
+                                        <Title order={5}>
+                                            Transport System(s)
+                                        </Title>
+                                        {getTransportSystemsForProcessStep(ps).map(ts => {
+                                            return (
+                                                <Paper p={"xs"} shadow="xl" mb="xl" withBorder bg="white">
+                                                    <Flex>
+                                                        <Title order={6} mr={"xs"}>Name:</Title>
+                                                        {KPI("", ts.name)}
+                                                    </Flex>
+                                                    {/* Flex Body  for TS KPI Stats*/}
+                                                    <Flex w={"100%"} justify={"space-between"} p={"xs"} pr={"xl"} >
+                                                        {/* Container for KPI Stats */}
+                                                        <Flex justify={"center"} align={"center"}>
+                                                            <SimpleGrid cols={{ base: 2, sm: 1, md: 2, lg: 3 }}>
+                                                                {KPI("Placeholder", 1)}
+                                                                {KPI("Placeholder", 1)}
+                                                                {KPI("Placeholder", 1)}
+                                                                {KPI("Placeholder", 1)}
+                                                                {KPI("Placeholder", 1)}
+                                                                {KPI("Placeholder", 1)}
+                                                            </SimpleGrid>
+                                                        </Flex>
+                                                        {/* Container for Charts */}
+                                                        <Flex>
+                                                            <GaugeSection percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" />
+                                                        </Flex>
+                                                    </Flex>
+                                                </Paper>
+                                            )
+                                        })}
+                                    </Flex>
+                                </Flex>
+                            </Flex>
                         </Paper>
                     );
                 })}

@@ -1,6 +1,6 @@
 import { Flex, Text } from "@mantine/core";
+import { Gauge, gaugeClasses, useGaugeState } from '@mui/x-charts/Gauge';
 import React from "react";
-import GaugeChart from "react-gauge-chart";
 
 /**
  * A memoized GaugeSection to prevent re-renders unless the 'percent' prop changes.
@@ -9,34 +9,39 @@ import GaugeChart from "react-gauge-chart";
  */
 export const GaugeSection = React.memo(
     ({
-        id,
         percent,
-        width
+        width,
+        color
     }: {
-        id: string;
         percent: number;
-        width?: string;
+        width?: number;
+        color?: string
     }) => {
+
         return (
-            <Flex direction="column" align="center" justify="center" style={{ width: "100%" }}>
-                <Text fz={14} ta="center" mb="xs">
-                    Inventory Utilization
+            <Flex direction="column" align="center" justify="center" style={{}}>
+                <Text fw={600} fz={16} ta="center">
+                    Inventory Utilization (%)
                 </Text>
-                <GaugeChart
-                    id={id}
-                    nrOfLevels={10}
-                    arcPadding={0}
-                    cornerRadius={0}
-                    colors={["#5991ff", "#ed375b"]}
-                    percent={percent}
-                    style={{ width: width ? width : "100%", borderRadius: "20px" }}
-                    textColor="black"
-                    needleColor="grey"
-                    needleBaseColor="grey"
-                    formatTextValue={(val) => `${(+val).toFixed(1)}%`}
+                <Gauge
+                    cornerRadius="30%"
+                    width={width ? width : 200}
+                    height={200}
+                    value={percent * 100}
+                    sx={(theme) => ({
+                        [`& .${gaugeClasses.valueText}`]: {
+                            fontSize: 40
+                        },
+                        [`& .${gaugeClasses.valueArc}`]: {
+                            fill: `${color ? color : "#4c6ef5"}`,
+                        },
+                        [`& .${gaugeClasses.referenceArc}`]: {
+                            fill: theme.palette.text.disabled,
+                        },
+                    })}
                 />
             </Flex>
         );
     },
-    (prev, next) => prev.percent === next.percent && prev.id === next.id
+    (prev, next) => prev.percent === next.percent //&& prev.id === next.id
 );
