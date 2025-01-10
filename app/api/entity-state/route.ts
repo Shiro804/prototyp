@@ -1,5 +1,5 @@
 import prisma from "@/data/db";
-import { SimulationEntityState } from "@/lib/simulation/simulationNew";
+import { SimulationEntityState } from "@/lib/simulation/Simulation";
 
 export async function GET() {
   let state: SimulationEntityState = {
@@ -39,7 +39,7 @@ export async function GET() {
                     entries: true,
                   },
                 },
-                orders: true
+                orders: true,
               },
             },
             outputs: {
@@ -54,7 +54,7 @@ export async function GET() {
                     entries: true,
                   },
                 },
-                orders: true
+                orders: true,
               },
             },
             sensors: true,

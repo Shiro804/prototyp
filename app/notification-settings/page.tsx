@@ -1,7 +1,7 @@
 "use client";
 
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { Flex, SimpleGrid, Switch, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 

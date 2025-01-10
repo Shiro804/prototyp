@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { Paper, Table, Flex, Text, Button, Switch, Container, Divider } from "@mantine/core";
 import { LocationFull } from "@/lib/simulation/Simulation";
-import { groupInventory } from "@/app/incoming-goods/helpers";
+import { groupInventory } from "@/components/helpers";
 import { TransportSystem } from "@prisma/client";
 import { useSimulationMock } from "../context/SimulationContextMock";
 

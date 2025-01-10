@@ -2,7 +2,7 @@
 
 import { Button, Divider, Paper, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { FC, ReactNode, useState } from "react";
-import { getIncomingCommodities, getTotalCommodities, groupInventory } from "./helpers";
+import { getIncomingCommodities, getTotalCommodities, groupInventory } from "../../components/helpers";
 import { InventoryEntry, ProcessStep } from "@prisma/client";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { LocationTreeView } from "@/components/custom/LocationTreeView";

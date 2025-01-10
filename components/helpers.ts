@@ -1,7 +1,31 @@
 import prisma from "@/data/db";
-import { TransportSystemFull } from "@/lib/simulation/Simulation";
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import {
+  ProcessStepFull,
+  TransportSystemFull,
+} from "@/lib/simulation/Simulation";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { InventoryEntry, Prisma, TransportSystem } from "@prisma/client";
+
+/**
+ * Converts date strings ("YYYY-MM-DDTHH:mm:ss.sssZ") to actual Date objects.
+ */
+export function convertDates(key: string, value: any) {
+  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(value)) return value;
+  return new Date(value);
+}
+
+export function getTransportSystemsForProcessStep(
+  ps: ProcessStepFull
+): TransportSystemFull[] {
+  const tsList: TransportSystemFull[] = [];
+
+  for (const ts of ps.outputs) {
+    // ps.inputs.forEach((ts) => tsSet.set(ts.id, ts)); // (if relevant)
+    tsList.push(ts);
+  }
+
+  return tsList;
+}
 
 export function getTransportSystemsForLocation(
   location: LocationFull

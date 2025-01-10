@@ -23,7 +23,7 @@ import { LocationFull } from "@/lib/simulation/Simulation";
 // Depending on the "mode" we either import the mock context or the live context
 import { useSimulationMock } from "@/components/context/SimulationContextMock";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
-import { getTransportSystemsForLocation } from "@/app/incoming-goods/helpers";
+import { getTransportSystemsForLocation } from "../helpers";
 
 /**
  * A type to define whether we want the "mock" or "live" mode.
@@ -54,7 +54,7 @@ export function Monitoring({ mode }: MonitoringProps) {
     // If no simulation => fallback
     if (!simulation) {
         return mode === "mock" ? (
-            <Text>Please press on the calculate button. (Mock)</Text>
+            <Text>Please press on the calculate button.</Text>
         ) : (
             <Text>Loading... (Live)</Text>
         );
@@ -98,10 +98,11 @@ export function Monitoring({ mode }: MonitoringProps) {
     // Otherwise, show the Overview
     return (
         <>
-            <Title>
-                Monitoring {mode === "mock" ? "(Mock)" : "(Live)"}
+            <Title order={2}>
+                Monitoring Overview {mode === "mock" ? "(Mock Simulation)" : "(Live Simulation)"}
             </Title>
 
+            <Title order={3}>Orders</Title>
             {/* Render Orders */}
             <SimpleGrid cols={10} spacing="xs" mb="xl">
                 {currentFrame.orders.map((order: Order) => (
@@ -136,6 +137,7 @@ export function Monitoring({ mode }: MonitoringProps) {
                     </Paper>
                 ))}
             </SimpleGrid>
+            <Title order={3}>Locations</Title>
 
             {/* Render Locations */}
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">

@@ -1,4 +1,4 @@
-import { SimulationEntityState } from "./simulationNew";
+import { SimulationEntityState } from "./Simulation";
 
 export function nextFreeInventoryEntryId(state: SimulationEntityState): number {
   return (
