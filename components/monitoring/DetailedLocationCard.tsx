@@ -121,7 +121,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                 {ps.recipe && (
                                                     <Flex w="100%" direction="column" justify="center" align="center">
                                                         <Text fw={600}>Recipe</Text>
-                                                        <Text>{ps.recipe?.inputs.map(i => { return <>i.material</> })}</Text>
+                                                        <Flex direction={"column"}>{ps.recipe?.inputs.map(i => { return <Text fz={13}>{i.material} ({i.quantity})</Text> })}</Flex>
                                                     </Flex>
                                                 )}
                                                 {ps.totalRecipeTransformations !== null && (
@@ -155,7 +155,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                                 <Flex direction={"column"} w={"50%"} h={"100%"} align={"flex-start"} justify={"flex-start"} mr={"113"}>
                                                                     <Title order={6}>Materials within the Transport System</Title>
                                                                     <Flex direction="column" w="100%">
-                                                                        <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} showMaterialName/>
+                                                                        <MaterialEntriesTable w={"100%"} entries={ts.inventory.entries} showMaterialName />
                                                                     </Flex>
                                                                 </Flex>
                                                                 <Flex>
