@@ -69,8 +69,12 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
         completedSeatsPerMinute,
         averageOrdersPerMinute,
         openAssemblies,
-        transportTypeDurations
-        // transportSystemAverages
+        transportTypeDurations,
+        numberOfProcessSteps,
+        processStepNames,
+        transportSystemCounts,
+        totalTransportSystems,
+        processStepDurationsAverages
     } = useKPIs({ simulation, frame, speed });
 
     // Helper to determine background color for an Order based on status
@@ -106,12 +110,17 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
                 averageOrdersPerMinute={averageOrdersPerMinute}
                 openAssemblies={openAssemblies}
                 transportTypeDurations={transportTypeDurations}
+                numberOfProcessSteps={numberOfProcessSteps}
+                processStepNames={processStepNames}
+                transportSystemCounts={transportSystemCounts}
+                totalTransportSystems={totalTransportSystems}
+                processStepDurationsAverages={processStepDurationsAverages}
             // transportSystemAverages={transportSystemAverages}
             // allTransportTypes={allTypes}
             />
 
             {/* Orders Listing */}
-            <Title order={4} mb="sm">
+            <Title order={4} mb="sm" mt={"xl"}>
                 Orders
             </Title>
             <SimpleGrid cols={10} spacing="xs" mb="xl">

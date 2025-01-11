@@ -111,6 +111,7 @@ export interface SimulationFrame {
   tick: number;
   orders: Order[];
   tsTypeDurations?: Record<string, number[]>;
+  processStepDurations?: Record<string, number[]>;
 }
 
 export interface SimulationRun {
@@ -119,7 +120,7 @@ export interface SimulationRun {
 }
 
 /**
- * Wir erweitern InventoryEntry nur zur Laufzeit, um ein `arrivedTick` einzutragen,
+ * Wir erweitern InventoryEntry nur zur Laufzeit, um ein arrivedTick einzutragen,
  * wenn ein Item ins TransportSystem gelangt. Das ist kein DB-Feld, sondern "ephemer".
  */
 export type InventoryEntryWithDelay = InventoryEntry & {
@@ -281,13 +282,15 @@ export class Simulation {
     Simulation.objectsToReferences(newState);
 
     this.handleOrders(newState);
-
     if (!this.hasActiveOrders()) {
       return newState;
     }
 
-    // We'll create an empty map for this new frame
+    // We'll create an empty map for TS durations
     const tsDurationMap: Record<string, number[]> = {};
+    // We'll also create a map for process step durations:
+    //   Key = processStepId, Value = array of durations
+    const psDurationMap: Record<string, number[]> = {};
 
     const movedOrderIds = new Set<number>();
     const activeOrderIds = new Set(
@@ -296,21 +299,17 @@ export class Simulation {
         .map((o) => o.id)
     );
 
-    // ---------------------
-    // Phase 1: Production
-    // ---------------------
+    // 1) Production (Recipe-based)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
-        if (!ps.recipe) continue;
+        if (!ps.recipe) continue; // We'll handle "no recipe" separately below
 
         const itemsConsumedPerRun = ps.recipe.inputs
           .map((o) => o.quantity)
           .reduce((acc, cur) => acc + cur, 0);
-
         const itemsProducedPerRun = ps.recipe.outputs
           .map((o) => o.quantity)
           .reduce((acc, cur) => acc + cur, 0);
-
         const producedConsumedDifference =
           itemsProducedPerRun - itemsConsumedPerRun;
 
@@ -324,6 +323,7 @@ export class Simulation {
           let inputsFulfilled = true;
           let inputEntries: InventoryEntry[] = [];
 
+          // gather the needed inputs
           for (const recipeInput of ps.recipe.inputs) {
             let possible: InventoryEntry[] = [];
             for (const entry of ps.inventory.entries) {
@@ -345,16 +345,30 @@ export class Simulation {
           }
 
           if (inputsFulfilled) {
+            // The start of transformation is the min arrivedTick among these input entries
+            // If not set, fallback to the current tick
+            const transformStart = Math.min(
+              ...inputEntries.map(
+                (e) =>
+                  (e as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
+              )
+            );
+            const transformationDuration = this.currentTick - transformStart;
+            if (!psDurationMap[ps.name]) {
+              psDurationMap[ps.name] = [];
+            }
+            psDurationMap[ps.name].push(Math.max(0, transformationDuration));
+
+            // consume inputs
             const affectedOrders = Array.from(
               new Set(inputEntries.map((e) => e.orderId))
             );
-
             const inputEntriesSet = new Set(inputEntries);
             ps.inventory.entries = ps.inventory.entries.filter(
               (e) => !inputEntriesSet.has(e)
             );
 
-            // Produce outputs
+            // produce outputs
             for (const out of ps.recipe.outputs) {
               for (let i = 0; i < out.quantity; i++) {
                 for (const orderId of affectedOrders) {
@@ -391,9 +405,30 @@ export class Simulation {
       }
     }
 
-    // ---------------------
-    // Phase 2: Outlet (ProcessStep Inventory -> TransportSystem Inventory)
-    // ---------------------
+    // 2) For Process Steps with NO recipe, measure how long each item has stayed
+    //    We'll see if it has arrivedTick & leftTick
+    for (const location of newState.locations) {
+      for (const ps of location.processSteps) {
+        if (ps.recipe) continue; // skip those with recipe
+        // For each item that has arrivedTick & leftTick, store duration
+        for (const entry of ps.inventory.entries) {
+          const delayed = entry as InventoryEntryWithDelay;
+          if (
+            delayed.arrivedTick != null &&
+            delayed.leftTick != null &&
+            delayed.leftTick >= delayed.arrivedTick
+          ) {
+            const stayDuration = delayed.leftTick - delayed.arrivedTick;
+            if (!psDurationMap[ps.name]) {
+              psDurationMap[ps.name] = [];
+            }
+            psDurationMap[ps.name].push(Math.max(0, stayDuration));
+          }
+        }
+      }
+    }
+
+    // 3) Outlet (ProcessStep -> TS)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         const activeOutputs = ps.outputs.filter((o) => o.active);
@@ -418,7 +453,6 @@ export class Simulation {
 
         for (let i = 0; i < itemsPerOutput.length; i++) {
           let ts = ps.outputs[i];
-          // Alle Items, die in TS verschoben werden, bekommen arrivedTick = currentTick
           let entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
             addedAt: new Date(),
@@ -439,7 +473,6 @@ export class Simulation {
           ps.inventory.entries = ps.inventory.entries.filter(
             (e) => !outIds.has(e.id)
           );
-
           for (const eo of entriesOut) {
             if (eo.orderId != null) {
               movedOrderIds.add(eo.orderId);
@@ -449,19 +482,13 @@ export class Simulation {
       }
     }
 
-    // ---------------------
-    // Phase 3: Intake (TransportSystem Inventory -> ProcessStep Inventory)
-    // ---------------------
+    // 4) Intake (TS -> ProcessStep)
     {
-      // 1) Build a map of "sourceStepId -> canExpectMoreItemsFromSource"
-      //    for all active inputs across the entire simulation state.
       const sourceAvailability = new Map<number, boolean>();
-
       for (const location of newState.locations) {
         for (const ps of location.processSteps) {
           for (const inp of ps.inputs) {
             if (!inp.active || !inp.startStepId) continue;
-            // Only compute if we haven't already
             if (!sourceAvailability.has(inp.startStepId)) {
               const canExpect = canExpectMoreItemsFromSource(
                 newState,
@@ -474,13 +501,10 @@ export class Simulation {
         }
       }
 
-      // 2) Now do the actual intake logic, using the precomputed map
       for (const location of newState.locations) {
         for (const ps of location.processSteps) {
           for (const input of ps.inputs) {
             if (!input.active) continue;
-
-            // A) Capacity & speed checks
             const capacityNow =
               ps.inventory.limit - ps.inventory.entries.length;
             if (capacityNow <= 0) continue;
@@ -488,7 +512,6 @@ export class Simulation {
             const speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
             if (speedIn <= 0) continue;
 
-            // B) Filter only items for active orders that have waited transportDelay
             const itemsInTS = input.inventory.entries.filter((entry) => {
               if (!entry.orderId || !activeOrderIds.has(entry.orderId))
                 return false;
@@ -503,25 +526,27 @@ export class Simulation {
 
             if (itemsInTS.length === 0) continue;
 
-            // C) minQuantity check
             if (
               input.minQuantity != null &&
               input.minQuantity > 0 &&
               itemsInTS.length < input.minQuantity
             ) {
-              // If the source step is not empty, skip; otherwise proceed
               const sourceStepId = input.startStepId ?? -1;
               const sourceEmpty = !sourceAvailability.get(sourceStepId);
               if (!sourceEmpty) {
-                continue; // Wait for more
+                continue;
               }
-              // else proceed with final leftover
             }
 
+            const finalIntakeCount = Math.min(
+              speedIn,
+              capacityNow,
+              itemsInTS.length
+            );
             const finalIntake = itemsInTS
-              .slice(0, speedIn) // your logic
+              .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
+              .slice(0, finalIntakeCount)
               .map((e) => {
-                // We clamp leftTick so it's >= arrivedTick
                 const leftTick = Math.max(
                   this.currentTick,
                   (e as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
@@ -534,31 +559,27 @@ export class Simulation {
                 };
               });
 
-            // Now we compute the duration for each item
+            // Accumulate TS durations
             for (const movedItem of finalIntake) {
               const typed = movedItem as InventoryEntryWithDelay;
               if (typed.arrivedTick != null && typed.leftTick != null) {
                 const diff = typed.leftTick - typed.arrivedTick;
                 if (diff >= 0) {
-                  // Figure out the TS type
                   const tsType = input.type || "Unknown";
-                  tsDurationMap[tsType] = tsDurationMap[tsType] || [];
+                  if (!tsDurationMap[tsType]) {
+                    tsDurationMap[tsType] = [];
+                  }
                   tsDurationMap[tsType].push(diff);
                 }
               }
             }
 
-            // E) Optional recipe constraint
             if (!ps.recipe || this.canIntakeItems(ps, finalIntake)) {
               ps.inventory.entries.push(...finalIntake);
-
-              // Remove them from the TS
               const intakeIds = new Set(finalIntake.map((x) => x.id));
               input.inventory.entries = input.inventory.entries.filter(
                 (e) => !intakeIds.has(e.id)
               );
-
-              // Track moved orders
               for (const movedItem of finalIntake) {
                 if (movedItem.orderId != null) {
                   movedOrderIds.add(movedItem.orderId);
@@ -569,46 +590,30 @@ export class Simulation {
         }
       }
     }
-    /**
-     * Checks if the transport system’s source step (by ID) might still produce
-     * more items for active orders. If no source step or no chance of new items,
-     * returns false.
-     */
+
     function canExpectMoreItemsFromSource(
       state: SimulationEntityState,
       sourceStepId: number | null | undefined,
       activeOrderIds: Set<number>
     ): boolean {
       if (!sourceStepId) return false;
-
-      // Find the relevant process step that feeds this transport system
       const sourceStep = state.locations
         .flatMap((loc) => loc.processSteps)
         .find((procStep) => procStep.id === sourceStepId);
-
       if (!sourceStep) return false;
-
-      // Very basic check: if the source step's inventory has any item for an active order,
-      // we assume it can still produce/transfer more materials (or is about to).
       return sourceStep.inventory.entries.some(
         (it) => it.orderId && activeOrderIds.has(it.orderId)
       );
     }
 
-    // Phase 4: Check Order Completion
     this.checkAndCompleteOrders(newState);
-
-    // Phase 5: Update Order Relationships
     this.updateOrderRelationships(newState);
-
-    // Phase 6: Update Order Statuses
     for (const oid of movedOrderIds) {
       const orderObj = this.orders.find((o) => o.id === oid);
       if (orderObj && orderObj.status === "pending") {
         orderObj.status = "in_progress";
         orderObj.startedAt = new Date();
         orderObj.startedTick = this.currentTick;
-
         this.notificationsEnabled &&
           handleNotification(
             "Order Status",
@@ -618,8 +623,12 @@ export class Simulation {
       }
     }
 
+    // After the standard logic, we measure "no-recipe" durations more precisely:
+    // We'll store them in psDurationMap if an item has arrived & left the ps in this tick.
+    // Already done above for recipe-based steps. So let's finalize the result:
+
+    // Merge new TS durations into lastFrame
     const lastFrame = this.frames[this.frames.length - 1];
-    // Merge new durations into lastFrame.tsTypeDurations
     if (!lastFrame.tsTypeDurations) {
       lastFrame.tsTypeDurations = {};
     }
@@ -627,6 +636,17 @@ export class Simulation {
       lastFrame.tsTypeDurations[tsType] = [
         ...(lastFrame.tsTypeDurations[tsType] || []),
         ...arr,
+      ];
+    }
+
+    // Store the psDurationMap in a new property: processStepDurations
+    if (!lastFrame.processStepDurations) {
+      lastFrame.processStepDurations = {};
+    }
+    for (const psName of Object.keys(psDurationMap)) {
+      lastFrame.processStepDurations[psName] = [
+        ...(lastFrame.processStepDurations[psName] || []),
+        ...psDurationMap[psName],
       ];
     }
 
@@ -681,11 +701,11 @@ export class Simulation {
     // Logging for debugging
     console.log(`Checking intake for PS: ${ps.name}`);
     console.log(
-      `Intaking items:`,
+      "Intaking items:",
       inputItems.map((i) => i.material)
     );
-    console.log(`Required materials:`, requiredMaterials);
-    console.log(`Current materials after intake:`, currentMaterials);
+    console.log("Required materials:", requiredMaterials);
+    console.log("Current materials after intake:", currentMaterials);
     console.log(`Remaining required: ${remainingRequired}`);
     console.log(`Available slots after intake: ${availableSlots}`);
 

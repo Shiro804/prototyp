@@ -2,21 +2,14 @@
 
 import { useMemo } from "react";
 import { Order, InventoryEntry, ProcessStep } from "@prisma/client";
-import { LocationFull, SimulationRun } from "@/lib/simulation/Simulation";
+import {
+  LocationFull,
+  SimulationRun,
+  SimulationFrame,
+} from "@/lib/simulation/Simulation";
 
-// Define Interfaces for Enhanced Type Safety
-interface Inventory {
-  entries: InventoryEntry[];
-  // Add other relevant properties if any
-}
-
-interface UseKPIsProps {
-  simulation: SimulationRun;
-  frame: number;
-  speed: number;
-}
-
-interface KPIs {
+// Our external KPI interface
+export interface KPIs {
   pendingCount: number;
   inProgressCount: number;
   completedCount: number;
@@ -26,6 +19,20 @@ interface KPIs {
   averageOrdersPerMinute: number;
   openAssemblies: number;
   transportTypeDurations: Record<string, TransportTypeStats>;
+  numberOfProcessSteps: number;
+  processStepNames: Map<number, string>;
+  transportSystemCounts: Record<string, number>;
+  totalTransportSystems: number;
+  processStepDurationsAverages: Record<
+    string,
+    { durations: number[]; average: number }
+  >;
+}
+
+interface UseKPIsProps {
+  simulation: SimulationRun;
+  frame: number;
+  speed: number;
 }
 
 interface TransportTypeStats {
@@ -33,31 +40,24 @@ interface TransportTypeStats {
   average: number;
 }
 
-// Method to check if all orders are completed
 const areOrdersCompleteCheck = (orders: Order[]): boolean => {
   return orders.every((order) => order.status === "completed");
 };
 
-// app/kpis/hooks/useKPIs.ts
-
 export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
-  // -----------------------------
-  // 1) Basic KPI counts
-  // -----------------------------
+  // Basic KPI counts
   const pendingCount = useMemo(
     () =>
       simulation.frames[frame].orders.filter((o) => o.status === "pending")
         .length,
     [simulation.frames, frame]
   );
-
   const inProgressCount = useMemo(
     () =>
       simulation.frames[frame].orders.filter((o) => o.status === "in_progress")
         .length,
     [simulation.frames, frame]
   );
-
   const completedCount = useMemo(
     () =>
       simulation.frames[frame].orders.filter((o) => o.status === "completed")
@@ -65,122 +65,83 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
     [simulation.frames, frame]
   );
 
-  // -----------------------------
-  // 2) Compute completedSeatsCount with dynamic access
-  // -----------------------------
+  // Completed Seats
   const completedSeatsCount = useMemo(() => {
-    // Step 1: Find all process steps named "Shipping" across all locations
-    const shippingProcessSteps = simulation.frames[
-      frame
-    ].state.locations.flatMap((loc) =>
-      loc.processSteps.filter((ps) => ps.name === "Shipping")
+    const shippingSteps = simulation.frames[frame].state.locations.flatMap(
+      (loc) => loc.processSteps.filter((ps) => ps.name === "Shipping")
     );
-
-    // Step 2: Count "Complete Seat" materials in their inventories
-    const completeSeatCount = shippingProcessSteps.reduce(
-      (count: number, ps) => {
-        if (ps.inventory && ps.inventory.entries) {
-          return (
-            count +
-            ps.inventory.entries.filter((e) => e.material === "Complete Seat")
-              .length
-          );
-        }
-        return count;
-      },
-      0
-    );
-
-    return completeSeatCount;
+    let total = 0;
+    for (const step of shippingSteps) {
+      total += step.inventory.entries.filter(
+        (e) => e.material === "Complete Seat"
+      ).length;
+    }
+    return total;
   }, [simulation.frames, frame]);
 
-  // -----------------------------
-  // 3) Compute average processing time directly from completed orders
-  // -----------------------------
+  // Average Time
   const averageTimeMinutes = useMemo(() => {
-    const completedOrders = simulation.frames[frame].orders.filter(
+    const doneOrders = simulation.frames[frame].orders.filter(
       (o) =>
         o.status === "completed" &&
         o.startedTick != null &&
         o.completedTick != null
     );
-
-    if (completedOrders.length === 0) return 0;
-
-    const totalSeconds = completedOrders.reduce((acc, o) => {
-      const durationTicks = o.completedTick! - o.startedTick!;
-      return acc + durationTicks * speed;
+    if (doneOrders.length === 0) return 0;
+    const totalSeconds = doneOrders.reduce((acc, o) => {
+      const ticks = o.completedTick! - o.startedTick!;
+      return acc + ticks * speed;
     }, 0);
-
-    return totalSeconds / 60 / completedOrders.length;
+    return totalSeconds / 60 / doneOrders.length;
   }, [simulation.frames, frame, speed]);
 
-  // -----------------------------
-  // 4) Find the first frame where all orders are completed
-  // -----------------------------
+  // firstCompleteFrame
   const firstCompleteFrame = useMemo(() => {
     for (let i = 0; i <= frame; i++) {
-      const currentOrders = simulation.frames[i].orders;
-      if (areOrdersCompleteCheck(currentOrders)) {
-        return i;
-      }
+      const allDone = areOrdersCompleteCheck(simulation.frames[i].orders);
+      if (allDone) return i;
     }
     return null;
   }, [simulation.frames, frame]);
 
-  // -----------------------------
-  // 5) Calculate Average Completed Seats per Minute (Refactored)
-  // -----------------------------
+  // Completed Seats / min
   const completedSeatsPerMinute = useMemo(() => {
     if (firstCompleteFrame !== null) {
-      const elapsedTimeMinutes = (firstCompleteFrame * speed) / 60;
-      if (elapsedTimeMinutes > 0) {
-        return completedSeatsCount / elapsedTimeMinutes;
-      }
-      return 0;
+      const mins = (firstCompleteFrame * speed) / 60;
+      return mins > 0 ? completedSeatsCount / mins : 0;
     } else {
-      const elapsedTimeMinutes = (frame * speed) / 60;
-      if (elapsedTimeMinutes > 0) {
-        return completedSeatsCount / elapsedTimeMinutes;
-      }
-      return 0;
+      const mins = (frame * speed) / 60;
+      return mins > 0 ? completedSeatsCount / mins : 0;
     }
   }, [completedSeatsCount, firstCompleteFrame, frame, speed]);
 
-  // -----------------------------
-  // 6) Calculate Average Completed Orders per Minute (Refactored)
-  // -----------------------------
+  // Orders completed / min
   const averageOrdersPerMinute = useMemo(() => {
     if (firstCompleteFrame !== null) {
-      const elapsedTimeMinutes = (firstCompleteFrame * speed) / 60;
-      if (elapsedTimeMinutes > 0) {
-        return completedCount / elapsedTimeMinutes;
-      }
-      return 0;
+      const mins = (firstCompleteFrame * speed) / 60;
+      return mins > 0 ? completedCount / mins : 0;
     } else {
-      const elapsedTimeMinutes = (frame * speed) / 60;
-      if (elapsedTimeMinutes > 0) {
-        return completedCount / elapsedTimeMinutes;
-      }
-      return 0;
+      const mins = (frame * speed) / 60;
+      return mins > 0 ? completedCount / mins : 0;
     }
   }, [completedCount, firstCompleteFrame, frame, speed]);
 
-  // -----------------------------
-  // 7) Calculate Open Assemblies
-  // -----------------------------
+  // Open Assemblies
   const totalSeatsRequired = useMemo(() => {
     return simulation.frames[frame].orders.reduce(
-      (acc: number, order) => acc + order.quantity,
+      (acc, order) => acc + order.quantity,
       0
     );
   }, [simulation.frames, frame]);
 
-  const transportTypeDurations = useMemo(() => {
-    // Combine all durations from frames[0..frame]
-    const aggregator: Record<string, number[]> = {};
+  const openAssemblies = useMemo(() => {
+    const open = totalSeatsRequired - completedSeatsCount;
+    return open >= 0 ? open : 0;
+  }, [totalSeatsRequired, completedSeatsCount]);
 
-    // Collect durations
+  // Combine TS durations
+  const transportTypeDurations = useMemo(() => {
+    const aggregator: Record<string, number[]> = {};
     for (let i = 0; i <= frame; i++) {
       const fr = simulation.frames[i];
       if (fr.tsTypeDurations) {
@@ -192,8 +153,6 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
         }
       }
     }
-
-    // Compute stats
     const results: Record<string, TransportTypeStats> = {};
     for (const [tsType, arr] of Object.entries(aggregator)) {
       const count = arr.length;
@@ -201,20 +160,91 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
         results[tsType] = { durations: [], average: 0 };
       } else {
         const total = arr.reduce((acc, n) => acc + n, 0);
-        const avg = total / count;
         results[tsType] = {
           durations: arr,
-          average: avg,
+          average: total / count,
         };
       }
     }
     return results;
   }, [simulation.frames, frame]);
 
-  const openAssemblies = useMemo(() => {
-    const open = totalSeatsRequired - completedSeatsCount;
-    return open >= 0 ? open : 0;
-  }, [totalSeatsRequired, completedSeatsCount]);
+  // Combine Process Step durations
+  // We'll store them in a map: { psId -> all durations }, then compute average
+  const processStepDurationsAverages = useMemo(() => {
+    const aggregator: Record<string, number[]> = {};
+    for (let i = 0; i <= frame; i++) {
+      const fr = simulation.frames[i];
+      if (fr.processStepDurations) {
+        for (const [psName, durationsArr] of Object.entries(
+          fr.processStepDurations
+        )) {
+          aggregator[psName] = aggregator[psName] || [];
+          aggregator[psName].push(...durationsArr);
+        }
+      }
+    }
+    const result: Record<string, { durations: number[]; average: number }> = {};
+    for (const [psName, arr] of Object.entries(aggregator)) {
+      if (arr.length === 0) {
+        result[psName] = { durations: [], average: 0 };
+      } else {
+        const total = arr.reduce((acc, n) => acc + n, 0);
+        const avg = total / arr.length;
+        result[psName] = { durations: arr, average: avg / 60 };
+      }
+    }
+    return result;
+  }, [simulation.frames, frame]);
+
+  // numberOfProcessSteps + processStepNames
+  const { numberOfProcessSteps, processStepNames } = useMemo(() => {
+    let countPS = 0;
+    let names: Map<number, string> = new Map();
+    const fr = simulation.frames[frame];
+    for (const loc of fr.state.locations) {
+      for (const ps of loc.processSteps) {
+        countPS++;
+        names.set(ps.id, ps.name);
+      }
+    }
+    return {
+      numberOfProcessSteps: countPS,
+      processStepNames: names,
+    };
+  }, [simulation.frames, frame]);
+
+  // TS counts
+  const { transportSystemCounts, totalTransportSystems } = useMemo(() => {
+    const aggregator: Record<string, Set<number>> = {};
+    const fr = simulation.frames[frame];
+    for (const loc of fr.state.locations) {
+      for (const ps of loc.processSteps) {
+        for (const inp of ps.inputs) {
+          const typeName = inp.type || "Unknown";
+          aggregator[typeName] = aggregator[typeName] || new Set();
+          aggregator[typeName].add(inp.id);
+        }
+        for (const out of ps.outputs) {
+          const typeName = out.type || "Unknown";
+          aggregator[typeName] = aggregator[typeName] || new Set();
+          aggregator[typeName].add(out.id);
+        }
+      }
+    }
+    let totalCount = 0;
+    for (const setOfIds of Object.values(aggregator)) {
+      totalCount += setOfIds.size;
+    }
+    const finalCounts: Record<string, number> = {};
+    for (const [typeName, ids] of Object.entries(aggregator)) {
+      finalCounts[typeName] = ids.size;
+    }
+    return {
+      transportSystemCounts: finalCounts,
+      totalTransportSystems: totalCount,
+    };
+  }, [simulation.frames, frame]);
 
   return {
     pendingCount,
@@ -225,6 +255,12 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
     completedSeatsPerMinute,
     averageOrdersPerMinute,
     openAssemblies,
+
     transportTypeDurations,
+    numberOfProcessSteps,
+    processStepNames,
+    transportSystemCounts,
+    totalTransportSystems,
+    processStepDurationsAverages,
   };
 };
