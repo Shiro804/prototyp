@@ -73,7 +73,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
             <Divider mb="lg" />
 
             {/* PROCESS STEPS GRID */}
-            <SimpleGrid cols={2} spacing="md">
+            <SimpleGrid cols={1} spacing="md">
                 {processSteps.map((ps) => {
                     const utilization = calculateInventoryUtilization(ps.inventory);
                     return (
@@ -84,7 +84,6 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                             withBorder
                             bg="white"
                             miw={500}
-                            maw={700}
                         >
                             <Flex direction={"column"}>
                                 <Box>
@@ -93,10 +92,10 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                     </Title>
                                     <Divider mb="sm" />
                                 </Box>
-                                <Flex direction={"column"}>
-                                    <Flex justify={"space-between"} p={20} pr={40}>
+                                <Flex direction={"row"}>
+                                    <Flex p={20} pr={40} w={"50%"}>
                                         {/* KPIs */}
-                                        <SimpleGrid cols={{ base: 2, sm: 2, lg: 2 }}>
+                                        <SimpleGrid cols={{ base: 2, sm: 2, lg: 2 }} miw={"50%"} mr={"xl"}>
                                             {/* Left column: textual details */}
                                             {KPI("Status", ps.status)}
                                             {KPI("Input Speed", ps.inputSpeed)}
@@ -125,7 +124,18 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                         </SimpleGrid>
                                         <GaugeSection percent={utilization} width={170} />
                                     </Flex>
-                                    <Flex direction={"column"} w={"100%"}>
+                                    <Flex direction={"row"} gap={20} align={"center"}>
+                                        <Title order={5} style={{ transform: "rotate(-90deg)" }} miw={200} mr={-40}>
+                                            Transport System(s)
+                                        </Title>
+                                        {getTransportSystemsForProcessStep(ps).map(ts => {
+                                            return (
+                                                <GaugeSection title="Inventory Ut. (%)" percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" footerLabel={ts.name}/>
+
+                                            )
+                                        })}
+                                    </Flex>
+                                    {/* <Flex direction={"column"} w={"100%"}>
                                         <Title order={5}>
                                             Transport System(s)
                                         </Title>
@@ -136,9 +146,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                                         <Title order={6} mr={"xs"}>Name:</Title>
                                                         {KPI("", ts.name)}
                                                     </Flex>
-                                                    {/* Flex Body  for TS KPI Stats*/}
                                                     <Flex w={"100%"} justify={"space-between"} p={"xs"} pr={"xl"} >
-                                                        {/* Container for KPI Stats */}
                                                         <Flex justify={"center"} align={"center"}>
                                                             <SimpleGrid cols={{ base: 2, sm: 1, md: 2, lg: 3 }}>
                                                                 {KPI("Placeholder", 1)}
@@ -149,7 +157,6 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                                                 {KPI("Placeholder", 1)}
                                                             </SimpleGrid>
                                                         </Flex>
-                                                        {/* Container for Charts */}
                                                         <Flex>
                                                             <GaugeSection percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" />
                                                         </Flex>
@@ -157,7 +164,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                                 </Paper>
                                             )
                                         })}
-                                    </Flex>
+                                    </Flex> */}
                                 </Flex>
                             </Flex>
                         </Paper>

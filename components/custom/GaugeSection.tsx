@@ -9,19 +9,23 @@ import React from "react";
  */
 export const GaugeSection = React.memo(
     ({
+        title,
         percent,
         width,
-        color
+        color,
+        footerLabel
     }: {
+        title?: string;
         percent: number;
         width?: number;
         color?: string
+        footerLabel?: string
     }) => {
 
         return (
             <Flex direction="column" align="center" justify="center" style={{}}>
                 <Text fw={600} fz={16} ta="center">
-                    Inventory Utilization (%)
+                    {title}
                 </Text>
                 <Gauge
                     cornerRadius="30%"
@@ -40,6 +44,9 @@ export const GaugeSection = React.memo(
                         },
                     })}
                 />
+                <Text fw={600} fz={13} ta="center" maw={100}>
+                    {footerLabel}
+                </Text>
             </Flex>
         );
     },
