@@ -77,28 +77,27 @@ model Location {
 }
 
 model ProcessStep {
-    id                         Int               @id @default(autoincrement())
-    createdAt                  DateTime          @default(now())
-    updatedAt                  DateTime          @updatedAt
-    name                       String
-    status                     String
-    inputSpeed                 Int
-    outputSpeed                Int
-    recipeRate                 Int               @default(10)
-    duration                   Int               @default(1)
-    locationId                 Int
-    inventoryId                Int               @unique
-    recipeId                   Int?
-    totalRecipeTransformations Int?
+    id          Int               @id @default(autoincrement())
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+    name        String
+    status      String
+    inputSpeed  Int
+    outputSpeed Int
+    recipeRate  Int               @default(10)
+    duration    Int               @default(1)
+    locationId  Int
+    inventoryId Int               @unique
+    recipeId    Int?
     // Many-to-Many Beziehung mit Orders
-    orders                     Order[]           @relation("OrderToProcessStep")
-    recipe                     Recipe?           @relation(fields: [recipeId], references: [id])
-    inventory                  Inventory         @relation(fields: [inventoryId], references: [id])
-    location                   Location          @relation(fields: [locationId], references: [id])
-    resources                  Resource[]
-    sensors                    Sensor[]
-    inputs                     TransportSystem[] @relation("stepInputs")
-    outputs                    TransportSystem[] @relation("stepOutputs")
+    orders      Order[]           @relation("OrderToProcessStep")
+    recipe      Recipe?           @relation(fields: [recipeId], references: [id])
+    inventory   Inventory         @relation(fields: [inventoryId], references: [id])
+    location    Location          @relation(fields: [locationId], references: [id])
+    resources   Resource[]
+    sensors     Sensor[]
+    inputs      TransportSystem[] @relation("stepInputs")
+    outputs     TransportSystem[] @relation("stepOutputs")
 }
 
 model Recipe {
@@ -129,13 +128,35 @@ model RecipeOutput {
     Recipe   Recipe? @relation(fields: [recipeId], references: [id])
 }
 
+model LogEntry {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    inputType String
+
+    sensorId     Int?
+    sensor       Sensor? @relation(fields: [sensorId], references: [id])
+    materialId   Int
+    materialName String
+
+    processStepId     Int?
+    transportSystemId Int?
+}
+
 model Sensor {
-    id            Int         @id @default(autoincrement())
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-    name          String
-    processStepId Int
-    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
+    id          Int      @id @default(autoincrement())
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    name        String
+    type        String // e.g. "scanner" or "counter"
+    value       Int      @default(0) // e.g. counter's current count
+    sensorDelay Int      @default(0) // optional delay for scanning
+
+    processStepId Int?
+    processStep   ProcessStep? @relation(fields: [processStepId], references: [id])
+
+    transportSystemId Int?
+    transportSystem   TransportSystem? @relation(fields: [transportSystemId], references: [id])
+    logEntries        LogEntry[]
 }
 
 model FilterEntry {
@@ -174,7 +195,8 @@ model TransportSystem {
     endStep        ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
     startStep      ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
     inventory      Inventory    @relation(fields: [inventoryId], references: [id])
-    orders         Order[]      @relation("OrderToTransportSystem") // Many-to-Many mit Orders
+    orders         Order[]      @relation("OrderToTransportSystem")
+    sensors        Sensor[]
 }
 
 model Order {

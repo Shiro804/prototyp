@@ -1,6 +1,4 @@
-// Simulation.ts
-
-import { InventoryEntry, Prisma, Order } from "@prisma/client";
+import { InventoryEntry, Prisma, Order, LogEntry } from "@prisma/client";
 import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
 import { distributeRoundRobin } from "./round-robin";
@@ -39,6 +37,11 @@ export type LocationFull = Prisma.LocationGetPayload<{
             inventory: { include: { entries: true } };
             filter: { include: { entries: true } };
             orders: true;
+            sensors: {
+              include: {
+                logEntries: true;
+              };
+            };
           };
         };
         outputs: {
@@ -46,9 +49,18 @@ export type LocationFull = Prisma.LocationGetPayload<{
             inventory: { include: { entries: true } };
             filter: { include: { entries: true } };
             orders: true;
+            sensors: {
+              include: {
+                logEntries: true;
+              };
+            };
           };
         };
-        sensors: true;
+        sensors: {
+          include: {
+            logEntries: true;
+          };
+        };
         inventory: { include: { entries: true } };
         recipe: {
           include: { inputs: true; outputs: true };
@@ -64,6 +76,11 @@ export type TransportSystemFull = Prisma.TransportSystemGetPayload<{
     inventory: { include: { entries: true } };
     filter: { include: { entries: true } };
     orders: true;
+    sensors: {
+      include: {
+        logEntries: true;
+      };
+    };
   };
 }>;
 
@@ -84,6 +101,11 @@ export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
         inventory: { include: { entries: true } };
         filter: { include: { entries: true } };
         orders: true;
+        sensors: {
+          include: {
+            logEntries: true;
+          };
+        };
       };
     };
     outputs: {
@@ -91,9 +113,18 @@ export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
         inventory: { include: { entries: true } };
         filter: { include: { entries: true } };
         orders: true;
+        sensors: {
+          include: {
+            logEntries: true;
+          };
+        };
       };
     };
-    sensors: true;
+    sensors: {
+      include: {
+        logEntries: true;
+      };
+    };
     inventory: { include: { entries: true } };
     recipe: {
       include: { inputs: true; outputs: true };
@@ -111,6 +142,7 @@ export interface SimulationFrame {
   tick: number;
   orders: Order[];
   tsTypeDurations?: Record<string, number[]>;
+  // ProcessStepDurations could be Map or object of arrays (depending on approach)
   processStepDurations?: Record<string, number[]>;
 }
 
@@ -120,8 +152,7 @@ export interface SimulationRun {
 }
 
 /**
- * Wir erweitern InventoryEntry nur zur Laufzeit, um ein arrivedTick einzutragen,
- * wenn ein Item ins TransportSystem gelangt. Das ist kein DB-Feld, sondern "ephemer".
+ * Extended InventoryEntry (runtime) with arrivedTick/leftTick.
  */
 export type InventoryEntryWithDelay = InventoryEntry & {
   arrivedTick?: number;
@@ -139,7 +170,7 @@ export class Simulation {
   private notificationsEnabled: boolean = false;
   private initialState: SimulationEntityState;
 
-  // -- (NEU) Transport-Verzögerung in Ticks
+  // Transport-Verzögerung in Ticks
   private readonly transportDelay = 1;
 
   constructor(initialState: SimulationEntityState, initialOrders: Order[]) {
@@ -272,24 +303,24 @@ export class Simulation {
     this.currentState = Simulation.cloneState(lastFrame.state);
   }
 
-  // -----------------------------------------------
-  //           computeNextTick  (Kernlogik)
-  // -----------------------------------------------
+  /**
+   * computeNextTick: main logic for each simulation tick
+   */
   private computeNextTick(
     oldState: SimulationEntityState
   ): SimulationEntityState {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
+    // Possibly handle new orders
     this.handleOrders(newState);
+
     if (!this.hasActiveOrders()) {
       return newState;
     }
 
-    // We'll create an empty map for TS durations
+    // We'll create an aggregator for TS durations and PS durations
     const tsDurationMap: Record<string, number[]> = {};
-    // We'll also create a map for process step durations:
-    //   Key = processStepId, Value = array of durations
     const psDurationMap: Record<string, number[]> = {};
 
     const movedOrderIds = new Set<number>();
@@ -299,10 +330,10 @@ export class Simulation {
         .map((o) => o.id)
     );
 
-    // 1) Production (Recipe-based)
+    // 1) Production (recipe-based)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
-        if (!ps.recipe) continue; // We'll handle "no recipe" separately below
+        if (!ps.recipe) continue;
 
         const itemsConsumedPerRun = ps.recipe.inputs
           .map((o) => o.quantity)
@@ -321,11 +352,10 @@ export class Simulation {
           r++
         ) {
           let inputsFulfilled = true;
-          let inputEntries: InventoryEntry[] = [];
+          const inputEntries: InventoryEntry[] = [];
 
-          // gather the needed inputs
           for (const recipeInput of ps.recipe.inputs) {
-            let possible: InventoryEntry[] = [];
+            const possible: InventoryEntry[] = [];
             for (const entry of ps.inventory.entries) {
               if (
                 recipeInput.material === entry.material &&
@@ -345,8 +375,13 @@ export class Simulation {
           }
 
           if (inputsFulfilled) {
-            // The start of transformation is the min arrivedTick among these input entries
-            // If not set, fallback to the current tick
+            // SHIFT: Instead of using totalRecipeTransformations, we'll find the "counter" sensor and increment
+            this.sensorIncrement(ps, "counter", itemsProducedPerRun);
+
+            // Use the "scanner" sensor as an output scanning step for the newly produced items
+            // (Placeholder logic; in real code you'd log the materials into the sensor's materialList)
+            // e.g. sensorScan(ps, "scanner", "output", ...)
+
             const transformStart = Math.min(
               ...inputEntries.map(
                 (e) =>
@@ -359,13 +394,12 @@ export class Simulation {
             }
             psDurationMap[ps.name].push(Math.max(0, transformationDuration));
 
-            // consume inputs
             const affectedOrders = Array.from(
               new Set(inputEntries.map((e) => e.orderId))
             );
-            const inputEntriesSet = new Set(inputEntries);
+            const inputSet = new Set(inputEntries);
             ps.inventory.entries = ps.inventory.entries.filter(
-              (e) => !inputEntriesSet.has(e)
+              (e) => !inputSet.has(e)
             );
 
             // produce outputs
@@ -383,34 +417,20 @@ export class Simulation {
               }
             }
 
-            if (ps.totalRecipeTransformations == null) {
-              ps.totalRecipeTransformations = 0;
-            }
-            ps.totalRecipeTransformations++;
-
             for (const oid of affectedOrders) {
               if (oid != null) {
                 movedOrderIds.add(oid);
               }
             }
-
-            this.notificationsEnabled &&
-              handleNotification(
-                ps.name,
-                `Live Simulation: ${ps.name}`,
-                "Transformation complete"
-              );
           }
         }
       }
     }
 
-    // 2) For Process Steps with NO recipe, measure how long each item has stayed
-    //    We'll see if it has arrivedTick & leftTick
+    // 2) No recipe => measure stay
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
-        if (ps.recipe) continue; // skip those with recipe
-        // For each item that has arrivedTick & leftTick, store duration
+        if (ps.recipe) continue;
         for (const entry of ps.inventory.entries) {
           const delayed = entry as InventoryEntryWithDelay;
           if (
@@ -428,7 +448,7 @@ export class Simulation {
       }
     }
 
-    // 3) Outlet (ProcessStep -> TS)
+    // 3) Outlet (PS -> TS)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         const activeOutputs = ps.outputs.filter((o) => o.active);
@@ -452,8 +472,23 @@ export class Simulation {
         );
 
         for (let i = 0; i < itemsPerOutput.length; i++) {
-          let ts = ps.outputs[i];
-          let entriesOut = itemsPerOutput[i].map((item) => ({
+          const ts = ps.outputs[i];
+          // We call sensorScan on ps's "scanner" for output
+          // We call sensorScan on ts's "scanner" for input
+          // For now, we'll do a placeholder "scan success":
+
+          // Check if ps scanner is OK
+          if (!this.sensorScan(ps, "scanner", "output", itemsPerOutput[i])) {
+            // if fail => skip
+            continue;
+          }
+
+          // Then check TS scanner is OK
+          if (!this.sensorScan(ts, "scanner", "input", itemsPerOutput[i])) {
+            continue;
+          }
+
+          const entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
             addedAt: new Date(),
             inventoryId: ts.inventory.id,
@@ -473,6 +508,7 @@ export class Simulation {
           ps.inventory.entries = ps.inventory.entries.filter(
             (e) => !outIds.has(e.id)
           );
+
           for (const eo of entriesOut) {
             if (eo.orderId != null) {
               movedOrderIds.add(eo.orderId);
@@ -482,7 +518,7 @@ export class Simulation {
       }
     }
 
-    // 4) Intake (TS -> ProcessStep)
+    // 4) Intake (TS -> PS)
     {
       const sourceAvailability = new Map<number, boolean>();
       for (const location of newState.locations) {
@@ -508,13 +544,13 @@ export class Simulation {
             const capacityNow =
               ps.inventory.limit - ps.inventory.entries.length;
             if (capacityNow <= 0) continue;
-
             const speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
             if (speedIn <= 0) continue;
 
             const itemsInTS = input.inventory.entries.filter((entry) => {
-              if (!entry.orderId || !activeOrderIds.has(entry.orderId))
+              if (!entry.orderId || !activeOrderIds.has(entry.orderId)) {
                 return false;
+              }
               const delayedEntry = entry as InventoryEntryWithDelay;
               if (delayedEntry.arrivedTick == null) return false;
               const delayNeeded =
@@ -525,7 +561,6 @@ export class Simulation {
             });
 
             if (itemsInTS.length === 0) continue;
-
             if (
               input.minQuantity != null &&
               input.minQuantity > 0 &&
@@ -559,16 +594,22 @@ export class Simulation {
                 };
               });
 
-            // Accumulate TS durations
+            // sensorScan on TS => "output"?
+            if (!this.sensorScan(input, "scanner", "output", finalIntake)) {
+              continue;
+            }
+            // sensorScan on PS => "input"?
+            if (!this.sensorScan(ps, "scanner", "input", finalIntake)) {
+              continue;
+            }
+
             for (const movedItem of finalIntake) {
               const typed = movedItem as InventoryEntryWithDelay;
               if (typed.arrivedTick != null && typed.leftTick != null) {
                 const diff = typed.leftTick - typed.arrivedTick;
                 if (diff >= 0) {
                   const tsType = input.type || "Unknown";
-                  if (!tsDurationMap[tsType]) {
-                    tsDurationMap[tsType] = [];
-                  }
+                  tsDurationMap[tsType] = tsDurationMap[tsType] || [];
                   tsDurationMap[tsType].push(diff);
                 }
               }
@@ -608,6 +649,7 @@ export class Simulation {
 
     this.checkAndCompleteOrders(newState);
     this.updateOrderRelationships(newState);
+
     for (const oid of movedOrderIds) {
       const orderObj = this.orders.find((o) => o.id === oid);
       if (orderObj && orderObj.status === "pending") {
@@ -623,11 +665,7 @@ export class Simulation {
       }
     }
 
-    // After the standard logic, we measure "no-recipe" durations more precisely:
-    // We'll store them in psDurationMap if an item has arrived & left the ps in this tick.
-    // Already done above for recipe-based steps. So let's finalize the result:
-
-    // Merge new TS durations into lastFrame
+    // Merge new TS durations
     const lastFrame = this.frames[this.frames.length - 1];
     if (!lastFrame.tsTypeDurations) {
       lastFrame.tsTypeDurations = {};
@@ -639,7 +677,7 @@ export class Simulation {
       ];
     }
 
-    // Store the psDurationMap in a new property: processStepDurations
+    // Store the psDurationMap
     if (!lastFrame.processStepDurations) {
       lastFrame.processStepDurations = {};
     }
@@ -651,6 +689,230 @@ export class Simulation {
     }
 
     return newState;
+  }
+
+  // ---- Sensors logic stubs ----
+  /**
+   * sensorIncrement: increment a "counter" sensor by some value
+   */
+  private sensorIncrement(
+    psOrTS: ProcessStepFull | TransportSystemFull,
+    sensorType: string,
+    amount: number
+  ) {
+    if (!("sensors" in psOrTS) || !Array.isArray(psOrTS.sensors)) {
+      return;
+    }
+    const sensor = psOrTS.sensors.find((s) => s.type === sensorType);
+    if (sensor) {
+      sensor.value += amount;
+      // Placeholder: log this increment somewhere
+      console.log(
+        `[SENSOR] ${sensor.name} incremented by ${amount}, new value: ${sensor.value}`
+      );
+    }
+  }
+
+  /**
+   * sensorScan: placeholder for scanning logic
+   *  If the sensor is found, we simulate a successful scan 100% of the time for now.
+   *  In the future, we might do random fails or check sensorDelay, etc.
+   */
+  private sensorScan(
+    psOrTS: ProcessStepFull | TransportSystemFull,
+    sensorType: string,
+    direction: "input" | "output",
+    items: InventoryEntry[]
+  ): boolean {
+    if (!("sensors" in psOrTS) || !Array.isArray(psOrTS.sensors)) {
+      return true;
+    }
+    const sensor = psOrTS.sensors.find((s) => s.type === sensorType);
+    if (!sensor) {
+      return true;
+    }
+
+    const isProcessStep = (entity: any): entity is ProcessStepFull =>
+      "recipe" in entity;
+
+    for (const i of items) {
+      const logEntry: LogEntry = {
+        id: sensor.logEntries.length + 1,
+        sensorId: sensor.id,
+        createdAt: new Date(Date.now()),
+        materialId: i.id,
+        materialName: i.material,
+        inputType: direction,
+        processStepId: isProcessStep(psOrTS) ? psOrTS.id : null,
+        transportSystemId: !isProcessStep(psOrTS) ? psOrTS.id : null,
+      };
+      sensor.logEntries.push(logEntry);
+    }
+    console.log(sensor.logEntries);
+    console.log(
+      `[SCAN] ${sensor.name} scanning ${items.length} items as ${direction} => success`
+    );
+    // You might store them in sensor.materialList JSON
+    return true; // success
+  }
+  // -----------------------------
+
+  private handleOrders(state: SimulationEntityState): void {
+    if (this.orders.length === 0) return;
+
+    const pending = this.orders.filter(
+      (o) => o.status === "pending" && o.materialsReserved !== true
+    );
+
+    for (const order of pending) {
+      const required = this.getRequiredMaterialsForOrder(order);
+      if (required) {
+        const success = this.reserveMaterialsForOrder(order, required, state);
+        if (success) {
+          order.materialsReserved = true;
+        } else {
+          this.notificationsEnabled &&
+            handleNotification(
+              "Order Reservation",
+              `Order ${order.id}: Nicht genügend Materialien reserviert.`,
+              "error"
+            );
+        }
+      }
+    }
+  }
+
+  private getRequiredMaterialsForOrder(
+    order: Order & { materialsReserved?: boolean }
+  ): { material: string }[] | null {
+    if (!order.quantity || order.quantity < 1) return null;
+    const baseMaterials = [
+      "Seat Structure",
+      "Backrest Structure",
+      "Seat Foam",
+      "Headrest",
+      "Airbag",
+      "Small Part",
+      "Seat Cover",
+      "Backrest Cover",
+    ];
+    return baseMaterials.map((m) => ({ material: m }));
+  }
+
+  private reserveMaterialsForOrder(
+    order: Order & { materialsReserved?: boolean },
+    materials: { material: string }[],
+    state: SimulationEntityState
+  ): boolean {
+    let allOk = true;
+    for (const mat of materials) {
+      let needed = order.quantity;
+      for (const loc of state.locations) {
+        for (const ps of loc.processSteps) {
+          const avail = ps.inventory.entries.filter(
+            (e) => e.material === mat.material && !e.orderId
+          );
+          for (const e of avail) {
+            if (needed <= 0) break;
+            e.orderId = order.id;
+            needed--;
+          }
+          if (needed <= 0) break;
+        }
+        if (needed <= 0) break;
+      }
+      if (needed > 0) {
+        allOk = false;
+        // revert partial reservations
+        for (const loc of state.locations) {
+          for (const ps of loc.processSteps) {
+            for (const e of ps.inventory.entries) {
+              if (e.orderId === order.id && e.material === mat.material) {
+                e.orderId = null;
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+    return allOk;
+  }
+
+  private checkAndCompleteOrders(state: SimulationEntityState): void {
+    const shippingIds = state.locations
+      .flatMap((l) => l.processSteps)
+      .filter((p) => p.name === "Shipping")
+      .map((p) => p.inventory.id);
+
+    for (const order of this.orders) {
+      if (order.status === "completed") continue;
+
+      const seats = state.locations
+        .flatMap((l) => l.processSteps)
+        .flatMap((p) => p.inventory.entries)
+        .filter(
+          (e) =>
+            e.orderId === order.id &&
+            this.isSeatCompleted(e.material) &&
+            shippingIds.includes(e.inventoryId)
+        ).length;
+
+      if (seats >= order.quantity) {
+        order.status = "completed";
+        order.completedAt = new Date();
+        order.completedTick = this.currentTick;
+        this.notificationsEnabled &&
+          handleNotification(
+            "Order Completed",
+            `Order ${order.id} wurde abgeschlossen.`,
+            "success"
+          );
+      }
+    }
+  }
+
+  private updateOrderRelationships(state: SimulationEntityState): void {
+    const orderMap = new Map<number, Order & { materialsReserved?: boolean }>();
+    for (const o of this.orders) {
+      orderMap.set(o.id, o);
+    }
+
+    for (const loc of state.locations) {
+      for (const ps of loc.processSteps) {
+        const stepOrderIds = new Set<number>(
+          ps.inventory.entries
+            .filter((entry) => entry.orderId != null)
+            .map((entry) => entry.orderId as number)
+        );
+        ps.orders = [...stepOrderIds]
+          .map((oid) => orderMap.get(oid))
+          .filter((o): o is Order => o != null);
+
+        for (const inputTS of ps.inputs) {
+          const tsOrderIds = new Set<number>(
+            inputTS.inventory.entries
+              .filter((entry) => entry.orderId != null)
+              .map((entry) => entry.orderId as number)
+          );
+          inputTS.orders = [...tsOrderIds]
+            .map((oid) => orderMap.get(oid))
+            .filter((o): o is Order => o != null);
+        }
+
+        for (const outputTS of ps.outputs) {
+          const tsOrderIds = new Set<number>(
+            outputTS.inventory.entries
+              .filter((entry) => entry.orderId != null)
+              .map((entry) => entry.orderId as number)
+          );
+          outputTS.orders = [...tsOrderIds]
+            .map((oid) => orderMap.get(oid))
+            .filter((o): o is Order => o != null);
+        }
+      }
+    }
+    console.log("Order relationships updated:", state.locations);
   }
 
   /**
@@ -711,165 +973,6 @@ export class Simulation {
 
     // Ensure that available slots are enough for remaining required materials
     return availableSlots >= remainingRequired;
-  }
-
-  private handleOrders(state: SimulationEntityState): void {
-    if (this.orders.length === 0) return;
-
-    const pending = this.orders.filter(
-      (o) => o.status === "pending" && o.materialsReserved !== true
-    );
-
-    for (const order of pending) {
-      const required = this.getRequiredMaterialsForOrder(order);
-      if (required) {
-        const success = this.reserveMaterialsForOrder(order, required, state);
-        if (success) {
-          order.materialsReserved = true;
-        } else {
-          this.notificationsEnabled &&
-            handleNotification(
-              "Order Reservation",
-              `Order ${order.id}: Nicht genügend Materialien reserviert.`,
-              "error"
-            );
-        }
-      }
-    }
-  }
-
-  private getRequiredMaterialsForOrder(
-    order: Order & { materialsReserved?: boolean }
-  ): { material: string }[] | null {
-    if (!order.quantity || order.quantity < 1) return null;
-    const baseMaterials = [
-      "Seat Structure",
-      "Backrest Structure",
-      "Seat Foam",
-      "Headrest",
-      "Airbag",
-      "Small Part",
-      "Seat Cover",
-      "Backrest Cover",
-    ];
-    return baseMaterials.map((m) => ({ material: m }));
-  }
-
-  private reserveMaterialsForOrder(
-    order: Order & { materialsReserved?: boolean },
-    materials: { material: string }[],
-    state: SimulationEntityState
-  ): boolean {
-    let allOk = true;
-
-    for (const mat of materials) {
-      let needed = order.quantity;
-      for (const loc of state.locations) {
-        for (const ps of loc.processSteps) {
-          const avail = ps.inventory.entries.filter(
-            (e) => e.material === mat.material && !e.orderId
-          );
-          for (const e of avail) {
-            if (needed <= 0) break;
-            e.orderId = order.id;
-            needed--;
-          }
-          if (needed <= 0) break;
-        }
-        if (needed <= 0) break;
-      }
-      if (needed > 0) {
-        allOk = false;
-        for (const loc of state.locations) {
-          for (const ps of loc.processSteps) {
-            for (const e of ps.inventory.entries) {
-              if (e.orderId === order.id && e.material === mat.material) {
-                e.orderId = null;
-              }
-            }
-          }
-        }
-        break;
-      }
-    }
-    return allOk;
-  }
-
-  private checkAndCompleteOrders(state: SimulationEntityState): void {
-    const shippingIds = state.locations
-      .flatMap((l) => l.processSteps)
-      .filter((p) => p.name === "Shipping")
-      .map((p) => p.inventory.id);
-
-    for (const order of this.orders) {
-      if (order.status === "completed") continue;
-
-      const seats = state.locations
-        .flatMap((l) => l.processSteps)
-        .flatMap((p) => p.inventory.entries)
-        .filter(
-          (e) =>
-            e.orderId === order.id &&
-            this.isSeatCompleted(e.material) &&
-            shippingIds.includes(e.inventoryId)
-        ).length;
-
-      if (seats >= order.quantity) {
-        order.status = "completed";
-        order.completedAt = new Date();
-        order.completedTick = this.currentTick;
-
-        this.notificationsEnabled &&
-          handleNotification(
-            "Order Completed",
-            `Order ${order.id} wurde abgeschlossen.`,
-            "success"
-          );
-      }
-    }
-  }
-
-  private updateOrderRelationships(state: SimulationEntityState): void {
-    const orderMap = new Map<number, Order & { materialsReserved?: boolean }>();
-    for (const o of this.orders) {
-      orderMap.set(o.id, o);
-    }
-
-    for (const loc of state.locations) {
-      for (const ps of loc.processSteps) {
-        const stepOrderIds = new Set<number>(
-          ps.inventory.entries
-            .filter((entry) => entry.orderId != null)
-            .map((entry) => entry.orderId as number)
-        );
-        ps.orders = [...stepOrderIds]
-          .map((oid) => orderMap.get(oid))
-          .filter((o): o is Order => o != null);
-
-        for (const inputTS of ps.inputs) {
-          const tsOrderIds = new Set<number>(
-            inputTS.inventory.entries
-              .filter((entry) => entry.orderId != null)
-              .map((entry) => entry.orderId as number)
-          );
-          inputTS.orders = [...tsOrderIds]
-            .map((oid) => orderMap.get(oid))
-            .filter((o): o is Order => o != null);
-        }
-
-        for (const outputTS of ps.outputs) {
-          const tsOrderIds = new Set<number>(
-            outputTS.inventory.entries
-              .filter((entry) => entry.orderId != null)
-              .map((entry) => entry.orderId as number)
-          );
-          outputTS.orders = [...tsOrderIds]
-            .map((oid) => orderMap.get(oid))
-            .filter((o): o is Order => o != null);
-        }
-      }
-    }
-    console.log("Order relationships updated:", state.locations);
   }
 
   private isSeatCompleted(material: string): boolean {

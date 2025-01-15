@@ -40,6 +40,11 @@ export async function GET() {
                   },
                 },
                 orders: true,
+                sensors: {
+                  include: {
+                    logEntries: true,
+                  },
+                },
               },
             },
             outputs: {
@@ -55,9 +60,18 @@ export async function GET() {
                   },
                 },
                 orders: true,
+                sensors: {
+                  include: {
+                    logEntries: true,
+                  },
+                },
               },
             },
-            sensors: true,
+            sensors: {
+              include: {
+                logEntries: true
+              }
+            },
             inventory: {
               include: {
                 entries: true,

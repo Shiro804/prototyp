@@ -2,19 +2,10 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-/**
- * Hilfsfunktion für zufällige Zahlen, wird aber hier nicht weiter genutzt.
- */
 function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-/**
- * Erstellt ein TransportSystem zwischen zwei ProcessSteps
- * und legt (falls das "to"-ProcessStep ein Rezept hat) direkt einen Filter an,
- * der genau jene Materialien akzeptiert, die im Rezept des Ziel-Schritts
- * als Input definiert sind.
- */
 async function createTransportSystemWithFilter(
   name: string,
   fromStepId: number,
@@ -23,9 +14,6 @@ async function createTransportSystemWithFilter(
   minQuantity?: number,
   transportDelay?: number,
   options?: {
-    // materials, die manuell eingetragen werden sollen (statt der Recipe-Inputs).
-    // Falls wir beides wollen (Recipe + overrides), könnten wir eine zweite Liste einführen
-    // oder einen bool „mergeRecipeInputs“.
     overrideMaterials?: string[];
   },
   orderId?: number
@@ -36,16 +24,37 @@ async function createTransportSystemWithFilter(
       name,
       inputSpeed: 2,
       outputSpeed: 2,
-      type: type,
+      type,
       inventory: { create: { type: "transportSystem", limit: 10 } },
       startStep: { connect: { id: fromStepId } },
       endStep: { connect: { id: toStepId } },
       transportDelay,
       minQuantity,
+      sensors: {
+        create: [
+          {
+            name: `${name}-scanner`,
+            type: "scanner",
+            sensorDelay: 1,
+            value: 0,
+            // materialList: "[]", // if we store logs as JSON
+          },
+          {
+            name: `${name}-counter`,
+            type: "counter",
+            sensorDelay: 0,
+            value: 0,
+            // materialList: "[]",
+          },
+        ],
+      },
+    },
+    include: {
+      sensors: true,
     },
   });
 
-  // 2) Prüfen, ob das Ziel ("to") ein Recipe hat
+  // 2) ggf. Filter
   const targetStep = await prisma.processStep.findUnique({
     where: { id: toStepId },
     include: {
@@ -55,25 +64,14 @@ async function createTransportSystemWithFilter(
     },
   });
 
-  // 3) Filter-Materialien bestimmen
-  // Falls `options?.overrideMaterials` vorhanden sind, nehmen wir diese –
-  // sonst (Standardfall) lesen wir das Ziel-Recipe.
   let filterMaterials: string[] = [];
   if (options?.overrideMaterials?.length) {
-    // a) explizite Liste verwenden
     filterMaterials = options.overrideMaterials;
   } else if (targetStep?.recipe) {
-    // b) Materialien aus dem Recipe
     filterMaterials = targetStep.recipe.inputs.map((ri) => ri.material);
   }
-
-  // Falls wir kein Rezept haben und keine overrideMaterials, legen wir keinen Filter an
-  // (d.h. das TransportSystem transportiert ALLES).
   if (filterMaterials.length > 0) {
-    // Dubletten entfernen, falls z.B. recipe doppelte Inputs hatte
     const uniqueMaterials = Array.from(new Set(filterMaterials));
-
-    // Filter in DB anlegen
     await prisma.filter.create({
       data: {
         transportSystem: { connect: { id: transportSystem.id } },
@@ -84,33 +82,26 @@ async function createTransportSystemWithFilter(
       },
     });
   }
-
   return transportSystem;
 }
 
-// --- Mock Orders erstellen ---
 async function createMockOrders(count: number) {
   const description = "Bestellung Komplettsitz";
-
   for (let i = 0; i < count; i++) {
-    // const randomQuantity = randomBetween(1, 5);
     const randomQuantity = randomBetween(1, 2);
-
     await prisma.order.create({
       data: {
         status: "pending",
         priority: 1,
-        description: description,
+        description,
         quantity: randomQuantity,
-        // dueDate wird hier nicht gesetzt, da es optional ist
-        // Beziehungen zu anderen Modellen können hier hinzugefügt werden, falls gewünscht
       },
     });
   }
 }
 
 async function main() {
-  // --- Recipes anlegen ---
+  // Recipes
   const preAssemblyRecipeSeat = await prisma.recipe.create({
     data: {
       name: "Pre-Assembly - Seat Recipe",
@@ -190,7 +181,7 @@ async function main() {
 
   const materialQuantity = 100;
 
-  // --- Locations & ProcessSteps ---
+  // Hall 1
   const hall1 = await prisma.location.create({
     data: {
       name: "Hall 1 - Goods Receipt",
@@ -219,6 +210,22 @@ async function main() {
                 },
               },
             },
+            sensors: {
+              create: [
+                {
+                  name: "GoodsEntryPoint-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "GoodsEntryPoint-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
         ],
       },
@@ -228,6 +235,7 @@ async function main() {
     },
   });
 
+  // Hall 5
   const hall5 = await prisma.location.create({
     data: {
       name: "Hall 5 - Covers Receipt",
@@ -252,6 +260,22 @@ async function main() {
                 },
               },
             },
+            sensors: {
+              create: [
+                {
+                  name: "CoversEntryPoint-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "CoversEntryPoint-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
           {
             name: "Shipping",
@@ -264,6 +288,22 @@ async function main() {
                 limit: 500,
               },
             },
+            sensors: {
+              create: [
+                {
+                  name: "Shipping-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "Shipping-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
         ],
       },
@@ -273,6 +313,7 @@ async function main() {
     },
   });
 
+  // Hall 2
   const hall2 = await prisma.location.create({
     data: {
       name: "Hall 2 - Intermediate Storage (Supermarket)",
@@ -289,8 +330,23 @@ async function main() {
                 limit: 100,
               },
             },
+            sensors: {
+              create: [
+                {
+                  name: "StorageRack-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "StorageRack-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
-          // ggf. weitere Steps auskommentiert
         ],
       },
     },
@@ -299,6 +355,7 @@ async function main() {
     },
   });
 
+  // Hall 3
   const hall3 = await prisma.location.create({
     data: {
       name: "Hall 3 - Pre-Assembly and Upholstery",
@@ -311,6 +368,22 @@ async function main() {
             status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeSeat.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "PreAssemblySeat-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "PreAssemblySeat-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
           {
             name: "Pre-Assembly - Backrest",
@@ -319,6 +392,22 @@ async function main() {
             status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeBackrest.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "PreAssemblyBackrest-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "PreAssemblyBackrest-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
           {
             name: "Upholstery - Seat",
@@ -327,6 +416,22 @@ async function main() {
             status: "PROCEEDING",
             recipe: { connect: { id: upholsterySeatRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "UpholsterySeat-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "UpholsterySeat-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
           {
             name: "Upholstery - Backrest",
@@ -335,6 +440,22 @@ async function main() {
             status: "PROCEEDING",
             recipe: { connect: { id: upholsteryBackrestRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "UpholsteryBackrest-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "UpholsteryBackrest-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
         ],
       },
@@ -342,6 +463,7 @@ async function main() {
     include: { processSteps: true },
   });
 
+  // Hall 4
   const hall4 = await prisma.location.create({
     data: {
       name: "Hall 4 - Assembly and Quality Check",
@@ -354,6 +476,22 @@ async function main() {
             status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 5 } },
             recipe: { connect: { id: assemblingRecipe.id } },
+            sensors: {
+              create: [
+                {
+                  name: "Assembling-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "Assembling-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
           {
             name: "End of Line Check",
@@ -361,6 +499,22 @@ async function main() {
             outputSpeed: 1,
             status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 5 } },
+            sensors: {
+              create: [
+                {
+                  name: "EndOfLineCheck-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+                {
+                  name: "EndOfLineCheck-counter",
+                  type: "counter",
+                  value: 0,
+                  sensorDelay: 0,
+                },
+              ],
+            },
           },
         ],
       },
@@ -370,11 +524,7 @@ async function main() {
     },
   });
 
-  // --- Transport-Systeme erstellen ---
-  //
-  // ACHTUNG: Wir holen uns jeweils den ProcessStep, um an seine ID zu kommen
-  // und rufen `createTransportSystemWithFilter(...)` auf.
-
+  // Now create Transport Systems
   await createTransportSystemWithFilter(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
     hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!.id,
@@ -488,7 +638,7 @@ async function main() {
 
   await createMockOrders(10);
 
-  // Prüfe, was wir haben:
+  // Print out final data
   console.dir(
     {
       locations: await prisma.location.findMany({
@@ -499,6 +649,7 @@ async function main() {
           filter: {
             include: { entries: true },
           },
+          sensors: true,
         },
       }),
     },
