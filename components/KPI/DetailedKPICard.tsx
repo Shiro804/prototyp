@@ -114,9 +114,9 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                                     : "-"
                                             )}
 
-                                            {ps.totalRecipeTransformations != null && (
+                                            {ps.sensors.find(s => s.type === "counter") != null && (
                                                 <>
-                                                    {KPI("Transformations", ps.totalRecipeTransformations)}
+                                                    {KPI("Transformations", ps.sensors.find(s => s.type === "counter")?.value)}
                                                 </>
                                             )}
 

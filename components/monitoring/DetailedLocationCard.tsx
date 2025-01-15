@@ -124,8 +124,8 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                         <Flex direction={"column"}>{ps.recipe?.inputs.map(i => { return <Text fz={13}>{i.material} ({i.quantity})</Text> })}</Flex>
                                                     </Flex>
                                                 )}
-                                                {ps.totalRecipeTransformations !== null && (
-                                                    LocationStat("Transformations", ps.totalRecipeTransformations)
+                                                {ps.sensors.find(s => s.type === "counter") !== null && (
+                                                    LocationStat("Transformations", ps.sensors.find(s => s.type === "counter")?.value)
                                                 )}
                                             </SimpleGrid>
                                         </Flex>
