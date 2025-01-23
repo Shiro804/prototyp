@@ -9,6 +9,7 @@ import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCo
  */
 export interface SimulationStateMock extends SimulationCoreState {
   toggleTransportSystem: (tsId: number) => void;
+  toggleProcessStep: (psId: number) => void;
 }
 
 /**
@@ -29,7 +30,7 @@ export const SimulationContextMock = createContext<SimulationStateMock>({
   toggle: () => { },
   moveFrame: () => { },
   handleJumpToTick: () => { },
-
+  toggleProcessStep: () => { },
   toggleTransportSystem: () => { },
 });
 
@@ -59,8 +60,28 @@ export const SimulationProviderMock: FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  /**
+   * Toggle the active state of a transport system.
+   */
+  const toggleProcessStep = (psId: number) => {
+    if (!core.simInstance) return;
+
+    // Toggle in the Simulation (also discards future frames)
+    core.simInstance.toggleProcessStep(psId);
+
+    // Retrieve the updated SimulationRun
+    const newRun = core.simInstance.getSimulationRun();
+    core.setSimulation(newRun);
+
+    // If the current frame index is now out of bounds (e.g., future frames discarded),
+    // set it to the last available frame
+    if (core.frame >= newRun.frames.length) {
+      core.setFrame(newRun.frames.length - 1);
+    }
+  };
+
   return (
-    <SimulationContextMock.Provider value={{ ...core, toggleTransportSystem }}>
+    <SimulationContextMock.Provider value={{ ...core, toggleProcessStep, toggleTransportSystem }}>
       {children}
     </SimulationContextMock.Provider>
   );

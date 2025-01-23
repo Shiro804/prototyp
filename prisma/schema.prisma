@@ -81,7 +81,8 @@ model ProcessStep {
     createdAt   DateTime          @default(now())
     updatedAt   DateTime          @updatedAt
     name        String
-    status      String
+    status      String            @default("IDLING")
+    active      Boolean           @default(true)
     inputSpeed  Int
     outputSpeed Int
     recipeRate  Int               @default(10)
@@ -89,6 +90,7 @@ model ProcessStep {
     locationId  Int
     inventoryId Int               @unique
     recipeId    Int?
+    errorRate   Float?            @default(0.0)
     // Many-to-Many Beziehung mit Orders
     orders      Order[]           @relation("OrderToProcessStep")
     recipe      Recipe?           @relation(fields: [recipeId], references: [id])

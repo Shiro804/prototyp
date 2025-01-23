@@ -21,7 +21,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
 }) => {
     const { name, processSteps } = location;
 
-    const { toggleTransportSystem } = useSimulationMock();
+    const { toggleTransportSystem, toggleProcessStep } = useSimulationMock();
 
     return (
         <Paper shadow="md" p="lg" style={{ overflowY: "auto", width: "100%", height: "550px" }} bg="white">
@@ -50,9 +50,15 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                     .reverse()
                     .map((ps) => (
                         <Flex w="100%" direction="column" key={ps.id}>
-                            <Text my="md" fw={600}>
-                                {ps.name}
-                            </Text>
+                            <Flex align={"center"} justify={"space-between"}>
+                                <Text my="md" fw={600}>
+                                    {ps.name}
+                                </Text>
+                                <Switch
+                                    checked={ps.active}
+                                    onChange={() => toggleProcessStep(ps.id)}
+                                />
+                            </Flex>
                             <Table withRowBorders highlightOnHover>
                                 <Table.Thead>
                                     <Table.Tr>

@@ -142,7 +142,6 @@ export interface SimulationFrame {
   tick: number;
   orders: Order[];
   tsTypeDurations?: Record<string, number[]>;
-  // ProcessStepDurations could be Map or object of arrays (depending on approach)
   processStepDurations?: Record<string, number[]>;
 }
 
@@ -159,6 +158,30 @@ export type InventoryEntryWithDelay = InventoryEntry & {
   leftTick?: number;
 };
 
+/**
+ * Ephemeral structure to store "work in progress" in a ProcessStep:
+ * We also reuse it for no-recipe steps (like a "holding pattern").
+ */
+interface ProcessStepProduction {
+  /** The orders involved in the current run (IDs). */
+  affectedOrderIds: number[];
+
+  /** When does this production (or holding) finish? Tick number. */
+  finishTick: number;
+
+  /** For recipe steps: how many items are produced upon completion. */
+  itemsProducedPerRun: number;
+
+  /** For no-recipe steps: how many raw items we’re just holding, if needed. */
+  rawItems?: InventoryEntryWithDelay[];
+
+  /** The recipe outputs we create (if recipe-based). */
+  recipeOutputs: { material: string; quantity: number }[];
+}
+
+/**
+ * The main Simulation class.
+ */
 export class Simulation {
   private readonly events: Event[] = [];
   private orders: (Order & { materialsReserved?: boolean })[] = [];
@@ -170,7 +193,7 @@ export class Simulation {
   private notificationsEnabled: boolean = false;
   private initialState: SimulationEntityState;
 
-  // Transport-Verzögerung in Ticks
+  // Default Transport-System delay in ticks
   private readonly transportDelay = 1;
 
   constructor(initialState: SimulationEntityState, initialOrders: Order[]) {
@@ -181,6 +204,7 @@ export class Simulation {
       materialsReserved: false,
     }));
 
+    // Initialize first frame at tick=0
     this.frames.push({
       state: Simulation.cloneState(this.currentState),
       tick: this.currentTick,
@@ -233,8 +257,8 @@ export class Simulation {
     }
 
     const targetFrame = this.frames.find((f) => f.tick === targetTick);
-
     if (targetFrame) {
+      // Jump back
       this.currentTick = targetFrame.tick;
       this.currentState = Simulation.cloneState(targetFrame.state);
       this.orders = Simulation.cloneOrders(targetFrame.orders);
@@ -243,12 +267,14 @@ export class Simulation {
     } else {
       const lastTick = this.currentTick;
       if (targetTick > lastTick) {
+        // Forward
         const missingTicks = targetTick - lastTick;
         this.discardFutureFrames();
         for (let i = 0; i < missingTicks; i++) {
           this.tickForward();
         }
       } else if (targetTick < this.frames[0].tick) {
+        // Too far back => reset
         this.reset();
       }
     }
@@ -264,6 +290,7 @@ export class Simulation {
       this.frames.push(nextFrame);
       this.futureFrames = this.futureFrames.filter((f) => f.tick > nextTick);
     } else {
+      // Compute a new state from the old one
       const newState = this.computeNextTick(this.currentState);
       this.currentTick += 1;
       this.currentState = Simulation.cloneState(newState);
@@ -277,6 +304,7 @@ export class Simulation {
       console.log("New Frame:", newFrame);
     }
 
+    // If no active orders, stop
     if (!this.hasActiveOrders() && !this.isStopped) {
       this.handleSimulationStop();
     }
@@ -303,23 +331,50 @@ export class Simulation {
     this.currentState = Simulation.cloneState(lastFrame.state);
   }
 
-  /**
-   * computeNextTick: main logic for each simulation tick
-   */
+  public toggleProcessStep(psId: number): void {
+    const lastFrame = this.frames[this.frames.length - 1];
+    const { locations } = lastFrame.state;
+
+    const allSteps = locations.flatMap((loc) => loc.processSteps);
+    const foundPS = allSteps.find((ps) => ps.id === psId);
+
+    if (foundPS) {
+      foundPS.active = !foundPS.active;
+      console.log(
+        `Toggle ProcessStep: ${foundPS.name} (ID: ${foundPS.id}) -> ${
+          foundPS.active ? "Active" : "Inactive"
+        }`
+      );
+    }
+
+    this.discardFutureFrames();
+    this.currentState = Simulation.cloneState(lastFrame.state);
+  }
+
+  // --------------------------------------------------------
+  //                  computeNextTick
+  // --------------------------------------------------------
   private computeNextTick(
     oldState: SimulationEntityState
   ): SimulationEntityState {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    // Possibly handle new orders
+    // Attach ephemeral arrays
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
+        (ps as any).__ongoingProduction = (ps as any).__ongoingProduction || [];
+      }
+    }
+
+    // 1) Possibly handle new orders
     this.handleOrders(newState);
 
     if (!this.hasActiveOrders()) {
       return newState;
     }
 
-    // We'll create an aggregator for TS durations and PS durations
+    // Maps to store durations
     const tsDurationMap: Record<string, number[]> = {};
     const psDurationMap: Record<string, number[]> = {};
 
@@ -330,127 +385,168 @@ export class Simulation {
         .map((o) => o.id)
     );
 
-    // 1) Production (recipe-based)
+    // (A) Recipe-based steps
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
+        if (!ps.active) continue;
         if (!ps.recipe) continue;
 
-        const itemsConsumedPerRun = ps.recipe.inputs
-          .map((o) => o.quantity)
-          .reduce((acc, cur) => acc + cur, 0);
-        const itemsProducedPerRun = ps.recipe.outputs
-          .map((o) => o.quantity)
-          .reduce((acc, cur) => acc + cur, 0);
-        const producedConsumedDifference =
-          itemsProducedPerRun - itemsConsumedPerRun;
+        // ephemeralProd array
+        const ephemeralProd = (ps as any)
+          .__ongoingProduction as ProcessStepProduction[];
 
-        for (
-          let r = 0;
-          r < ps.recipeRate &&
-          ps.inventory.entries.length + producedConsumedDifference <=
-            ps.inventory.limit;
-          r++
-        ) {
-          let inputsFulfilled = true;
-          const inputEntries: InventoryEntry[] = [];
-
-          for (const recipeInput of ps.recipe.inputs) {
-            const possible: InventoryEntry[] = [];
-            for (const entry of ps.inventory.entries) {
-              if (
-                recipeInput.material === entry.material &&
-                entry.orderId &&
-                activeOrderIds.has(entry.orderId)
-              ) {
-                possible.push(entry);
-              }
-              if (possible.length >= recipeInput.quantity) break;
-            }
-            if (possible.length >= recipeInput.quantity) {
-              inputEntries.push(...possible);
-            } else {
-              inputsFulfilled = false;
-              break;
-            }
-          }
-
-          if (inputsFulfilled) {
-            // SHIFT: Instead of using totalRecipeTransformations, we'll find the "counter" sensor and increment
-            this.sensorIncrement(ps, "counter", itemsProducedPerRun);
-
-            // Use the "scanner" sensor as an output scanning step for the newly produced items
-            // (Placeholder logic; in real code you'd log the materials into the sensor's materialList)
-            // e.g. sensorScan(ps, "scanner", "output", ...)
-
-            const transformStart = Math.min(
-              ...inputEntries.map(
-                (e) =>
-                  (e as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
-              )
+        // finalize if done
+        if (ephemeralProd.length > 0) {
+          const currentProd = ephemeralProd[0];
+          if (this.currentTick >= currentProd.finishTick) {
+            this.finalizeProductionRun(
+              ps,
+              newState,
+              currentProd,
+              movedOrderIds
             );
-            const transformationDuration = this.currentTick - transformStart;
-            if (!psDurationMap[ps.name]) {
-              psDurationMap[ps.name] = [];
-            }
-            psDurationMap[ps.name].push(Math.max(0, transformationDuration));
-
-            const affectedOrders = Array.from(
-              new Set(inputEntries.map((e) => e.orderId))
-            );
-            const inputSet = new Set(inputEntries);
-            ps.inventory.entries = ps.inventory.entries.filter(
-              (e) => !inputSet.has(e)
-            );
-
-            // produce outputs
-            for (const out of ps.recipe.outputs) {
-              for (let i = 0; i < out.quantity; i++) {
-                for (const orderId of affectedOrders) {
-                  ps.inventory.entries.push({
-                    id: nextFreeInventoryEntryId(newState),
-                    addedAt: new Date(),
-                    inventoryId: ps.inventory.id,
-                    material: out.material,
-                    orderId,
-                  });
-                }
-              }
-            }
-
-            for (const oid of affectedOrders) {
-              if (oid != null) {
-                movedOrderIds.add(oid);
-              }
-            }
+            ephemeralProd.shift();
           }
         }
-      }
-    }
 
-    // 2) No recipe => measure stay
-    for (const location of newState.locations) {
-      for (const ps of location.processSteps) {
-        if (ps.recipe) continue;
-        for (const entry of ps.inventory.entries) {
-          const delayed = entry as InventoryEntryWithDelay;
-          if (
-            delayed.arrivedTick != null &&
-            delayed.leftTick != null &&
-            delayed.leftTick >= delayed.arrivedTick
+        // try to start new production
+        if (ephemeralProd.length === 0) {
+          const itemsConsumedPerRun = ps.recipe.inputs
+            .map((o) => o.quantity)
+            .reduce((acc, cur) => acc + cur, 0);
+          const itemsProducedPerRun = ps.recipe.outputs
+            .map((o) => o.quantity)
+            .reduce((acc, cur) => acc + cur, 0);
+          const capacityCheck = itemsProducedPerRun - itemsConsumedPerRun;
+
+          for (
+            let r = 0;
+            r < ps.recipeRate &&
+            ps.inventory.entries.length + capacityCheck <= ps.inventory.limit;
+            r++
           ) {
-            const stayDuration = delayed.leftTick - delayed.arrivedTick;
-            if (!psDurationMap[ps.name]) {
-              psDurationMap[ps.name] = [];
+            let inputsFulfilled = true;
+            const inputEntries: InventoryEntry[] = [];
+
+            // 1) Gather the needed inputs
+            for (const recipeInput of ps.recipe.inputs) {
+              const possible: InventoryEntry[] = [];
+              for (const entry of ps.inventory.entries) {
+                if (
+                  recipeInput.material === entry.material &&
+                  entry.orderId &&
+                  activeOrderIds.has(entry.orderId)
+                ) {
+                  possible.push(entry);
+                }
+                if (possible.length >= recipeInput.quantity) break;
+              }
+              if (possible.length >= recipeInput.quantity) {
+                inputEntries.push(...possible);
+              } else {
+                inputsFulfilled = false;
+                break;
+              }
             }
-            psDurationMap[ps.name].push(Math.max(0, stayDuration));
+
+            // 2) If inputs are available...
+            if (inputsFulfilled) {
+              // 2a) **Check errorRate**; for now we always succeed
+              if (!this.productionSucceeds(ps)) {
+                // If production fails, do nothing for now
+                // (We'll expand logic here later)
+              } else {
+                // measure immediate "transformStart" (old approach)
+                const transformStart = Math.min(
+                  ...inputEntries.map(
+                    (xx) =>
+                      (xx as InventoryEntryWithDelay).arrivedTick ??
+                      this.currentTick
+                  )
+                );
+                const transformationDuration =
+                  this.currentTick - transformStart;
+
+                // record in psDurationMap (for KPI)
+                if (!psDurationMap[ps.name]) {
+                  psDurationMap[ps.name] = [];
+                }
+                psDurationMap[ps.name].push(
+                  Math.max(0, transformationDuration)
+                );
+
+                // remove the input items from this PS's inventory
+                const inputSet = new Set(inputEntries);
+                ps.inventory.entries = ps.inventory.entries.filter(
+                  (e) => !inputSet.has(e)
+                );
+
+                // schedule production
+                const finishTick = this.currentTick + (ps.duration || 1);
+                ephemeralProd.push({
+                  finishTick,
+                  affectedOrderIds: Array.from(
+                    new Set(inputEntries.map((e) => e.orderId))
+                  ).filter((x): x is number => x !== null && x !== undefined),
+                  itemsProducedPerRun,
+                  recipeOutputs: ps.recipe.outputs.map((o) => ({
+                    material: o.material,
+                    quantity: o.quantity,
+                  })),
+                });
+              }
+            }
           }
         }
       }
     }
 
-    // 3) Outlet (PS -> TS)
+    // -----------------------------
+    //  (B) No-recipe steps
+    // -----------------------------
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
+        if (!ps.active) continue;
+        if (ps.recipe) continue;
+
+        // ephemeral array
+        const ephemeralProd = (ps as any)
+          .__ongoingProduction as ProcessStepProduction[];
+
+        // finalize if ongoing
+        if (ephemeralProd.length > 0) {
+          const currentProd = ephemeralProd[0];
+          if (this.currentTick >= currentProd.finishTick) {
+            // finalize
+            this.finalizeNoRecipe(ps, currentProd, psDurationMap);
+            ephemeralProd.shift();
+          }
+        }
+
+        // see if new items arrived => start new "holding" run
+        if (ephemeralProd.length === 0) {
+          const rawItems = [...ps.inventory.entries];
+          if (rawItems.length > 0) {
+            // we hold them for ps.duration
+            const finishTick = this.currentTick + (ps.duration || 1);
+            ephemeralProd.push({
+              finishTick,
+              affectedOrderIds: [], // not used
+              itemsProducedPerRun: 0,
+              rawItems,
+              recipeOutputs: [],
+            });
+          }
+        }
+      }
+    }
+
+    // -----------------------------
+    //  (C) Outlet (PS -> TS)
+    // -----------------------------
+    for (const location of newState.locations) {
+      for (const ps of location.processSteps) {
+        if (!ps.active) continue;
         const activeOutputs = ps.outputs.filter((o) => o.active);
         const outputSpeeds = activeOutputs.map((o) =>
           Math.min(ps.outputSpeed, o.inputSpeed)
@@ -473,17 +569,10 @@ export class Simulation {
 
         for (let i = 0; i < itemsPerOutput.length; i++) {
           const ts = ps.outputs[i];
-          // We call sensorScan on ps's "scanner" for output
-          // We call sensorScan on ts's "scanner" for input
-          // For now, we'll do a placeholder "scan success":
 
-          // Check if ps scanner is OK
           if (!this.sensorScan(ps, "scanner", "output", itemsPerOutput[i])) {
-            // if fail => skip
             continue;
           }
-
-          // Then check TS scanner is OK
           if (!this.sensorScan(ts, "scanner", "input", itemsPerOutput[i])) {
             continue;
           }
@@ -518,11 +607,14 @@ export class Simulation {
       }
     }
 
-    // 4) Intake (TS -> PS)
+    // -----------------------------
+    //  (D) Intake (TS -> PS)
+    // -----------------------------
     {
       const sourceAvailability = new Map<number, boolean>();
       for (const location of newState.locations) {
         for (const ps of location.processSteps) {
+          if (!ps.active) continue;
           for (const inp of ps.inputs) {
             if (!inp.active || !inp.startStepId) continue;
             if (!sourceAvailability.has(inp.startStepId)) {
@@ -539,6 +631,7 @@ export class Simulation {
 
       for (const location of newState.locations) {
         for (const ps of location.processSteps) {
+          if (!ps.active) continue;
           for (const input of ps.inputs) {
             if (!input.active) continue;
             const capacityNow =
@@ -594,15 +687,15 @@ export class Simulation {
                 };
               });
 
-            // sensorScan on TS => "output"?
+            // sensorScan
             if (!this.sensorScan(input, "scanner", "output", finalIntake)) {
               continue;
             }
-            // sensorScan on PS => "input"?
             if (!this.sensorScan(ps, "scanner", "input", finalIntake)) {
               continue;
             }
 
+            // measure durations for TS
             for (const movedItem of finalIntake) {
               const typed = movedItem as InventoryEntryWithDelay;
               if (typed.arrivedTick != null && typed.leftTick != null) {
@@ -615,6 +708,7 @@ export class Simulation {
               }
             }
 
+            // actual intake
             if (!ps.recipe || this.canIntakeItems(ps, finalIntake)) {
               ps.inventory.entries.push(...finalIntake);
               const intakeIds = new Set(finalIntake.map((x) => x.id));
@@ -632,6 +726,7 @@ export class Simulation {
       }
     }
 
+    // Helper
     function canExpectMoreItemsFromSource(
       state: SimulationEntityState,
       sourceStepId: number | null | undefined,
@@ -647,6 +742,7 @@ export class Simulation {
       );
     }
 
+    // 5) final checks
     this.checkAndCompleteOrders(newState);
     this.updateOrderRelationships(newState);
 
@@ -665,7 +761,7 @@ export class Simulation {
       }
     }
 
-    // Merge new TS durations
+    // Save TS durations
     const lastFrame = this.frames[this.frames.length - 1];
     if (!lastFrame.tsTypeDurations) {
       lastFrame.tsTypeDurations = {};
@@ -677,7 +773,7 @@ export class Simulation {
       ];
     }
 
-    // Store the psDurationMap
+    // Save PS durations
     if (!lastFrame.processStepDurations) {
       lastFrame.processStepDurations = {};
     }
@@ -691,10 +787,77 @@ export class Simulation {
     return newState;
   }
 
-  // ---- Sensors logic stubs ----
   /**
-   * sensorIncrement: increment a "counter" sensor by some value
+   * Helper method to check if production succeeds
+   * based on ps.errorRate. Currently always returns true
+   * (i.e. no error), but you can expand later with random logic, etc.
    */
+  private productionSucceeds(ps: ProcessStepFull): boolean {
+    if (!ps.errorRate) return true;
+
+    return Math.random() > ps.errorRate;
+  }
+
+  /**
+   * finalizeProductionRun for recipe-based steps
+   */
+  private finalizeProductionRun(
+    ps: ProcessStepFull,
+    newState: SimulationEntityState,
+    production: ProcessStepProduction,
+    movedOrderIds: Set<number>
+  ) {
+    // increment counter sensor
+    this.sensorIncrement(ps, "counter", production.itemsProducedPerRun);
+
+    // produce actual items
+    for (const oid of production.affectedOrderIds) {
+      for (const out of production.recipeOutputs) {
+        for (let i = 0; i < out.quantity; i++) {
+          ps.inventory.entries.push({
+            id: nextFreeInventoryEntryId(newState),
+            addedAt: new Date(),
+            inventoryId: ps.inventory.id,
+            material: out.material,
+            orderId: oid,
+          });
+        }
+      }
+      movedOrderIds.add(oid);
+    }
+    console.log(
+      `ProcessStep "${ps.name}" completed a production run with duration = ${ps.duration}. Produced: ${production.itemsProducedPerRun} item(s) for Orders: ${production.affectedOrderIds}`
+    );
+  }
+
+  /**
+   * finalizeNoRecipe for no-recipe steps
+   */
+  private finalizeNoRecipe(
+    ps: ProcessStepFull,
+    production: ProcessStepProduction,
+    psDurationMap: Record<string, number[]>
+  ) {
+    // We say each raw item had to wait ps.duration
+    const totalWait = ps.duration || 1;
+    // We can store that in psDurationMap once or for each item.
+    // For better KPI averaging, let's push it as many times as items:
+    const itemCount = production.rawItems?.length || 0;
+    if (!psDurationMap[ps.name]) {
+      psDurationMap[ps.name] = [];
+    }
+    for (let i = 0; i < itemCount; i++) {
+      psDurationMap[ps.name].push(totalWait);
+    }
+
+    console.log(
+      `ProcessStep "${ps.name}" (no-recipe) waited duration = ${ps.duration}. Items: ${itemCount}`
+    );
+  }
+
+  // ----------------------------------------------
+  //  Sensors & scanning
+  // ----------------------------------------------
   private sensorIncrement(
     psOrTS: ProcessStepFull | TransportSystemFull,
     sensorType: string,
@@ -706,18 +869,12 @@ export class Simulation {
     const sensor = psOrTS.sensors.find((s) => s.type === sensorType);
     if (sensor) {
       sensor.value += amount;
-      // Placeholder: log this increment somewhere
       console.log(
         `[SENSOR] ${sensor.name} incremented by ${amount}, new value: ${sensor.value}`
       );
     }
   }
 
-  /**
-   * sensorScan: placeholder for scanning logic
-   *  If the sensor is found, we simulate a successful scan 100% of the time for now.
-   *  In the future, we might do random fails or check sensorDelay, etc.
-   */
   private sensorScan(
     psOrTS: ProcessStepFull | TransportSystemFull,
     sensorType: string,
@@ -739,7 +896,7 @@ export class Simulation {
       const logEntry: LogEntry = {
         id: sensor.logEntries.length + 1,
         sensorId: sensor.id,
-        createdAt: new Date(Date.now()),
+        createdAt: new Date(),
         materialId: i.id,
         materialName: i.material,
         inputType: direction,
@@ -748,18 +905,17 @@ export class Simulation {
       };
       sensor.logEntries.push(logEntry);
     }
-    console.log(sensor.logEntries);
     console.log(
       `[SCAN] ${sensor.name} scanning ${items.length} items as ${direction} => success`
     );
-    // You might store them in sensor.materialList JSON
-    return true; // success
+    return true;
   }
-  // -----------------------------
 
+  // ----------------------------------------------
+  //  Orders logic
+  // ----------------------------------------------
   private handleOrders(state: SimulationEntityState): void {
     if (this.orders.length === 0) return;
-
     const pending = this.orders.filter(
       (o) => o.status === "pending" && o.materialsReserved !== true
     );
@@ -790,6 +946,7 @@ export class Simulation {
       "Seat Structure",
       "Backrest Structure",
       "Seat Foam",
+      "Backrest Foam",
       "Headrest",
       "Airbag",
       "Small Part",
@@ -847,7 +1004,6 @@ export class Simulation {
 
     for (const order of this.orders) {
       if (order.status === "completed") continue;
-
       const seats = state.locations
         .flatMap((l) => l.processSteps)
         .flatMap((p) => p.inventory.entries)
@@ -857,7 +1013,6 @@ export class Simulation {
             this.isSeatCompleted(e.material) &&
             shippingIds.includes(e.inventoryId)
         ).length;
-
       if (seats >= order.quantity) {
         order.status = "completed";
         order.completedAt = new Date();
@@ -915,24 +1070,24 @@ export class Simulation {
     console.log("Order relationships updated:", state.locations);
   }
 
-  /**
-   * Determines if intaking a specified number of items will not block other required materials.
-   * @param ps The ProcessStep in question.
-   * @param numItems The number of items intended to intake.
-   * @returns True if intake is permissible, false otherwise.
-   */
+  // ----------------------------
+  //  Helper
+  // ----------------------------
   private canIntakeItems(
     ps: ProcessStepFull,
     inputItems: InventoryEntryWithDelay[]
   ): boolean {
     const currentEntries = ps.inventory.entries;
     const limit = ps.inventory.limit;
-
-    // Clone current entries and add inputItems to simulate intake
     const newEntries = [...currentEntries, ...inputItems];
 
-    // Calculate required materials based on the recipe inputs
-    const requiredMaterials: Record<string, number> = ps.recipe!.inputs.reduce(
+    // if no recipe, just capacity check
+    if (!ps.recipe) {
+      return newEntries.length <= limit;
+    }
+
+    // gather required
+    const requiredMaterials: Record<string, number> = ps.recipe.inputs.reduce(
       (acc: Record<string, number>, input) => {
         acc[input.material] = (acc[input.material] || 0) + input.quantity;
         return acc;
@@ -940,7 +1095,7 @@ export class Simulation {
       {}
     );
 
-    // Calculate current materials in newEntries
+    // gather current
     const currentMaterials: Record<string, number> = newEntries.reduce(
       (acc: Record<string, number>, entry) => {
         acc[entry.material] = (acc[entry.material] || 0) + 1;
@@ -949,29 +1104,14 @@ export class Simulation {
       {}
     );
 
-    // Calculate remaining required materials
     let remainingRequired = 0;
-    for (const [material, qty] of Object.entries(requiredMaterials)) {
-      const currentQty = currentMaterials[material] || 0;
+    for (const [mat, qty] of Object.entries(requiredMaterials)) {
+      const currentQty = currentMaterials[mat] || 0;
       const need = Math.max(qty - currentQty, 0);
       remainingRequired += need;
     }
 
-    // Calculate available slots after intake
     const availableSlots = limit - newEntries.length;
-
-    // Logging for debugging
-    console.log(`Checking intake for PS: ${ps.name}`);
-    console.log(
-      "Intaking items:",
-      inputItems.map((i) => i.material)
-    );
-    console.log("Required materials:", requiredMaterials);
-    console.log("Current materials after intake:", currentMaterials);
-    console.log(`Remaining required: ${remainingRequired}`);
-    console.log(`Available slots after intake: ${availableSlots}`);
-
-    // Ensure that available slots are enough for remaining required materials
     return availableSlots >= remainingRequired;
   }
 
@@ -995,6 +1135,7 @@ export class Simulation {
       );
   }
 
+  // Converts references => real pointers
   private static objectsToReferences(state: SimulationEntityState): void {
     const transportSystems = Object.fromEntries(
       state.locations

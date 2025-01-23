@@ -88,7 +88,8 @@ async function createTransportSystemWithFilter(
 async function createMockOrders(count: number) {
   const description = "Bestellung Komplettsitz";
   for (let i = 0; i < count; i++) {
-    const randomQuantity = randomBetween(1, 2);
+    // const randomQuantity = randomBetween(1, 2);
+    const randomQuantity = 1;
     await prisma.order.create({
       data: {
         status: "pending",
@@ -125,6 +126,7 @@ async function main() {
       inputs: {
         create: [
           { material: "Headrest", quantity: 1 },
+          { material: "Backrest Foam", quantity: 1 },
           { material: "Backrest Structure", quantity: 1 },
         ],
       },
@@ -191,7 +193,6 @@ async function main() {
             name: "Goods Entry Point",
             inputSpeed: 5,
             outputSpeed: 5,
-            status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
@@ -203,6 +204,7 @@ async function main() {
                       { material: "Seat Structure" },
                       { material: "Backrest Structure" },
                       { material: "Seat Foam" },
+                      { material: "Backrest Foam" },
                       { material: "Headrest" },
                       { material: "Airbag" },
                       { material: "Small Part" },
@@ -245,7 +247,6 @@ async function main() {
             name: "Covers Entry Point",
             inputSpeed: 5,
             outputSpeed: 2,
-            status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
@@ -281,7 +282,6 @@ async function main() {
             name: "Shipping",
             inputSpeed: 5,
             outputSpeed: 5,
-            status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
@@ -323,7 +323,6 @@ async function main() {
             name: "Storage Rack",
             inputSpeed: 5,
             outputSpeed: 4,
-            status: "PROCEEDING",
             inventory: {
               create: {
                 type: "processStep",
@@ -365,7 +364,6 @@ async function main() {
             name: "Pre-Assembly - Seat",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeSeat.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
             sensors: {
@@ -389,7 +387,6 @@ async function main() {
             name: "Pre-Assembly - Backrest",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             recipe: { connect: { id: preAssemblyRecipeBackrest.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
             sensors: {
@@ -413,7 +410,6 @@ async function main() {
             name: "Upholstery - Seat",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             recipe: { connect: { id: upholsterySeatRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
             sensors: {
@@ -437,7 +433,6 @@ async function main() {
             name: "Upholstery - Backrest",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             recipe: { connect: { id: upholsteryBackrestRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
             sensors: {
@@ -473,7 +468,6 @@ async function main() {
             name: "Assembling",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 5 } },
             recipe: { connect: { id: assemblingRecipe.id } },
             sensors: {
@@ -497,7 +491,6 @@ async function main() {
             name: "End of Line Check",
             inputSpeed: 2,
             outputSpeed: 1,
-            status: "PROCEEDING",
             inventory: { create: { type: "processStep", limit: 5 } },
             sensors: {
               create: [
