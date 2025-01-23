@@ -1,8 +1,8 @@
 // app/kpis/page.tsx
 "use client";
 
-import KPIOverview from "@/components/kpi/KPIOverview";
+import KpiLive from "@/components/kpi/KPILive";
 
 export default function KpiPage() {
-    return <KPIOverview mode="live" />
+    return <KpiLive />
 }

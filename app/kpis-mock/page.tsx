@@ -1,8 +1,8 @@
 // app/kpis/page.tsx
 "use client";
 
-import KPIOverview from "@/components/kpi/KPIOverview";
+import KpiMock from "@/components/kpi/KPIMock";
 
 export default function KpiPage() {
-    return <KPIOverview mode="mock" />
+    return <KpiMock />
 }

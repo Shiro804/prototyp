@@ -1,7 +1,7 @@
 "use client";
-import { Monitoring } from "@/components/monitoring/Monitoring";
+import MonitoringLive from "@/components/monitoring/MonitoringLive";
 import React from "react";
 
-export default function MonitoringMock() {
-  return <Monitoring mode="live" />;
+export default function Monitoring() {
+  return <MonitoringLive />;
 }

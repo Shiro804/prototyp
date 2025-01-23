@@ -15,6 +15,8 @@ import { Notifications } from "@mantine/notifications";
 import {
   IconAddressBook,
   IconArrowBadgeRight,
+  IconBaselineDensityLarge,
+  IconBaselineDensitySmall,
   IconBell,
   IconBrandSteam,
   IconBuildingFactory2,
@@ -22,11 +24,8 @@ import {
   IconDeviceDesktopAnalytics,
   IconGraph,
   IconHome,
-  IconReportAnalytics,
-  IconReportSearch,
   IconSettings,
   IconTruck,
-  IconUserCog
 } from "@tabler/icons-react";
 import { ExoticComponent, ReactNode, useEffect } from "react";
 
@@ -48,14 +47,14 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
-  // Additional links...
+  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
 ];
 
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
-  // Additional links...
+  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
 ];
 
 const crudLinks: LinkDescription[] = [

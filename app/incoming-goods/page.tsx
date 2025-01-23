@@ -43,7 +43,7 @@ export default function IncomingGoods() {
 
   // If a location is selected, show its detailed view
   if (selectedLocation !== null) {
-    const location = currentFrame.locations.find((l) => l.id === selectedLocation);
+    const location = currentFrame.state.locations.find((l) => l.id === selectedLocation);
     if (!location) return <Text>Error: Location not found</Text>;
 
     const groupedInventory = groupInventory(
@@ -86,7 +86,7 @@ export default function IncomingGoods() {
     <>
       <Title>Incoming Commodities</Title>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
-        {currentFrame.locations.map((l) => (
+        {currentFrame.state.locations.map((l) => (
           <LocationCard
             key={l.id}
             name={l.name}
