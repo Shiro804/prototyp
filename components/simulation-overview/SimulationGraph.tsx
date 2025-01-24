@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, LoadingOverlay, Title } from "@mantine/core";
+import { Box, Button, LoadingOverlay } from "@mantine/core";
 import {
   Background,
   Controls,
@@ -28,38 +28,40 @@ import { EntityInfo } from "./EntityInfo";
 
 export interface SimulationGraphProps { }
 
-export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
+export function SimulationGraph({ }: SimulationGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeType>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity>();
-
   const [layout, setLayout] = useState<string>("TB");
 
   useEffect(() => {
     fetch("/api/entity-state")
       .then((res) => res.json())
       .then((entities: SimulationEntityState) => {
-        let newNodes: { [id: string]: ProcessStepNode | TransportSystemNode } =
-          {};
-        let newEdges: { [id: string]: Edge } = {};
+        // Temporäre Maps für Nodes/Edges
+        const newNodes: Record<string, ProcessStepNode | TransportSystemNode> = {};
+        const newEdges: Record<string, Edge> = {};
 
-        for (const l of entities.locations) {
-          for (const ps of l.processSteps) {
-            newNodes[ps.id] = {
+        // 1) Erstelle Nodes für alle ProcessSteps
+        for (const loc of entities.locations) {
+          for (const ps of loc.processSteps) {
+            newNodes["ps-" + ps.id] = {
               id: "ps-" + ps.id,
-              data: { name: ps.name, location: l.name, entity: ps },
+              data: { name: ps.name, location: loc.name, entity: ps },
               position: { x: 0, y: 0 },
               type: "processStep",
             };
           }
         }
 
-        for (const l of entities.locations) {
-          for (const ts of l.processSteps.flatMap((ps) =>
-            ps.inputs.concat(ps.outputs),
-          )) {
+        // 2) Erstelle Nodes für alle TransportSystems (aus ps.inputs/ps.outputs)
+        //    sowie Edges (PS->TS, TS->PS)
+        for (const loc of entities.locations) {
+          const allTS = loc.processSteps.flatMap((ps) => ps.inputs.concat(ps.outputs));
+          for (const ts of allTS) {
             const tsId = "ts-" + ts.id;
+
             if (!newNodes[tsId]) {
               newNodes[tsId] = {
                 id: tsId,
@@ -69,25 +71,66 @@ export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
               };
             }
 
-            const inEdgeId = "ps-" + ts.startStepId + "-ts-" + ts.id;
-            const outEdgeId = "ts-" + ts.id + "-ps-" + ts.endStepId;
-
-            if (!newEdges[inEdgeId]) {
-              newEdges[inEdgeId] = {
-                id: "ps-" + ts.startStepId + "-ts-" + ts.id,
-                source: "ps-" + ts.startStepId,
-                target: tsId,
-                animated: true,
-              };
+            // PS->TS Edge (wenn startStepId definiert)
+            if (ts.startStepId !== null && ts.startStepId !== undefined) {
+              const sourceId = "ps-" + ts.startStepId;
+              const targetId = tsId;
+              const edgeId = sourceId + "-to-" + targetId;
+              if (!newEdges[edgeId]) {
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  animated: true,
+                };
+              }
             }
 
-            if (!newEdges[outEdgeId]) {
-              newEdges[outEdgeId] = {
-                id: "ts-" + ts.id + "-ps-" + ts.endStepId,
-                source: tsId,
-                target: "ps-" + ts.endStepId,
-                animated: true,
-              };
+            // TS->PS Edge (wenn endStepId definiert)
+            if (ts.endStepId !== null && ts.endStepId !== undefined) {
+              const sourceId = tsId;
+              const targetId = "ps-" + ts.endStepId;
+              const edgeId = sourceId + "-to-" + targetId;
+              if (!newEdges[edgeId]) {
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  animated: true,
+                };
+              }
+            }
+
+            // NEU: TS->TS: Wenn startTSId (d. h. dieses TS hat einen Vorläufer-TS)
+            if (ts.startTSId !== null && ts.startTSId !== undefined) {
+              const sourceId = "ts-" + ts.startTSId;
+              const targetId = tsId;
+              const edgeId = sourceId + "-to-" + targetId;
+              if (!newEdges[edgeId]) {
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  animated: true,
+                  style: { stroke: "#a8a8a8" }, // bspw. graue Farbe
+                };
+              }
+            }
+
+            // NEU: TS->TS: Wenn endTSId (d. h. dieses TS geht zu einem anderen TS)
+            if (ts.endTSId !== null && ts.endTSId !== undefined) {
+              const sourceId = tsId;
+              const targetId = "ts-" + ts.endTSId;
+              const edgeId = sourceId + "-to-" + targetId;
+              if (!newEdges[edgeId]) {
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  animated: true,
+                  style: { stroke: "#a8a8a8" },
+                };
+              }
             }
           }
         }
@@ -97,10 +140,10 @@ export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
       });
   }, []);
 
+  // Selektions-Callback
   const onSelectionChange = useCallback<OnSelectionChangeFunc>(({ nodes }) => {
     if (nodes[0]) {
       const node = nodes[0] as NodeType;
-
       switch (node.type) {
         case "processStep":
           setSelectedEntity({
@@ -120,6 +163,7 @@ export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
     }
   }, []);
 
+  // Layout
   const layoutedGraph =
     nodes.length > 0 && edges.length > 0
       ? getLayoutedElements(nodes, edges, {

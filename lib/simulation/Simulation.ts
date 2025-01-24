@@ -42,6 +42,7 @@ export type LocationFull = Prisma.LocationGetPayload<{
                 logEntries: true;
               };
             };
+            
           };
         };
         outputs: {
@@ -239,6 +240,7 @@ export class Simulation {
     ];
     this.futureFrames = [];
     this.events.length = 0;
+    this.isStopped = false;
   }
 
   public discardFutureFrames(): void {
@@ -428,7 +430,7 @@ export class Simulation {
             let inputsFulfilled = true;
             const inputEntries: InventoryEntry[] = [];
 
-            // 1) Gather the needed inputs
+            // 1) gather needed inputs
             for (const recipeInput of ps.recipe.inputs) {
               const possible: InventoryEntry[] = [];
               for (const entry of ps.inventory.entries) {
@@ -451,12 +453,11 @@ export class Simulation {
 
             // 2) If inputs are available...
             if (inputsFulfilled) {
-              // 2a) **Check errorRate**; for now we always succeed
+              // errorRate check
               if (!this.productionSucceeds(ps)) {
-                // If production fails, do nothing for now
-                // (We'll expand logic here later)
+                // skip
               } else {
-                // measure immediate "transformStart" (old approach)
+                // measure immediate "transformStart"
                 const transformStart = Math.min(
                   ...inputEntries.map(
                     (xx) =>
@@ -475,7 +476,7 @@ export class Simulation {
                   Math.max(0, transformationDuration)
                 );
 
-                // remove the input items from this PS's inventory
+                // remove input items
                 const inputSet = new Set(inputEntries);
                 ps.inventory.entries = ps.inventory.entries.filter(
                   (e) => !inputSet.has(e)
@@ -487,8 +488,8 @@ export class Simulation {
                   finishTick,
                   affectedOrderIds: Array.from(
                     new Set(inputEntries.map((e) => e.orderId))
-                  ).filter((x): x is number => x !== null && x !== undefined),
-                  itemsProducedPerRun,
+                  ).filter((x): x is number => x != null),
+                  itemsProducedPerRun: itemsProducedPerRun,
                   recipeOutputs: ps.recipe.outputs.map((o) => ({
                     material: o.material,
                     quantity: o.quantity,
@@ -501,9 +502,7 @@ export class Simulation {
       }
     }
 
-    // -----------------------------
-    //  (B) No-recipe steps
-    // -----------------------------
+    // (B) No-recipe steps
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
@@ -517,21 +516,19 @@ export class Simulation {
         if (ephemeralProd.length > 0) {
           const currentProd = ephemeralProd[0];
           if (this.currentTick >= currentProd.finishTick) {
-            // finalize
             this.finalizeNoRecipe(ps, currentProd, psDurationMap);
             ephemeralProd.shift();
           }
         }
 
-        // see if new items arrived => start new "holding" run
+        // see if new items arrived => start "holding"
         if (ephemeralProd.length === 0) {
           const rawItems = [...ps.inventory.entries];
           if (rawItems.length > 0) {
-            // we hold them for ps.duration
             const finishTick = this.currentTick + (ps.duration || 1);
             ephemeralProd.push({
               finishTick,
-              affectedOrderIds: [], // not used
+              affectedOrderIds: [],
               itemsProducedPerRun: 0,
               rawItems,
               recipeOutputs: [],
@@ -541,9 +538,7 @@ export class Simulation {
       }
     }
 
-    // -----------------------------
-    //  (C) Outlet (PS -> TS)
-    // -----------------------------
+    // (C) Outlet (PS -> TS)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
@@ -570,6 +565,7 @@ export class Simulation {
         for (let i = 0; i < itemsPerOutput.length; i++) {
           const ts = ps.outputs[i];
 
+          // sensor
           if (!this.sensorScan(ps, "scanner", "output", itemsPerOutput[i])) {
             continue;
           }
@@ -607,126 +603,150 @@ export class Simulation {
       }
     }
 
-    // -----------------------------
-    //  (D) Intake (TS -> PS)
-    // -----------------------------
-    {
-      const sourceAvailability = new Map<number, boolean>();
-      for (const location of newState.locations) {
-        for (const ps of location.processSteps) {
-          if (!ps.active) continue;
-          for (const inp of ps.inputs) {
-            if (!inp.active || !inp.startStepId) continue;
-            if (!sourceAvailability.has(inp.startStepId)) {
-              const canExpect = canExpectMoreItemsFromSource(
-                newState,
-                inp.startStepId,
-                activeOrderIds
-              );
-              sourceAvailability.set(inp.startStepId, canExpect);
-            }
+    // (D) Intake (TS -> PS)
+    const sourceAvailability = new Map<number, boolean>();
+    for (const location of newState.locations) {
+      for (const ps of location.processSteps) {
+        if (!ps.active) continue;
+        for (const inp of ps.inputs) {
+          if (!inp.active || !inp.startStepId) continue;
+          if (!sourceAvailability.has(inp.startStepId)) {
+            const canExpect = canExpectMoreItemsFromSource(
+              newState,
+              inp.startStepId,
+              activeOrderIds
+            );
+            sourceAvailability.set(inp.startStepId, canExpect);
           }
         }
       }
+    }
 
-      for (const location of newState.locations) {
-        for (const ps of location.processSteps) {
-          if (!ps.active) continue;
-          for (const input of ps.inputs) {
-            if (!input.active) continue;
-            const capacityNow =
-              ps.inventory.limit - ps.inventory.entries.length;
-            if (capacityNow <= 0) continue;
-            const speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
-            if (speedIn <= 0) continue;
+    for (const location of newState.locations) {
+      for (const ps of location.processSteps) {
+        if (!ps.active) continue;
+        for (const input of ps.inputs) {
+          if (!input.active) continue;
 
-            const itemsInTS = input.inventory.entries.filter((entry) => {
-              if (!entry.orderId || !activeOrderIds.has(entry.orderId)) {
-                return false;
-              }
-              const delayedEntry = entry as InventoryEntryWithDelay;
-              if (delayedEntry.arrivedTick == null) return false;
-              const delayNeeded =
-                input.transportDelay != null && input.transportDelay >= 0
-                  ? input.transportDelay
-                  : this.transportDelay;
-              return this.currentTick - delayedEntry.arrivedTick >= delayNeeded;
-            });
+          // Kapazität
+          const capacityNow = ps.inventory.limit - ps.inventory.entries.length;
+          if (capacityNow <= 0) continue;
 
-            if (itemsInTS.length === 0) continue;
+          // Geschw.
+          const speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
+          if (speedIn <= 0) continue;
+
+          // potenzielle Items
+          const potentialItems = input.inventory.entries.filter((entry) => {
+            if (!entry.orderId || !activeOrderIds.has(entry.orderId)) {
+              return false;
+            }
+            const delayedEntry = entry as InventoryEntryWithDelay;
+            if (delayedEntry.arrivedTick == null) return false;
+            const delayNeeded =
+              input.transportDelay != null && input.transportDelay >= 0
+                ? input.transportDelay
+                : this.transportDelay;
+            return this.currentTick - delayedEntry.arrivedTick >= delayNeeded;
+          });
+          if (potentialItems.length === 0) continue;
+
+          // minQuantity
+          if (
+            input.minQuantity != null &&
+            input.minQuantity > 0 &&
+            potentialItems.length < input.minQuantity
+          ) {
+            const sourceStepId = input.startStepId ?? -1;
+            const sourceEmpty = !sourceAvailability.get(sourceStepId);
+            if (!sourceEmpty) {
+              continue;
+            }
+          }
+
+          // FIFO
+          const sortedPotentials = potentialItems.sort(
+            (a, b) => a.addedAt.getTime() - b.addedAt.getTime()
+          );
+
+          // Hier jetzt EINZEL-Aufnahme:
+          const acceptedItems: InventoryEntryWithDelay[] = [];
+
+          for (const candidate of sortedPotentials) {
+            if (acceptedItems.length >= speedIn) break;
             if (
-              input.minQuantity != null &&
-              input.minQuantity > 0 &&
-              itemsInTS.length < input.minQuantity
+              ps.inventory.entries.length + acceptedItems.length >=
+              ps.inventory.limit
             ) {
-              const sourceStepId = input.startStepId ?? -1;
-              const sourceEmpty = !sourceAvailability.get(sourceStepId);
-              if (!sourceEmpty) {
-                continue;
-              }
+              break;
             }
 
-            const finalIntakeCount = Math.min(
-              speedIn,
-              capacityNow,
-              itemsInTS.length
-            );
-            const finalIntake = itemsInTS
-              .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
-              .slice(0, finalIntakeCount)
-              .map((e) => {
-                const leftTick = Math.max(
-                  this.currentTick,
-                  (e as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
-                );
-                return {
-                  ...e,
-                  addedAt: new Date(),
-                  inventoryId: ps.inventory.id,
-                  leftTick,
-                };
-              });
+            // Test, ob wir dieses Item annehmen können
+            const testItem: InventoryEntryWithDelay = {
+              ...candidate,
+              inventoryId: ps.inventory.id,
+            };
+            const testArray = [...acceptedItems, testItem];
 
-            // sensorScan
-            if (!this.sensorScan(input, "scanner", "output", finalIntake)) {
+            // final check canIntake
+            if (!ps.recipe || this.canIntakeItems(ps, testArray)) {
+              // => akzeptieren
+              acceptedItems.push(candidate);
+            } else {
+              // => skip item, but do NOT break
+              // maybe we can still accept a later item
               continue;
             }
-            if (!this.sensorScan(ps, "scanner", "input", finalIntake)) {
-              continue;
-            }
+          }
 
-            // measure durations for TS
-            for (const movedItem of finalIntake) {
-              const typed = movedItem as InventoryEntryWithDelay;
-              if (typed.arrivedTick != null && typed.leftTick != null) {
-                const diff = typed.leftTick - typed.arrivedTick;
-                if (diff >= 0) {
-                  const tsType = input.type || "Unknown";
-                  tsDurationMap[tsType] = tsDurationMap[tsType] || [];
-                  tsDurationMap[tsType].push(diff);
-                }
+          if (acceptedItems.length === 0) {
+            continue;
+          }
+
+          // sensor
+          if (!this.sensorScan(input, "scanner", "output", acceptedItems)) {
+            continue;
+          }
+          if (!this.sensorScan(ps, "scanner", "input", acceptedItems)) {
+            continue;
+          }
+
+          // measure durations
+          for (const movedItem of acceptedItems) {
+            const typed = movedItem as InventoryEntryWithDelay;
+            if (typed.arrivedTick != null) {
+              typed.leftTick = this.currentTick;
+              const diff = typed.leftTick - typed.arrivedTick;
+              if (diff >= 0) {
+                const tsType = input.type || "Unknown";
+                tsDurationMap[tsType] = tsDurationMap[tsType] || [];
+                tsDurationMap[tsType].push(diff);
               }
             }
+          }
 
-            // actual intake
-            if (!ps.recipe || this.canIntakeItems(ps, finalIntake)) {
-              ps.inventory.entries.push(...finalIntake);
-              const intakeIds = new Set(finalIntake.map((x) => x.id));
-              input.inventory.entries = input.inventory.entries.filter(
-                (e) => !intakeIds.has(e.id)
-              );
-              for (const movedItem of finalIntake) {
-                if (movedItem.orderId != null) {
-                  movedOrderIds.add(movedItem.orderId);
-                }
-              }
+          // Verschieben
+          const acceptedIds = new Set(acceptedItems.map((x) => x.id));
+          input.inventory.entries = input.inventory.entries.filter(
+            (e) => !acceptedIds.has(e.id)
+          );
+
+          for (const item of acceptedItems) {
+            const newItem: InventoryEntryWithDelay = {
+              ...item,
+              addedAt: new Date(),
+              inventoryId: ps.inventory.id,
+            };
+            ps.inventory.entries.push(newItem);
+
+            if (newItem.orderId != null) {
+              movedOrderIds.add(newItem.orderId);
             }
           }
         }
       }
     }
 
-    // Helper
     function canExpectMoreItemsFromSource(
       state: SimulationEntityState,
       sourceStepId: number | null | undefined,
@@ -740,6 +760,142 @@ export class Simulation {
       return sourceStep.inventory.entries.some(
         (it) => it.orderId && activeOrderIds.has(it.orderId)
       );
+    }
+
+    // ---------------------------------------------------------
+    // (E) Outlet (TS->TS)
+    // ---------------------------------------------------------
+    for (const location of newState.locations) {
+      const allTS = location.processSteps.flatMap((ps) =>
+        ps.inputs.concat(ps.outputs)
+      );
+      for (const sourceTS of allTS) {
+        if (!sourceTS.active) continue;
+        if (sourceTS.endTSId == null) {
+          continue;
+        }
+        const targetTS = allTS.find((t) => t.id === sourceTS.endTSId);
+        if (!targetTS || !targetTS.active) continue;
+
+        const speedOut = Math.min(sourceTS.outputSpeed, targetTS.inputSpeed);
+
+        const sourceItems = sourceTS.inventory.entries
+          .filter((x) => x.orderId && activeOrderIds.has(x.orderId))
+          .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
+
+        let finalItems = sourceItems;
+        if (sourceTS.filter) {
+          finalItems = finalItems.filter((x) =>
+            sourceTS.filter!.entries.some((fe) => fe.material === x.material)
+          );
+        }
+        finalItems = finalItems.slice(0, speedOut);
+        if (finalItems.length === 0) continue;
+
+        if (!this.sensorScan(sourceTS, "scanner", "output", finalItems)) continue;
+        if (!this.sensorScan(targetTS, "scanner", "input", finalItems)) continue;
+
+        const outX = finalItems.map((it) => ({
+          ...it,
+          addedAt: new Date(),
+          arrivedTick: this.currentTick,
+          inventoryId: targetTS.inventory.id,
+        })) as InventoryEntryWithDelay[];
+
+        if (
+          outX.length + targetTS.inventory.entries.length <=
+          targetTS.inventory.limit
+        ) {
+          targetTS.inventory.entries.push(...outX);
+          const rmSet = new Set(outX.map((xx) => xx.id));
+          sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
+            (xx) => !rmSet.has(xx.id)
+          );
+          for (const mo of outX) {
+            if (mo.orderId) movedOrderIds.add(mo.orderId);
+          }
+        }
+      }
+    }
+
+    // ---------------------------------------------------------
+    // (F) Intake (TS->TS)
+    // ---------------------------------------------------------
+    for (const location of newState.locations) {
+      const allTS = location.processSteps.flatMap((ps) =>
+        ps.inputs.concat(ps.outputs)
+      );
+      for (const targetTS of allTS) {
+        if (!targetTS.active) continue;
+
+        if (targetTS.startTSId == null) {
+          continue;
+        }
+        const sourceTS = allTS.find((t) => t.id === targetTS.startTSId);
+        if (!sourceTS || !sourceTS.active) continue;
+
+        const capacityNow =
+          targetTS.inventory.limit - targetTS.inventory.entries.length;
+        if (capacityNow <= 0) continue;
+
+        const speedIn = Math.min(targetTS.inputSpeed, sourceTS.outputSpeed);
+        if (speedIn <= 0) continue;
+
+        const itemsAvailable = sourceTS.inventory.entries.filter((x) => {
+          if (!x.orderId || !activeOrderIds.has(x.orderId)) {
+            return false;
+          }
+          const xx = x as InventoryEntryWithDelay;
+          if (xx.arrivedTick == null) return false;
+          const delayNeeded =
+            sourceTS.transportDelay != null && sourceTS.transportDelay >= 0
+              ? sourceTS.transportDelay
+              : this.transportDelay;
+          return this.currentTick - xx.arrivedTick >= delayNeeded;
+        });
+        if (itemsAvailable.length === 0) continue;
+
+        const moved = itemsAvailable
+          .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
+          .slice(0, speedIn)
+          .map((it) => {
+            const leftTick = Math.max(
+              this.currentTick,
+              (it as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
+            );
+            return {
+              ...it,
+              addedAt: new Date(),
+              inventoryId: targetTS.inventory.id,
+              leftTick,
+            };
+          });
+
+        if (!this.sensorScan(sourceTS, "scanner", "output", moved)) continue;
+        if (!this.sensorScan(targetTS, "scanner", "input", moved)) continue;
+
+        // measure durations
+        for (const mv of moved) {
+          const typed = mv as InventoryEntryWithDelay;
+          if (typed.arrivedTick != null && typed.leftTick != null) {
+            const diff = typed.leftTick - typed.arrivedTick;
+            if (diff >= 0) {
+              const tsType = targetTS.type || "Unknown";
+              tsDurationMap[tsType] = tsDurationMap[tsType] || [];
+              tsDurationMap[tsType].push(diff);
+            }
+          }
+        }
+
+        targetTS.inventory.entries.push(...moved);
+        const rmSet = new Set(moved.map((xx) => xx.id));
+        sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
+          (xx) => !rmSet.has(xx.id)
+        );
+        for (const mv2 of moved) {
+          if (mv2.orderId) movedOrderIds.add(mv2.orderId);
+        }
+      }
     }
 
     // 5) final checks
@@ -794,23 +950,17 @@ export class Simulation {
    */
   private productionSucceeds(ps: ProcessStepFull): boolean {
     if (!ps.errorRate) return true;
-
     return Math.random() > ps.errorRate;
   }
 
-  /**
-   * finalizeProductionRun for recipe-based steps
-   */
   private finalizeProductionRun(
     ps: ProcessStepFull,
     newState: SimulationEntityState,
     production: ProcessStepProduction,
     movedOrderIds: Set<number>
   ) {
-    // increment counter sensor
     this.sensorIncrement(ps, "counter", production.itemsProducedPerRun);
 
-    // produce actual items
     for (const oid of production.affectedOrderIds) {
       for (const out of production.recipeOutputs) {
         for (let i = 0; i < out.quantity; i++) {
@@ -830,18 +980,12 @@ export class Simulation {
     );
   }
 
-  /**
-   * finalizeNoRecipe for no-recipe steps
-   */
   private finalizeNoRecipe(
     ps: ProcessStepFull,
     production: ProcessStepProduction,
     psDurationMap: Record<string, number[]>
   ) {
-    // We say each raw item had to wait ps.duration
     const totalWait = ps.duration || 1;
-    // We can store that in psDurationMap once or for each item.
-    // For better KPI averaging, let's push it as many times as items:
     const itemCount = production.rawItems?.length || 0;
     if (!psDurationMap[ps.name]) {
       psDurationMap[ps.name] = [];
@@ -855,9 +999,6 @@ export class Simulation {
     );
   }
 
-  // ----------------------------------------------
-  //  Sensors & scanning
-  // ----------------------------------------------
   private sensorIncrement(
     psOrTS: ProcessStepFull | TransportSystemFull,
     sensorType: string,
@@ -911,13 +1052,10 @@ export class Simulation {
     return true;
   }
 
-  // ----------------------------------------------
-  //  Orders logic
-  // ----------------------------------------------
   private handleOrders(state: SimulationEntityState): void {
     if (this.orders.length === 0) return;
     const pending = this.orders.filter(
-      (o) => o.status === "pending" && o.materialsReserved !== true
+      (o) => o.status === "pending" && !o.materialsReserved
     );
 
     for (const order of pending) {
@@ -1070,9 +1208,6 @@ export class Simulation {
     console.log("Order relationships updated:", state.locations);
   }
 
-  // ----------------------------
-  //  Helper
-  // ----------------------------
   private canIntakeItems(
     ps: ProcessStepFull,
     inputItems: InventoryEntryWithDelay[]

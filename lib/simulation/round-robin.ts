@@ -1,7 +1,10 @@
+// ----------------------------------------------------
+//                  round-robin.ts
+// ----------------------------------------------------
 export function distributeRoundRobin<T>(
   items: T[],
   outputSpeeds: number[],
-  outputFilterPredicates?: ((i: T) => boolean)[],
+  outputFilterPredicates?: ((i: T) => boolean)[]
 ): T[][] {
   if (outputSpeeds.length === 0) {
     return [];
@@ -11,7 +14,7 @@ export function distributeRoundRobin<T>(
     outputFilterPredicates = Array(outputSpeeds.length).fill(() => true);
   } else if (outputSpeeds.length !== outputFilterPredicates.length) {
     throw new Error(
-      "The number of output speeds must be equal to the number of whitelists.",
+      "The number of output speeds must be equal to the number of whitelists."
     );
   }
 
@@ -34,12 +37,12 @@ export function distributeRoundRobin<T>(
       availableItems[outputIndex]
     ) {
       const nextAvailableItemIndex = remainingItems.findIndex(
-        outputFilterPredicates[outputIndex],
+        outputFilterPredicates[outputIndex]
       );
 
       if (nextAvailableItemIndex > -1) {
         result[outputIndex].push(
-          remainingItems.splice(nextAvailableItemIndex, 1)[0],
+          remainingItems.splice(nextAvailableItemIndex, 1)[0]
         );
       } else {
         availableItems[outputIndex] = false;
@@ -48,17 +51,6 @@ export function distributeRoundRobin<T>(
 
     outputIndex++;
   }
-
-  // let itemsTaken = 0;
-  // while (itemsTaken < take) {
-  //   for (
-  //     let key = 0;
-  //     itemsTaken < take && key < distributeTo.length;
-  //     key++, itemsTaken++
-  //   ) {
-  //     itemsDistributed[distributeTo[key]].push(items[itemsTaken]);
-  //   }
-  // }
 
   return result;
 }
