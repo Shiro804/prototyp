@@ -34,6 +34,7 @@ model Machine {
 model Worker {
     id          Int          @id @default(autoincrement())
     resourceId  Int          @unique
+    active      Boolean      @default(true)
     resource    Resource     @relation(fields: [resourceId], references: [id])
     workerRoles WorkerRole[] @relation("WorkerToWorkerRole")
 }
@@ -62,8 +63,9 @@ model InventoryEntry {
     material    String
     inventoryId Int
     inventory   Inventory @relation(fields: [inventoryId], references: [id])
-    Order       Order?    @relation(fields: [orderId], references: [id])
-    orderId     Int?
+
+    Order   Order? @relation(fields: [orderId], references: [id])
+    orderId Int?
 }
 
 model Location {
@@ -77,29 +79,29 @@ model Location {
 }
 
 model ProcessStep {
-    id          Int               @id @default(autoincrement())
-    createdAt   DateTime          @default(now())
-    updatedAt   DateTime          @updatedAt
+    id          Int      @id @default(autoincrement())
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
     name        String
-    status      String            @default("IDLING")
-    active      Boolean           @default(true)
+    status      String   @default("IDLING")
+    active      Boolean  @default(true)
     inputSpeed  Int
     outputSpeed Int
-    recipeRate  Int               @default(10)
-    duration    Int               @default(1)
+    recipeRate  Int      @default(10)
+    duration    Int      @default(1)
     locationId  Int
-    inventoryId Int               @unique
+    inventoryId Int      @unique
     recipeId    Int?
-    errorRate   Float?            @default(0.0)
-    // Many-to-Many Beziehung mit Orders
-    orders      Order[]           @relation("OrderToProcessStep")
-    recipe      Recipe?           @relation(fields: [recipeId], references: [id])
-    inventory   Inventory         @relation(fields: [inventoryId], references: [id])
-    location    Location          @relation(fields: [locationId], references: [id])
-    resources   Resource[]
-    sensors     Sensor[]
-    inputs      TransportSystem[] @relation("stepInputs")
-    outputs     TransportSystem[] @relation("stepOutputs")
+    errorRate   Float?   @default(0.0)
+
+    orders    Order[]           @relation("OrderToProcessStep")
+    recipe    Recipe?           @relation(fields: [recipeId], references: [id])
+    inventory Inventory         @relation(fields: [inventoryId], references: [id])
+    location  Location          @relation(fields: [locationId], references: [id])
+    resources Resource[]
+    sensors   Sensor[]
+    inputs    TransportSystem[] @relation("stepInputs")
+    outputs   TransportSystem[] @relation("stepOutputs")
 }
 
 model Recipe {
@@ -149,13 +151,12 @@ model Sensor {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
     name        String
-    type        String // e.g. "scanner" or "counter"
-    value       Int      @default(0) // e.g. counter's current count
-    sensorDelay Int      @default(0) // optional delay for scanning
+    type        String // e.g. "scanner" oder "counter"
+    value       Int      @default(0)
+    sensorDelay Int      @default(0)
 
-    processStepId Int?
-    processStep   ProcessStep? @relation(fields: [processStepId], references: [id])
-
+    processStepId     Int?
+    processStep       ProcessStep?     @relation(fields: [processStepId], references: [id])
     transportSystemId Int?
     transportSystem   TransportSystem? @relation(fields: [transportSystemId], references: [id])
     logEntries        LogEntry[]
@@ -180,45 +181,50 @@ model Filter {
 }
 
 model TransportSystem {
-    id             Int          @id @default(autoincrement())
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @updatedAt
-    active         Boolean      @default(true)
+    id             Int      @id @default(autoincrement())
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+    active         Boolean  @default(true)
     name           String
     inputSpeed     Int
     outputSpeed    Int
-    inventoryId    Int          @unique
-    minQuantity    Int?         @default(1)
-    transportDelay Int?         @default(1)
+    inventoryId    Int      @unique
+    minQuantity    Int?     @default(1)
+    transportDelay Int?     @default(1)
     startStepId    Int?
     endStepId      Int?
     type           String
-    filter         Filter?
-    endStep        ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
-    startStep      ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
-    inventory      Inventory    @relation(fields: [inventoryId], references: [id])
-    orders         Order[]      @relation("OrderToTransportSystem")
-    sensors        Sensor[]
+
+    // Verweise auf ProcessSteps
+    endStep   ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
+    startStep ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
+
+    // NEU: Nur noch IDs, keine Self-Relation-Objekte
+    startTSId Int?
+    endTSId   Int?
+
+    inventory Inventory @relation(fields: [inventoryId], references: [id])
+    orders    Order[]   @relation("OrderToTransportSystem")
+    filter    Filter?
+    sensors   Sensor[]
 }
 
 model Order {
     id               Int               @id @default(autoincrement())
     createdAt        DateTime          @default(now())
     updatedAt        DateTime          @updatedAt
-    status           String            @default("pending") // Mögliche Werte: pending, in_progress, completed, canceled
-    priority         Int               @default(1) // Höhere Priorität für dringendere Aufträge
-    dueDate          DateTime? // Optionales Fälligkeitsdatum für den Auftrag
-    description      String? // Beschreibung des Auftrags
+    status           String            @default("pending")
+    priority         Int               @default(1)
+    dueDate          DateTime?
+    description      String?
     quantity         Int               @default(1)
-    // Verweis auf zugeordnete Materialien/Produkte
-    inventoryEntries InventoryEntry[] // Materialien/Produkte, die diesem Auftrag zugeordnet sind
-    processSteps     ProcessStep[]     @relation("OrderToProcessStep") // Many-to-Many mit ProcessSteps
-    transportSystems TransportSystem[] @relation("OrderToTransportSystem") // Many-to-Many mit TransportSystem
+    inventoryEntries InventoryEntry[]
+    processSteps     ProcessStep[]     @relation("OrderToProcessStep")
+    transportSystems TransportSystem[] @relation("OrderToTransportSystem")
 
-    // Historische Informationen, z.B. für Logs
     startedAt     DateTime?
     startedTick   Int?
     completedTick Int?
-    completedAt   DateTime? // Wann der Auftrag abgeschlossen wurde
-    canceledAt    DateTime? // Wann der Auftrag abgebrochen wurde
+    completedAt   DateTime?
+    canceledAt    DateTime?
 }
