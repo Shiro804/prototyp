@@ -1,6 +1,3 @@
-// ----------------------------------------------------
-//                  round-robin.ts
-// ----------------------------------------------------
 export function distributeRoundRobin<T>(
   items: T[],
   outputSpeeds: number[],
@@ -51,6 +48,17 @@ export function distributeRoundRobin<T>(
 
     outputIndex++;
   }
+
+  // let itemsTaken = 0;
+  // while (itemsTaken < take) {
+  //   for (
+  //     let key = 0;
+  //     itemsTaken < take && key < distributeTo.length;
+  //     key++, itemsTaken++
+  //   ) {
+  //     itemsDistributed[distributeTo[key]].push(items[itemsTaken]);
+  //   }
+  // }
 
   return result;
 }

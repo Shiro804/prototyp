@@ -3,6 +3,7 @@
 import React, { createContext, useContext, FC } from "react";
 import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCore";
+import { Resource } from "@prisma/client";
 
 /**
  * Extended Interface for Mock Simulation State
@@ -10,6 +11,7 @@ import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCo
 export interface SimulationStateMock extends SimulationCoreState {
   toggleTransportSystem: (tsId: number) => void;
   toggleProcessStep: (psId: number) => void;
+  toggleResource: (res: Resource) => void;
 }
 
 /**
@@ -32,6 +34,7 @@ export const SimulationContextMock = createContext<SimulationStateMock>({
   handleJumpToTick: () => { },
   toggleProcessStep: () => { },
   toggleTransportSystem: () => { },
+  toggleResource: () => { },
 });
 
 /**
@@ -80,8 +83,28 @@ export const SimulationProviderMock: FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  /**
+   * Toggle the active state of a transport system.
+   */
+  const toggleResource = (res: Resource) => {
+    if (!core.simInstance) return;
+
+    // Toggle in the Simulation (also discards future frames)
+    core.simInstance.toggleResource(res);
+
+    // Retrieve the updated SimulationRun
+    const newRun = core.simInstance.getSimulationRun();
+    core.setSimulation(newRun);
+
+    // If the current frame index is now out of bounds (e.g., future frames discarded),
+    // set it to the last available frame
+    if (core.frame >= newRun.frames.length) {
+      core.setFrame(newRun.frames.length - 1);
+    }
+  };
+
   return (
-    <SimulationContextMock.Provider value={{ ...core, toggleProcessStep, toggleTransportSystem }}>
+    <SimulationContextMock.Provider value={{ ...core, toggleProcessStep, toggleTransportSystem, toggleResource }}>
       {children}
     </SimulationContextMock.Provider>
   );

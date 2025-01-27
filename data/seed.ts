@@ -6,6 +6,15 @@ function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Utility to create random full names
+function randomFullName() {
+  const firstNames = ["John", "Jane", "Alex", "Emily", "Taylor", "Sam"];
+  const lastNames = ["Smith", "Doe", "Brown", "Johnson", "Davis", "Garcia"];
+  const fn = firstNames[randomBetween(0, firstNames.length - 1)];
+  const ln = lastNames[randomBetween(0, lastNames.length - 1)];
+  return `${fn} ${ln}`;
+}
+
 /**
  * Erstellt ein TransportSystem und (optional) einen Filter mit den
  * Materialien, die vom Ziel-Rezept oder expliziten overrideMaterials
@@ -111,6 +120,23 @@ async function main() {
   // -------------------------------------------------
   // 0) Cleanup? (Optional) => If you want to start fresh
   // await prisma.$executeRawUnsafe(`DELETE FROM ...`)
+
+  // -------------------------------------------------
+  // 0.5) Create some WorkerRoles
+  // -------------------------------------------------
+  const [
+    storageWorkerRole,
+    preAssemblyWorkerRole,
+    upholsteryWorkerRole,
+    transportOperatorRole,
+    qualityCheckerRole,
+  ] = await prisma.$transaction([
+    prisma.workerRole.create({ data: { name: "Storage Worker" } }),
+    prisma.workerRole.create({ data: { name: "Pre-Assembly Worker" } }),
+    prisma.workerRole.create({ data: { name: "Upholstery Worker" } }),
+    prisma.workerRole.create({ data: { name: "Transport Operator" } }),
+    prisma.workerRole.create({ data: { name: "Quality Checker" } }),
+  ]);
 
   // -------------------------------------------------
   // 1) Recipes
@@ -368,11 +394,6 @@ async function main() {
   });
 
   // 2d) Hall 3: Pre-Assembly + Upholstery
-  //    Steps:
-  //      Pre-Assembly Storage,
-  //      Pre-Assembly Seat Worker, Pre-Assembly Backrest Worker,
-  //      Upholstery Storage,
-  //      Upholstery - Seat Worker, Upholstery - Backrest Worker
   const hall3 = await prisma.location.create({
     data: {
       name: "Hall 3 - Pre-Assembly and Upholstery",
@@ -492,7 +513,7 @@ async function main() {
   // -------------------------------------------------
 
   // 1) "Forklift - Hall 1 to Hall 2 (Seat Materials)"
-  await createTransportSystemWithFilter(
+  const tsForkliftHall1ToHall2 = await createTransportSystemWithFilter(
     "Forklift - Hall 1 to Hall 2 (Seat Materials)",
     hall1.processSteps.find((ps) => ps.name === "Goods Entry Point")!.id,
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
@@ -502,7 +523,7 @@ async function main() {
   );
 
   // 2) "DTS - Hall 5 to Hall 2 (Covers)"
-  await createTransportSystemWithFilter(
+  const tsDtsHall5ToHall2 = await createTransportSystemWithFilter(
     "DTS - Hall 5 to Hall 2 (Covers)",
     hall5.processSteps.find((ps) => ps.name === "Covers Entry Point")!.id,
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
@@ -512,12 +533,13 @@ async function main() {
   );
 
   // 3) "Worker TS - Rack -> PreAssembly Storage"
-  //    => Wir wollen KEINE Covers -> overrideMaterials
-  await createTransportSystemWithFilter(
-    "Worker TS - Rack -> PreAssembly Storage",
+  //    => We want NO covers => overrideMaterials
+  //    => Should remain DTS, so rename type to "DTS"
+  const tsDtsRackToPreAssemblyStorage = await createTransportSystemWithFilter(
+    "DTS - Rack -> PreAssembly Storage",
     hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
     hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Storage")!.id,
-    "Worker-TS",
+    "DTS",
     2,
     2,
     {
@@ -533,112 +555,124 @@ async function main() {
     }
   );
 
-  // 4) "Worker TS - PreAssemblyStorage -> Seat"
-  //    => PreAssembly Seat Worker needs ("Seat Foam", etc.)
-  //       but they've presumably arrived as raw materials in the Storage => no covers
-  //    => kann optional override weglassen => minimal
-  await createTransportSystemWithFilter(
-    "Worker TS - PreAssemblyStorage -> Seat",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Storage")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Seat Worker")!.id,
-    "Worker-TS",
-    1,
-    1
-  );
+  // 4) "Worker TS - PreAssemblyStorage -> Seat" => change to "Roller"
+  const tsRollerPreAssemblyStorageToSeat =
+    await createTransportSystemWithFilter(
+      "Worker TS - PreAssemblyStorage -> Seat",
+      hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Storage")!.id,
+      hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Seat Worker")!
+        .id,
+      "Roller", // changed from "Worker-TS"
+      1,
+      1
+    );
 
-  // 5) "Worker TS - PreAssemblyStorage -> Backrest"
-  await createTransportSystemWithFilter(
-    "Worker TS - PreAssemblyStorage -> Backrest",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Storage")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Backrest Worker")!
-      .id,
-    "Worker-TS",
-    1,
-    1
-  );
+  // 5) "Worker TS - PreAssemblyStorage -> Backrest" => change to "Roller"
+  const tsRollerPreAssemblyStorageToBackrest =
+    await createTransportSystemWithFilter(
+      "Worker TS - PreAssemblyStorage -> Backrest",
+      hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Storage")!.id,
+      hall3.processSteps.find(
+        (ps) => ps.name === "Pre-Assembly Backrest Worker"
+      )!.id,
+      "Roller", // changed from "Worker-TS"
+      1,
+      1
+    );
 
   // 6) "Worker TS - PreAssemblySeat -> UpholsteryStorage"
-  //    => Transport von "Pre-Assembled Seat" ins Upholstery Storage
-  await createTransportSystemWithFilter(
-    "Worker TS - PreAssemblySeat -> UpholsteryStorage",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Seat Worker")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
-    "Worker-TS",
-    1,
-    2,
-    {
-      overrideMaterials: ["Pre-Assembled Seat"],
-    }
-  );
+  //    => keep type "Worker-TS" (unchanged)
+  const tsWorkerPreAssemblySeatToUpholstery =
+    await createTransportSystemWithFilter(
+      "Worker TS - PreAssemblySeat -> UpholsteryStorage",
+      hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Seat Worker")!
+        .id,
+      hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
+      "Worker-TS",
+      1,
+      2,
+      {
+        overrideMaterials: ["Pre-Assembled Seat"],
+      }
+    );
 
   // 7) "Worker TS - PreAssemblyBackrest -> UpholsteryStorage"
-  await createTransportSystemWithFilter(
-    "Worker TS - PreAssemblyBackrest -> UpholsteryStorage",
-    hall3.processSteps.find((ps) => ps.name === "Pre-Assembly Backrest Worker")!
-      .id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
-    "Worker-TS",
-    1,
-    2,
-    {
-      overrideMaterials: ["Pre-Assembled Backrest"],
-    }
-  );
+  //    => keep type "Worker-TS" (unchanged)
+  const tsWorkerPreAssemblyBackrestToUpholstery =
+    await createTransportSystemWithFilter(
+      "Worker TS - PreAssemblyBackrest -> UpholsteryStorage",
+      hall3.processSteps.find(
+        (ps) => ps.name === "Pre-Assembly Backrest Worker"
+      )!.id,
+      hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
+      "Worker-TS",
+      1,
+      2,
+      {
+        overrideMaterials: ["Pre-Assembled Backrest"],
+      }
+    );
 
   // 8) "Worker TS - Upholstery Storage -> Upholstery - Seat Worker"
-  //    => Hier brauchen wir "Pre-Assembled Seat" + "Seat Cover"
-  //       => overrideMaterials: ["Pre-Assembled Seat", "Seat Cover"]
-  await createTransportSystemWithFilter(
-    "Worker TS - Upholstery Storage -> Upholstery - Seat Worker",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat Worker")!.id,
-    "Worker-TS",
-    1,
-    2,
-    {
-      overrideMaterials: ["Pre-Assembled Seat", "Seat Cover"],
-    }
-  );
+  //    => change to "Roller"
+  const tsRollerUpholsteryStorageToSeatWorker =
+    await createTransportSystemWithFilter(
+      "Worker TS - Upholstery Storage -> Upholstery - Seat Worker",
+      hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
+      hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat Worker")!
+        .id,
+      "Roller", // changed from "Worker-TS"
+      1,
+      2,
+      {
+        overrideMaterials: ["Pre-Assembled Seat", "Seat Cover"],
+      }
+    );
 
   // 9) "Conveyor - Upholstery - Seat Worker -> Assembly"
-  //    => Kein spezieller Filter, da "Upholstered Seat" das Output ist
-  await createTransportSystemWithFilter(
-    "Conveyor - Upholstery - Seat Worker -> Assembly",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat Worker")!.id,
-    hall4.processSteps.find((ps) => ps.name === "Assembly")!.id,
-    "Conveyor",
-    1,
-    2
-  );
+  const tsConveyorUpholsterySeatToAssembly =
+    await createTransportSystemWithFilter(
+      "Conveyor - Upholstery - Seat Worker -> Assembly",
+      hall3.processSteps.find((ps) => ps.name === "Upholstery - Seat Worker")!
+        .id,
+      hall4.processSteps.find((ps) => ps.name === "Assembly")!.id,
+      "Conveyor",
+      1,
+      2
+    );
 
   // 10) "Worker TS - Upholstery Storage -> Upholstery - Backrest Worker"
-  //     => "Pre-Assembled Backrest", "Backrest Cover"
-  await createTransportSystemWithFilter(
-    "Worker TS - Upholstery Storage -> Upholstery - Backrest Worker",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest Worker")!
-      .id,
-    "Worker-TS",
-    1,
-    2,
-    {
-      overrideMaterials: ["Pre-Assembled Backrest", "Backrest Cover"],
-    }
-  );
+  //      => change to "Roller"
+  const tsRollerUpholsteryStorageToBackrestWorker =
+    await createTransportSystemWithFilter(
+      "Worker TS - Upholstery Storage -> Upholstery - Backrest Worker",
+      hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
+      hall3.processSteps.find(
+        (ps) => ps.name === "Upholstery - Backrest Worker"
+      )!.id,
+      "Roller", // changed from "Worker-TS"
+      1,
+      2,
+      {
+        overrideMaterials: ["Pre-Assembled Backrest", "Backrest Cover"],
+      }
+    );
 
   // 11) "Conveyor - Upholstery - Backrest Worker -> Assembly"
-  await createTransportSystemWithFilter(
-    "Conveyor - Upholstery - Backrest Worker -> Assembly",
-    hall3.processSteps.find((ps) => ps.name === "Upholstery - Backrest Worker")!
-      .id,
-    hall4.processSteps.find((ps) => ps.name === "Assembly")!.id,
-    "Conveyor",
-    1,
-    2
-  );
+  const tsConveyorUpholsteryBackrestToAssembly =
+    await createTransportSystemWithFilter(
+      "Conveyor - Upholstery - Backrest Worker -> Assembly",
+      hall3.processSteps.find(
+        (ps) => ps.name === "Upholstery - Backrest Worker"
+      )!.id,
+      hall4.processSteps.find((ps) => ps.name === "Assembly")!.id,
+      "Conveyor",
+      1,
+      2
+    );
 
   // 12) "Conveyor - Assembly -> EOL"
-  await createTransportSystemWithFilter(
+  const tsConveyorAssemblyToEOL = await createTransportSystemWithFilter(
     "Conveyor - Assembly -> EOL",
     hall4.processSteps.find((ps) => ps.name === "Assembly")!.id,
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
@@ -650,12 +684,8 @@ async function main() {
     }
   );
 
-  // 13) "Forklift - Assembly -> EOL" (optional if you want 2 ways?)
-  // Skipped if you only want "Conveyor - Assembly -> EOL"
-
   // 14) "Forklift - EOL -> Shipping"
-  // Falls du es "Assembly -> EOL" + "Forklift EOL -> Shipping" willst
-  await createTransportSystemWithFilter(
+  const tsForkliftEOLToShipping = await createTransportSystemWithFilter(
     "Forklift - EOL -> Shipping",
     hall4.processSteps.find((ps) => ps.name === "End of Line Check")!.id,
     hall5.processSteps.find((ps) => ps.name === "Shipping")!.id,
@@ -665,20 +695,391 @@ async function main() {
   );
 
   // TransportSystem für Covers vom Storage Rack (Hall2) zum Upholstery Storage (Hall3)
-  await createTransportSystemWithFilter(
-    "Worker TS - Rack -> UpholsteryStorage (Covers Only)",
-    hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
-    hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
-    "Worker-TS",
-    2, // minQuantity
-    3, // transportDelay
-    {
-      overrideMaterials: ["Seat Cover", "Backrest Cover"],
-    }
-  );
+  // => now want a DTS type with a machine resource
+  const tsDtsRackToUpholsteryStorageCovers =
+    await createTransportSystemWithFilter(
+      "Worker TS - Rack -> UpholsteryStorage (Covers Only)",
+      hall2.processSteps.find((ps) => ps.name === "Storage Rack")!.id,
+      hall3.processSteps.find((ps) => ps.name === "Upholstery Storage")!.id,
+      "DTS", // changed from "Worker-TS"
+      2, // minQuantity
+      3, // transportDelay
+      {
+        overrideMaterials: ["Seat Cover", "Backrest Cover"],
+      }
+    );
 
   // 4) Create Orders
   await createMockOrders(10);
+
+  // -------------------------------------------------
+  // 5) Create Resources (Workers & Machines)
+  // -------------------------------------------------
+
+  // STORAGE RACK => 2 workers, same role
+  const storageRackPS = hall2.processSteps.find(
+    (ps) => ps.name === "Storage Rack"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Storage Rack Worker ${i}`,
+        locationId: hall2.id,
+        processStepId: storageRackPS.id,
+        Worker: {
+          create: {
+            workerNumber: `STOR-${100 + i}`,
+            fullName: randomFullName(),
+            address: `Storage Address #${i}`,
+            workerRoles: {
+              connect: [{ id: storageWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PRE-ASSEMBLY STORAGE => 2 workers, same role
+  const preAssemblyStoragePS = hall3.processSteps.find(
+    (ps) => ps.name === "Pre-Assembly Storage"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Pre-Assembly Storage Worker ${i}`,
+        locationId: hall3.id,
+        processStepId: preAssemblyStoragePS.id,
+        Worker: {
+          create: {
+            workerNumber: `PASW-${200 + i}`,
+            fullName: randomFullName(),
+            address: `PreAssembly Storage Rd #${i}`,
+            workerRoles: {
+              connect: [{ id: preAssemblyWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // "Worker TS - PreAssemblyStorage -> Seat" => 1 worker, type Roller
+  if (tsRollerPreAssemblyStorageToSeat) {
+    await prisma.resource.create({
+      data: {
+        name: "Roller Operator PreAssembly->Seat",
+        locationId: hall3.id,
+        transportSystemId: tsRollerPreAssemblyStorageToSeat.id,
+        Worker: {
+          create: {
+            workerNumber: `RPS-001`,
+            fullName: randomFullName(),
+            address: "Transport Alley #1",
+            workerRoles: {
+              connect: [{ id: transportOperatorRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // "Worker TS - PreAssemblyStorage -> Backrest" => 1 worker, type Roller
+  if (tsRollerPreAssemblyStorageToBackrest) {
+    await prisma.resource.create({
+      data: {
+        name: "Roller Operator PreAssembly->Backrest",
+        locationId: hall3.id,
+        transportSystemId: tsRollerPreAssemblyStorageToBackrest.id,
+        Worker: {
+          create: {
+            workerNumber: `RPB-001`,
+            fullName: randomFullName(),
+            address: "Transport Alley #2",
+            workerRoles: {
+              connect: [{ id: transportOperatorRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PS "Pre-Assembly Seat Worker" => 2 workers
+  const preAssemblySeatPS = hall3.processSteps.find(
+    (ps) => ps.name === "Pre-Assembly Seat Worker"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Pre-Assembly Seat Operator ${i}`,
+        locationId: hall3.id,
+        processStepId: preAssemblySeatPS.id,
+        Worker: {
+          create: {
+            workerNumber: `PASO-S${i}`,
+            fullName: randomFullName(),
+            address: `SeatOperator Ln #${i}`,
+            workerRoles: {
+              connect: [{ id: preAssemblyWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PS "Pre-Assembly Backrest Worker" => 2 workers
+  const preAssemblyBackrestPS = hall3.processSteps.find(
+    (ps) => ps.name === "Pre-Assembly Backrest Worker"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Pre-Assembly Backrest Operator ${i}`,
+        locationId: hall3.id,
+        processStepId: preAssemblyBackrestPS.id,
+        Worker: {
+          create: {
+            workerNumber: `PASO-B${i}`,
+            fullName: randomFullName(),
+            address: `BackrestOperator Ln #${i}`,
+            workerRoles: {
+              connect: [{ id: preAssemblyWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // "Worker TS - Rack -> UpholsteryStorage (Covers Only)" => DTS with a machine
+  // also each DTS at the end shall contain a machine resource => so let's add one
+  if (tsDtsRackToUpholsteryStorageCovers) {
+    await prisma.resource.create({
+      data: {
+        name: "Covers DTS Machine",
+        locationId: hall2.id,
+        transportSystemId: tsDtsRackToUpholsteryStorageCovers.id,
+        Machine: {
+          create: {},
+        },
+      },
+    });
+  }
+
+  // For each existing DTS we can also add a machine resource if you want "at the end each DTS"
+  // Minimal example: let's do it for "DTS - Rack -> PreAssembly Storage" and "DTS - Hall 5 to Hall 2 (Covers)"
+  if (tsDtsRackToPreAssemblyStorage) {
+    await prisma.resource.create({
+      data: {
+        name: "DTS Machine Rack->PreAssembly",
+        locationId: hall2.id,
+        transportSystemId: tsDtsRackToPreAssemblyStorage.id,
+        Machine: {
+          create: {},
+        },
+      },
+    });
+  }
+
+  if (tsDtsHall5ToHall2) {
+    await prisma.resource.create({
+      data: {
+        name: "DTS Machine Hall5->Hall2",
+        locationId: hall5.id,
+        transportSystemId: tsDtsHall5ToHall2.id,
+        Machine: {
+          create: {},
+        },
+      },
+    });
+  }
+
+  // PS "Upholstery Storage" => 2 workers
+  const upholsteryStoragePS = hall3.processSteps.find(
+    (ps) => ps.name === "Upholstery Storage"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Upholstery Storage Worker ${i}`,
+        locationId: hall3.id,
+        processStepId: upholsteryStoragePS.id,
+        Worker: {
+          create: {
+            workerNumber: `UPSW-${300 + i}`,
+            fullName: randomFullName(),
+            address: `Upholstery Storage Ln #${i}`,
+            workerRoles: {
+              connect: [{ id: upholsteryWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // "Worker TS - Upholstery Storage -> Upholstery - Seat Worker" => now Roller => 1 worker
+  if (tsRollerUpholsteryStorageToSeatWorker) {
+    await prisma.resource.create({
+      data: {
+        name: "Roller Operator UpholsteryStorage->Seat",
+        locationId: hall3.id,
+        transportSystemId: tsRollerUpholsteryStorageToSeatWorker.id,
+        Worker: {
+          create: {
+            workerNumber: `RUW-S001`,
+            fullName: randomFullName(),
+            address: "UphTransport Alley #1",
+            workerRoles: {
+              connect: [{ id: transportOperatorRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // "Worker TS - Upholstery Storage -> Upholstery - Backrest Worker" => now Roller => 1 worker
+  if (tsRollerUpholsteryStorageToBackrestWorker) {
+    await prisma.resource.create({
+      data: {
+        name: "Roller Operator UpholsteryStorage->Backrest",
+        locationId: hall3.id,
+        transportSystemId: tsRollerUpholsteryStorageToBackrestWorker.id,
+        Worker: {
+          create: {
+            workerNumber: `RUW-B001`,
+            fullName: randomFullName(),
+            address: "UphTransport Alley #2",
+            workerRoles: {
+              connect: [{ id: transportOperatorRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PS "Upholstery - Seat Worker" => 2 workers
+  const upholsterySeatPS = hall3.processSteps.find(
+    (ps) => ps.name === "Upholstery - Seat Worker"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Upholstery Seat Operator ${i}`,
+        locationId: hall3.id,
+        processStepId: upholsterySeatPS.id,
+        Worker: {
+          create: {
+            workerNumber: `UWS-${i}`,
+            fullName: randomFullName(),
+            address: `UphSeat Rd #${i}`,
+            workerRoles: {
+              connect: [{ id: upholsteryWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PS "Upholstery - Backrest Worker" => 2 workers
+  const upholsteryBackrestPS = hall3.processSteps.find(
+    (ps) => ps.name === "Upholstery - Backrest Worker"
+  )!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Upholstery Backrest Operator ${i}`,
+        locationId: hall3.id,
+        processStepId: upholsteryBackrestPS.id,
+        Worker: {
+          create: {
+            workerNumber: `UWB-${i}`,
+            fullName: randomFullName(),
+            address: `UphBackrest Rd #${i}`,
+            workerRoles: {
+              connect: [{ id: upholsteryWorkerRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // PS "Assembly" => 2 machines ("Assembly robotic arm #1" and "#2")
+  const assemblyPS = hall4.processSteps.find((ps) => ps.name === "Assembly")!;
+  for (let i = 1; i <= 2; i++) {
+    await prisma.resource.create({
+      data: {
+        name: `Assembly robotic arm ${i}`,
+        locationId: hall4.id,
+        processStepId: assemblyPS.id,
+        Machine: {
+          create: {},
+        },
+      },
+    });
+  }
+
+  // End of Line Check => 1 machine "PhotoSystem" + 1 worker "Quality Checker"
+  const eolPS = hall4.processSteps.find(
+    (ps) => ps.name === "End of Line Check"
+  )!;
+  // Machine
+  await prisma.resource.create({
+    data: {
+      name: "PhotoSystem",
+      locationId: hall4.id,
+      processStepId: eolPS.id,
+      Machine: {
+        create: {},
+      },
+    },
+  });
+  // Worker
+  await prisma.resource.create({
+    data: {
+      name: "Quality Checker",
+      locationId: hall4.id,
+      processStepId: eolPS.id,
+      Worker: {
+        create: {
+          workerNumber: `QC-001`,
+          fullName: randomFullName(),
+          address: "Quality Blvd #1",
+          workerRoles: {
+            connect: [{ id: qualityCheckerRole.id }],
+          },
+        },
+      },
+    },
+  });
+
+  // TS "Forklift - EOL -> Shipping" => 1 worker
+  if (tsForkliftEOLToShipping) {
+    await prisma.resource.create({
+      data: {
+        name: "Forklift Operator EOL->Shipping",
+        locationId: hall4.id,
+        transportSystemId: tsForkliftEOLToShipping.id,
+        Worker: {
+          create: {
+            workerNumber: `FLEOL-001`,
+            fullName: randomFullName(),
+            address: "Forklift Path #1",
+            workerRoles: {
+              connect: [{ id: transportOperatorRole.id }],
+            },
+          },
+        },
+      },
+    });
+  }
 
   // Debug
   console.dir(
@@ -688,10 +1089,16 @@ async function main() {
       }),
       transportSystems: await prisma.transportSystem.findMany({
         include: {
-          filter: {
-            include: { entries: true },
-          },
+          filter: { include: { entries: true } },
           sensors: true,
+          resources: {
+            include: {
+              Worker: {
+                include: { workerRoles: true },
+              },
+              Machine: true,
+            },
+          },
         },
       }),
     },

@@ -45,6 +45,7 @@ export async function GET() {
                     logEntries: true,
                   },
                 },
+                resources: true,
               },
             },
             outputs: {
@@ -65,12 +66,13 @@ export async function GET() {
                     logEntries: true,
                   },
                 },
+                resources: true,
               },
             },
             sensors: {
               include: {
-                logEntries: true
-              }
+                logEntries: true,
+              },
             },
             inventory: {
               include: {

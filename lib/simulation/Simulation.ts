@@ -1,4 +1,10 @@
-import { InventoryEntry, Prisma, Order, LogEntry } from "@prisma/client";
+import {
+  InventoryEntry,
+  Prisma,
+  Order,
+  LogEntry,
+  Resource,
+} from "@prisma/client";
 import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
 import { distributeRoundRobin } from "./round-robin";
@@ -42,7 +48,7 @@ export type LocationFull = Prisma.LocationGetPayload<{
                 logEntries: true;
               };
             };
-            
+            resources: true;
           };
         };
         outputs: {
@@ -55,6 +61,7 @@ export type LocationFull = Prisma.LocationGetPayload<{
                 logEntries: true;
               };
             };
+            resources: true;
           };
         };
         sensors: {
@@ -82,6 +89,7 @@ export type TransportSystemFull = Prisma.TransportSystemGetPayload<{
         logEntries: true;
       };
     };
+    resources: true;
   };
 }>;
 
@@ -107,6 +115,7 @@ export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
             logEntries: true;
           };
         };
+        resources: true;
       };
     };
     outputs: {
@@ -119,6 +128,7 @@ export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
             logEntries: true;
           };
         };
+        resources: true;
       };
     };
     sensors: {
@@ -351,6 +361,70 @@ export class Simulation {
 
     this.discardFutureFrames();
     this.currentState = Simulation.cloneState(lastFrame.state);
+  }
+
+  public toggleResource(res: Resource): void {
+    const lastFrame = this.frames[this.frames.length - 1];
+    const { locations } = lastFrame.state;
+
+    let found = false;
+
+    for (const loc of locations) {
+      // Check if the resource is associated with a ProcessStep
+      if (res.processStepId) {
+        const processStep = loc.processSteps.find(
+          (ps) => ps.id === res.processStepId
+        );
+        if (processStep) {
+          const resource = processStep.resources.find((r) => r.id === res.id);
+          if (resource) {
+            resource.active = !resource.active;
+            console.log(
+              `Toggle Resource: ${resource.name} (ID: ${resource.id}) -> ${
+                resource.active ? "Active" : "Inactive"
+              }`
+            );
+            found = true;
+            break;
+          }
+        }
+      }
+
+      // If not found in ProcessSteps, check TransportSystems
+      if (!found && res.transportSystemId) {
+        const allSteps = locations.flatMap((loc) => loc.processSteps);
+        const allTS = allSteps.flatMap((step) => [
+          ...step.inputs,
+          ...step.outputs,
+        ]);
+        const transportSystem = allTS.find(
+          (ts) => ts.id === res.transportSystemId
+        );
+
+        if (transportSystem) {
+          const resource = transportSystem.resources.find(
+            (r) => r.id === res.id
+          );
+          if (resource) {
+            resource.active = !resource.active;
+            console.log(
+              `Toggle Resource: ${resource.name} (ID: ${resource.id}) -> ${
+                resource.active ? "Active" : "Inactive"
+              }`
+            );
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (found) {
+      this.discardFutureFrames();
+      this.currentState = Simulation.cloneState(lastFrame.state);
+    } else {
+      console.log(`Resource with ID ${res.id} not found.`);
+    }
   }
 
   // --------------------------------------------------------
@@ -762,141 +836,141 @@ export class Simulation {
       );
     }
 
-    // ---------------------------------------------------------
-    // (E) Outlet (TS->TS)
-    // ---------------------------------------------------------
-    for (const location of newState.locations) {
-      const allTS = location.processSteps.flatMap((ps) =>
-        ps.inputs.concat(ps.outputs)
-      );
-      for (const sourceTS of allTS) {
-        if (!sourceTS.active) continue;
-        if (sourceTS.endTSId == null) {
-          continue;
-        }
-        const targetTS = allTS.find((t) => t.id === sourceTS.endTSId);
-        if (!targetTS || !targetTS.active) continue;
+    // // ---------------------------------------------------------
+    // // (E) Outlet (TS->TS)
+    // // ---------------------------------------------------------
+    // for (const location of newState.locations) {
+    //   const allTS = location.processSteps.flatMap((ps) =>
+    //     ps.inputs.concat(ps.outputs)
+    //   );
+    //   for (const sourceTS of allTS) {
+    //     if (!sourceTS.active) continue;
+    //     if (sourceTS.endTSId == null) {
+    //       continue;
+    //     }
+    //     const targetTS = allTS.find((t) => t.id === sourceTS.endTSId);
+    //     if (!targetTS || !targetTS.active) continue;
 
-        const speedOut = Math.min(sourceTS.outputSpeed, targetTS.inputSpeed);
+    //     const speedOut = Math.min(sourceTS.outputSpeed, targetTS.inputSpeed);
 
-        const sourceItems = sourceTS.inventory.entries
-          .filter((x) => x.orderId && activeOrderIds.has(x.orderId))
-          .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
+    //     const sourceItems = sourceTS.inventory.entries
+    //       .filter((x) => x.orderId && activeOrderIds.has(x.orderId))
+    //       .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
 
-        let finalItems = sourceItems;
-        if (sourceTS.filter) {
-          finalItems = finalItems.filter((x) =>
-            sourceTS.filter!.entries.some((fe) => fe.material === x.material)
-          );
-        }
-        finalItems = finalItems.slice(0, speedOut);
-        if (finalItems.length === 0) continue;
+    //     let finalItems = sourceItems;
+    //     if (sourceTS.filter) {
+    //       finalItems = finalItems.filter((x) =>
+    //         sourceTS.filter!.entries.some((fe) => fe.material === x.material)
+    //       );
+    //     }
+    //     finalItems = finalItems.slice(0, speedOut);
+    //     if (finalItems.length === 0) continue;
 
-        if (!this.sensorScan(sourceTS, "scanner", "output", finalItems)) continue;
-        if (!this.sensorScan(targetTS, "scanner", "input", finalItems)) continue;
+    //     if (!this.sensorScan(sourceTS, "scanner", "output", finalItems)) continue;
+    //     if (!this.sensorScan(targetTS, "scanner", "input", finalItems)) continue;
 
-        const outX = finalItems.map((it) => ({
-          ...it,
-          addedAt: new Date(),
-          arrivedTick: this.currentTick,
-          inventoryId: targetTS.inventory.id,
-        })) as InventoryEntryWithDelay[];
+    //     const outX = finalItems.map((it) => ({
+    //       ...it,
+    //       addedAt: new Date(),
+    //       arrivedTick: this.currentTick,
+    //       inventoryId: targetTS.inventory.id,
+    //     })) as InventoryEntryWithDelay[];
 
-        if (
-          outX.length + targetTS.inventory.entries.length <=
-          targetTS.inventory.limit
-        ) {
-          targetTS.inventory.entries.push(...outX);
-          const rmSet = new Set(outX.map((xx) => xx.id));
-          sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
-            (xx) => !rmSet.has(xx.id)
-          );
-          for (const mo of outX) {
-            if (mo.orderId) movedOrderIds.add(mo.orderId);
-          }
-        }
-      }
-    }
+    //     if (
+    //       outX.length + targetTS.inventory.entries.length <=
+    //       targetTS.inventory.limit
+    //     ) {
+    //       targetTS.inventory.entries.push(...outX);
+    //       const rmSet = new Set(outX.map((xx) => xx.id));
+    //       sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
+    //         (xx) => !rmSet.has(xx.id)
+    //       );
+    //       for (const mo of outX) {
+    //         if (mo.orderId) movedOrderIds.add(mo.orderId);
+    //       }
+    //     }
+    //   }
+    // }
 
-    // ---------------------------------------------------------
-    // (F) Intake (TS->TS)
-    // ---------------------------------------------------------
-    for (const location of newState.locations) {
-      const allTS = location.processSteps.flatMap((ps) =>
-        ps.inputs.concat(ps.outputs)
-      );
-      for (const targetTS of allTS) {
-        if (!targetTS.active) continue;
+    // // ---------------------------------------------------------
+    // // (F) Intake (TS->TS)
+    // // ---------------------------------------------------------
+    // for (const location of newState.locations) {
+    //   const allTS = location.processSteps.flatMap((ps) =>
+    //     ps.inputs.concat(ps.outputs)
+    //   );
+    //   for (const targetTS of allTS) {
+    //     if (!targetTS.active) continue;
 
-        if (targetTS.startTSId == null) {
-          continue;
-        }
-        const sourceTS = allTS.find((t) => t.id === targetTS.startTSId);
-        if (!sourceTS || !sourceTS.active) continue;
+    //     if (targetTS.startTSId == null) {
+    //       continue;
+    //     }
+    //     const sourceTS = allTS.find((t) => t.id === targetTS.startTSId);
+    //     if (!sourceTS || !sourceTS.active) continue;
 
-        const capacityNow =
-          targetTS.inventory.limit - targetTS.inventory.entries.length;
-        if (capacityNow <= 0) continue;
+    //     const capacityNow =
+    //       targetTS.inventory.limit - targetTS.inventory.entries.length;
+    //     if (capacityNow <= 0) continue;
 
-        const speedIn = Math.min(targetTS.inputSpeed, sourceTS.outputSpeed);
-        if (speedIn <= 0) continue;
+    //     const speedIn = Math.min(targetTS.inputSpeed, sourceTS.outputSpeed);
+    //     if (speedIn <= 0) continue;
 
-        const itemsAvailable = sourceTS.inventory.entries.filter((x) => {
-          if (!x.orderId || !activeOrderIds.has(x.orderId)) {
-            return false;
-          }
-          const xx = x as InventoryEntryWithDelay;
-          if (xx.arrivedTick == null) return false;
-          const delayNeeded =
-            sourceTS.transportDelay != null && sourceTS.transportDelay >= 0
-              ? sourceTS.transportDelay
-              : this.transportDelay;
-          return this.currentTick - xx.arrivedTick >= delayNeeded;
-        });
-        if (itemsAvailable.length === 0) continue;
+    //     const itemsAvailable = sourceTS.inventory.entries.filter((x) => {
+    //       if (!x.orderId || !activeOrderIds.has(x.orderId)) {
+    //         return false;
+    //       }
+    //       const xx = x as InventoryEntryWithDelay;
+    //       if (xx.arrivedTick == null) return false;
+    //       const delayNeeded =
+    //         sourceTS.transportDelay != null && sourceTS.transportDelay >= 0
+    //           ? sourceTS.transportDelay
+    //           : this.transportDelay;
+    //       return this.currentTick - xx.arrivedTick >= delayNeeded;
+    //     });
+    //     if (itemsAvailable.length === 0) continue;
 
-        const moved = itemsAvailable
-          .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
-          .slice(0, speedIn)
-          .map((it) => {
-            const leftTick = Math.max(
-              this.currentTick,
-              (it as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
-            );
-            return {
-              ...it,
-              addedAt: new Date(),
-              inventoryId: targetTS.inventory.id,
-              leftTick,
-            };
-          });
+    //     const moved = itemsAvailable
+    //       .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
+    //       .slice(0, speedIn)
+    //       .map((it) => {
+    //         const leftTick = Math.max(
+    //           this.currentTick,
+    //           (it as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
+    //         );
+    //         return {
+    //           ...it,
+    //           addedAt: new Date(),
+    //           inventoryId: targetTS.inventory.id,
+    //           leftTick,
+    //         };
+    //       });
 
-        if (!this.sensorScan(sourceTS, "scanner", "output", moved)) continue;
-        if (!this.sensorScan(targetTS, "scanner", "input", moved)) continue;
+    //     if (!this.sensorScan(sourceTS, "scanner", "output", moved)) continue;
+    //     if (!this.sensorScan(targetTS, "scanner", "input", moved)) continue;
 
-        // measure durations
-        for (const mv of moved) {
-          const typed = mv as InventoryEntryWithDelay;
-          if (typed.arrivedTick != null && typed.leftTick != null) {
-            const diff = typed.leftTick - typed.arrivedTick;
-            if (diff >= 0) {
-              const tsType = targetTS.type || "Unknown";
-              tsDurationMap[tsType] = tsDurationMap[tsType] || [];
-              tsDurationMap[tsType].push(diff);
-            }
-          }
-        }
+    //     // measure durations
+    //     for (const mv of moved) {
+    //       const typed = mv as InventoryEntryWithDelay;
+    //       if (typed.arrivedTick != null && typed.leftTick != null) {
+    //         const diff = typed.leftTick - typed.arrivedTick;
+    //         if (diff >= 0) {
+    //           const tsType = targetTS.type || "Unknown";
+    //           tsDurationMap[tsType] = tsDurationMap[tsType] || [];
+    //           tsDurationMap[tsType].push(diff);
+    //         }
+    //       }
+    //     }
 
-        targetTS.inventory.entries.push(...moved);
-        const rmSet = new Set(moved.map((xx) => xx.id));
-        sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
-          (xx) => !rmSet.has(xx.id)
-        );
-        for (const mv2 of moved) {
-          if (mv2.orderId) movedOrderIds.add(mv2.orderId);
-        }
-      }
-    }
+    //     targetTS.inventory.entries.push(...moved);
+    //     const rmSet = new Set(moved.map((xx) => xx.id));
+    //     sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
+    //       (xx) => !rmSet.has(xx.id)
+    //     );
+    //     for (const mv2 of moved) {
+    //       if (mv2.orderId) movedOrderIds.add(mv2.orderId);
+    //     }
+    //   }
+    // }
 
     // 5) final checks
     this.checkAndCompleteOrders(newState);

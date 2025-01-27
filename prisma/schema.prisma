@@ -12,17 +12,19 @@ datasource db {
 }
 
 model Resource {
-    id            Int         @id @default(autoincrement())
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-    name          String?
-    active        Boolean     @default(true)
-    locationId    Int
-    processStepId Int
-    Machine       Machine?
-    processStep   ProcessStep @relation(fields: [processStepId], references: [id])
-    location      Location    @relation(fields: [locationId], references: [id])
-    Worker        Worker?
+    id                Int              @id @default(autoincrement())
+    createdAt         DateTime         @default(now())
+    updatedAt         DateTime         @updatedAt
+    name              String?
+    active            Boolean          @default(true)
+    locationId        Int
+    processStepId     Int?
+    transportSystemId Int?
+    Machine           Machine?
+    processStep       ProcessStep?     @relation(fields: [processStepId], references: [id])
+    transportSystem   TransportSystem? @relation(fields: [transportSystemId], references: [id])
+    location          Location         @relation(fields: [locationId], references: [id])
+    Worker            Worker?
 }
 
 model Machine {
@@ -32,9 +34,12 @@ model Machine {
 }
 
 model Worker {
-    id          Int          @id @default(autoincrement())
+    id           Int    @id @default(autoincrement())
+    workerNumber String
+    fullName     String
+    address      String
+
     resourceId  Int          @unique
-    active      Boolean      @default(true)
     resource    Resource     @relation(fields: [resourceId], references: [id])
     workerRoles WorkerRole[] @relation("WorkerToWorkerRole")
 }
@@ -203,10 +208,11 @@ model TransportSystem {
     startTSId Int?
     endTSId   Int?
 
-    inventory Inventory @relation(fields: [inventoryId], references: [id])
-    orders    Order[]   @relation("OrderToTransportSystem")
+    inventory Inventory  @relation(fields: [inventoryId], references: [id])
+    orders    Order[]    @relation("OrderToTransportSystem")
     filter    Filter?
     sensors   Sensor[]
+    resources Resource[]
 }
 
 model Order {
