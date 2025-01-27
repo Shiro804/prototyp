@@ -6,10 +6,9 @@ import {
     Text,
     Button,
     Switch,
-    Container,
     Divider,
 } from "@mantine/core";
-import { LocationFull, TransportSystemFull } from "@/lib/simulation/Simulation";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { groupInventory } from "@/components/helpers";
 import { useSimulationMock } from "../context/SimulationContextMock";
 
@@ -19,26 +18,27 @@ import { useSimulationMock } from "../context/SimulationContextMock";
 interface MonitoringCardProps {
     location: LocationFull;
     onDetailsClick?: () => void;
-    transportSystems?: TransportSystemFull[];
 }
 
 export const MonitoringCard: FC<MonitoringCardProps> = ({
     location,
     onDetailsClick,
-    transportSystems,
 }) => {
     const { name, processSteps } = location;
-    const { toggleTransportSystem, toggleProcessStep, toggleResource } = useSimulationMock();
+    const { toggleProcessStep, toggleTransportSystem, toggleResource } =
+        useSimulationMock();
 
     return (
         <Paper
             shadow="md"
             p="lg"
             style={{ overflowY: "auto", width: "100%", height: "550px" }}
-            bg="white"
+            bg="#18181B"
+            c={"white"}
+            radius={10}
         >
             <Flex direction="column" h="100%">
-                <Flex align="center" justify="center" direction="row" w="100%">
+                <Flex align="center" justify="center" direction="row" w="100%" pb={20}>
                     <Text miw="120px"></Text>
                     <Flex w="100%" direction="row" justify="center" align="center">
                         <Text fw="bold" size="lg">
@@ -48,27 +48,45 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
 
                     {/* Button to trigger detailed view */}
                     {onDetailsClick && (
-                        <Button miw="120px" ml="auto" variant="gradient" onClick={onDetailsClick}>
+                        <Button
+                            miw="120px"
+                            ml="auto"
+                            variant="gradient"
+                            onClick={onDetailsClick}
+                            bg={"#5300E8"}
+                        >
                             View Details
                         </Button>
                     )}
                 </Flex>
 
-                {/* SUMMARY: For each ProcessStep, show grouped inventory in a Table */}
+                {/* SUMMARY: For each ProcessStep, show inventory & transportSystems & resources */}
                 {processSteps
-                    .slice() // so reverse() does not mutate the original array
+                    .slice()
                     .reverse()
                     .map((ps) => (
-                        <Flex w="100%" direction="column" key={ps.id}>
+                        <Flex
+                            w="100%"
+                            direction="column"
+                            key={ps.id}
+                            bg="#28252D"
+                            p={10}
+                            mb={20}
+                            style={{ borderRadius: "10px" }}
+                        >
                             <Flex align="center" justify="space-between">
                                 <Text my="md" fw={600}>
-                                    {ps.name}
+                                    # Process Step: {ps.name}
                                 </Text>
-                                <Switch checked={ps.active} onChange={() => toggleProcessStep(ps.id)} />
+                                <Switch
+                                    color="#5300E8"
+                                    checked={ps.active}
+                                    onChange={() => toggleProcessStep(ps.id)}
+                                />
                             </Flex>
 
                             {/* Table for the materials in this process step */}
-                            <Table withRowBorders highlightOnHover>
+                            <Table withRowBorders>
                                 <Table.Thead>
                                     <Table.Tr>
                                         <Flex
@@ -79,7 +97,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                             wrap="nowrap"
                                         >
                                             <Table.Th fw={700}>Material</Table.Th>
-                                            <Table.Th fw={600}>Count</Table.Th>
+                                            <Table.Th fw={700}>Count</Table.Th>
                                         </Flex>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -98,18 +116,59 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                     <Table.Td fw={600}>{count}</Table.Td>
                                                 </Flex>
                                             </Table.Tr>
-                                        ),
+                                        )
                                     )}
                                 </Table.Tbody>
                             </Table>
 
+                            {/* Table for output TransportSystems */}
+                            {ps.outputs && ps.outputs.length > 0 && (
+                                <Flex direction="column" mt="md">
+                                    <Table withRowBorders>
+                                        <Table.Thead>
+                                            <Table.Tr>
+                                                <Flex
+                                                    gap="md"
+                                                    justify="space-between"
+                                                    align="flex-start"
+                                                    direction="row"
+                                                    wrap="nowrap"
+                                                >
+                                                    <Table.Th fw={700}>Transport System</Table.Th>
+                                                    <Table.Th fw={700}>Active</Table.Th>
+                                                </Flex>
+                                            </Table.Tr>
+                                        </Table.Thead>
+                                        <Table.Tbody>
+                                            {ps.outputs.map((ts) => (
+                                                <Table.Tr key={ts.id}>
+                                                    <Flex
+                                                        gap="md"
+                                                        justify="space-between"
+                                                        align="flex-start"
+                                                        direction="row"
+                                                        wrap="nowrap"
+                                                    >
+                                                        <Table.Td fw={600}>{ts.name}</Table.Td>
+                                                        <Table.Td fw={600}>
+                                                            <Switch
+                                                                color="#5300E8"
+                                                                checked={ts.active}
+                                                                onChange={() => toggleTransportSystem(ts.id)}
+                                                            />
+                                                        </Table.Td>
+                                                    </Flex>
+                                                </Table.Tr>
+                                            ))}
+                                        </Table.Tbody>
+                                    </Table>
+                                </Flex>
+                            )}
+
                             {/* New Table for the resources of this process step */}
                             {ps.resources && ps.resources.length > 0 && (
                                 <Flex direction="column" mt="md">
-                                    <Text fw={600} mb="xs">
-                                        Process Step Resources
-                                    </Text>
-                                    <Table withRowBorders highlightOnHover>
+                                    <Table withRowBorders>
                                         <Table.Thead>
                                             <Table.Tr>
                                                 <Flex
@@ -137,6 +196,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                         <Table.Td fw={600}>{r.name}</Table.Td>
                                                         <Table.Td fw={600}>
                                                             <Switch
+                                                                color="#5300E8"
                                                                 key={r.id}
                                                                 checked={r.active}
                                                                 onChange={() => toggleResource(r)}
@@ -151,69 +211,6 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                             )}
                         </Flex>
                     ))}
-
-                {/* Transport Systems */}
-                {transportSystems && transportSystems.length > 0 && (
-                    <Flex w="100%" direction="column" mt="auto">
-                        <Divider mt="auto" mb={10} label="Transport Systems" />
-                        {transportSystems.map((ts) => (
-                            <Flex direction="column" key={ts.id} mb="sm">
-                                <Flex align="center" justify="space-between">
-                                    <Text fw={600}># {ts.name}</Text>
-                                    <Switch
-                                        checked={ts.active}
-                                        onChange={() => toggleTransportSystem(ts.id)}
-                                    />
-                                </Flex>
-
-                                {/* New table for this transport system's resources */}
-                                {ts.resources && ts.resources.length > 0 && (
-                                    <Flex direction="column" mt="md">
-                                        <Table withRowBorders highlightOnHover>
-                                            <Table.Thead>
-                                                <Table.Tr>
-                                                    <Flex
-                                                        gap="md"
-                                                        justify="space-between"
-                                                        align="flex-start"
-                                                        direction="row"
-                                                        wrap="nowrap"
-                                                    >
-                                                        <Table.Th fw={700}>Resource</Table.Th>
-                                                        <Table.Th fw={700}>Active</Table.Th>
-                                                    </Flex>
-                                                </Table.Tr>
-                                            </Table.Thead>
-                                            <Table.Tbody>
-                                                {ts.resources.map((r) => (
-                                                    <Table.Tr key={r.id}>
-                                                        <Flex
-                                                            gap="md"
-                                                            justify="space-between"
-                                                            align="flex-start"
-                                                            direction="row"
-                                                            wrap="nowrap"
-                                                        >
-                                                            <Table.Td fw={600}>{r.name}</Table.Td>
-                                                            <Table.Td fw={600}>
-                                                                <Switch
-                                                                    checked={r.active}
-                                                                    onChange={() => {
-                                                                        /* toggle TS resource logic can go here */
-                                                                    }}
-                                                                />
-                                                            </Table.Td>
-                                                        </Flex>
-                                                    </Table.Tr>
-                                                ))}
-                                            </Table.Tbody>
-                                        </Table>
-                                    </Flex>
-                                )}
-                            </Flex>
-                        ))}
-                    </Flex>
-                )}
             </Flex>
         </Paper>
     );
