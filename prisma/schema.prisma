@@ -12,19 +12,24 @@ datasource db {
 }
 
 model Resource {
-    id                Int              @id @default(autoincrement())
-    createdAt         DateTime         @default(now())
-    updatedAt         DateTime         @updatedAt
-    name              String?
-    active            Boolean          @default(true)
-    locationId        Int
-    processStepId     Int?
-    transportSystemId Int?
-    Machine           Machine?
-    processStep       ProcessStep?     @relation(fields: [processStepId], references: [id])
-    transportSystem   TransportSystem? @relation(fields: [transportSystemId], references: [id])
-    location          Location         @relation(fields: [locationId], references: [id])
-    Worker            Worker?
+    id                 Int              @id @default(autoincrement())
+    createdAt          DateTime         @default(now())
+    updatedAt          DateTime         @updatedAt
+    name               String?
+    active             Boolean          @default(true)
+    mandatory          Boolean          @default(false)
+    productionResource Boolean          @default(false)
+    inventoryResource  Boolean          @default(false)
+    locationId         Int
+    processStepId      Int?
+    transportSystemId  Int?
+    faulty             Boolean?         @default(false)
+    faultyRate         Float            @default(0.01)
+    Machine            Machine?
+    processStep        ProcessStep?     @relation(fields: [processStepId], references: [id])
+    transportSystem    TransportSystem? @relation(fields: [transportSystemId], references: [id])
+    location           Location         @relation(fields: [locationId], references: [id])
+    Worker             Worker?
 }
 
 model Machine {
@@ -34,14 +39,13 @@ model Machine {
 }
 
 model Worker {
-    id           Int    @id @default(autoincrement())
+    id           Int          @id @default(autoincrement())
     workerNumber String
     fullName     String
     address      String
-
-    resourceId  Int          @unique
-    resource    Resource     @relation(fields: [resourceId], references: [id])
-    workerRoles WorkerRole[] @relation("WorkerToWorkerRole")
+    resourceId   Int          @unique
+    resource     Resource     @relation(fields: [resourceId], references: [id])
+    workerRoles  WorkerRole[] @relation("WorkerToWorkerRole")
 }
 
 model WorkerRole {
@@ -159,6 +163,7 @@ model Sensor {
     type        String // e.g. "scanner" oder "counter"
     value       Int      @default(0)
     sensorDelay Int      @default(0)
+    active      Boolean  @default(true)
 
     processStepId     Int?
     processStep       ProcessStep?     @relation(fields: [processStepId], references: [id])

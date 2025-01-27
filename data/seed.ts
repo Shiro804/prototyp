@@ -460,7 +460,7 @@ async function main() {
             inputSpeed: 2,
             outputSpeed: 1,
             recipe: { connect: { id: assemblingRecipe.id } },
-            inventory: { create: { type: "processStep", limit: 5 } },
+            inventory: { create: { type: "processStep", limit: 4 } },
             sensors: {
               create: [
                 {
@@ -726,6 +726,7 @@ async function main() {
         name: `Storage Rack Worker ${i}`,
         locationId: hall2.id,
         processStepId: storageRackPS.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `STOR-${100 + i}`,
@@ -750,6 +751,7 @@ async function main() {
         name: `Pre-Assembly Storage Worker ${i}`,
         locationId: hall3.id,
         processStepId: preAssemblyStoragePS.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `PASW-${200 + i}`,
@@ -771,6 +773,7 @@ async function main() {
         name: "Roller Operator PreAssembly->Seat",
         locationId: hall3.id,
         transportSystemId: tsRollerPreAssemblyStorageToSeat.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `RPS-001`,
@@ -792,6 +795,7 @@ async function main() {
         name: "Roller Operator PreAssembly->Backrest",
         locationId: hall3.id,
         transportSystemId: tsRollerPreAssemblyStorageToBackrest.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `RPB-001`,
@@ -816,6 +820,7 @@ async function main() {
         name: `Pre-Assembly Seat Operator ${i}`,
         locationId: hall3.id,
         processStepId: preAssemblySeatPS.id,
+        productionResource: true,
         Worker: {
           create: {
             workerNumber: `PASO-S${i}`,
@@ -840,6 +845,7 @@ async function main() {
         name: `Pre-Assembly Backrest Operator ${i}`,
         locationId: hall3.id,
         processStepId: preAssemblyBackrestPS.id,
+        productionResource: true,
         Worker: {
           create: {
             workerNumber: `PASO-B${i}`,
@@ -862,6 +868,7 @@ async function main() {
         name: "Covers DTS Machine",
         locationId: hall2.id,
         transportSystemId: tsDtsRackToUpholsteryStorageCovers.id,
+        inventoryResource: true,
         Machine: {
           create: {},
         },
@@ -877,6 +884,7 @@ async function main() {
         name: "DTS Machine Rack->PreAssembly",
         locationId: hall2.id,
         transportSystemId: tsDtsRackToPreAssemblyStorage.id,
+        inventoryResource: true,
         Machine: {
           create: {},
         },
@@ -890,6 +898,7 @@ async function main() {
         name: "DTS Machine Hall5->Hall2",
         locationId: hall5.id,
         transportSystemId: tsDtsHall5ToHall2.id,
+        inventoryResource: true,
         Machine: {
           create: {},
         },
@@ -907,6 +916,7 @@ async function main() {
         name: `Upholstery Storage Worker ${i}`,
         locationId: hall3.id,
         processStepId: upholsteryStoragePS.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `UPSW-${300 + i}`,
@@ -928,6 +938,7 @@ async function main() {
         name: "Roller Operator UpholsteryStorage->Seat",
         locationId: hall3.id,
         transportSystemId: tsRollerUpholsteryStorageToSeatWorker.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `RUW-S001`,
@@ -949,6 +960,7 @@ async function main() {
         name: "Roller Operator UpholsteryStorage->Backrest",
         locationId: hall3.id,
         transportSystemId: tsRollerUpholsteryStorageToBackrestWorker.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `RUW-B001`,
@@ -973,6 +985,7 @@ async function main() {
         name: `Upholstery Seat Operator ${i}`,
         locationId: hall3.id,
         processStepId: upholsterySeatPS.id,
+        productionResource: true,
         Worker: {
           create: {
             workerNumber: `UWS-${i}`,
@@ -997,6 +1010,7 @@ async function main() {
         name: `Upholstery Backrest Operator ${i}`,
         locationId: hall3.id,
         processStepId: upholsteryBackrestPS.id,
+        productionResource: true,
         Worker: {
           create: {
             workerNumber: `UWB-${i}`,
@@ -1019,6 +1033,7 @@ async function main() {
         name: `Assembly robotic arm ${i}`,
         locationId: hall4.id,
         processStepId: assemblyPS.id,
+        productionResource: true,
         Machine: {
           create: {},
         },
@@ -1036,6 +1051,7 @@ async function main() {
       name: "PhotoSystem",
       locationId: hall4.id,
       processStepId: eolPS.id,
+      mandatory: true,
       Machine: {
         create: {},
       },
@@ -1047,6 +1063,7 @@ async function main() {
       name: "Quality Checker",
       locationId: hall4.id,
       processStepId: eolPS.id,
+      mandatory: true,
       Worker: {
         create: {
           workerNumber: `QC-001`,
@@ -1067,6 +1084,7 @@ async function main() {
         name: "Forklift Operator EOL->Shipping",
         locationId: hall4.id,
         transportSystemId: tsForkliftEOLToShipping.id,
+        inventoryResource: true,
         Worker: {
           create: {
             workerNumber: `FLEOL-001`,
