@@ -83,6 +83,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
       {/* Slider für manuelle Frame-Navigation */}
       <Slider
         styles={{ root: { width: 180 } }}
+        color="#5300E8"
         min={0}
         max={simulation ? simulation.frames.length - 1 : 0}
         value={frame}
