@@ -7,6 +7,7 @@ import { MaterialSelectedEntity } from "../material-flow-graph-overview/nodesMat
 const titles: { [key in MaterialSelectedEntity["type"]]: string } = {
     processStep: "Selected Process Step",
     transportSystem: "Selected Transport System",
+    resource: "Selected Resource",
     material: "Selected Material",
 };
 
@@ -26,10 +27,10 @@ export function EntityInfo({ entity }: EntityInfoProps) {
     return (
         <>
             <Title>{titles[entity.type]}</Title>
-            <Table>
+            <Table w={800}>
                 <Table.Thead>
                     <Table.Tr>
-                        <Table.Th>Property</Table.Th>
+                        <Table.Th miw={200}>Property</Table.Th>
                         <Table.Th>Value</Table.Th>
                     </Table.Tr>
                 </Table.Thead>

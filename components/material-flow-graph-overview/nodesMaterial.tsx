@@ -5,9 +5,10 @@ import { Handle, Node, NodeProps, Position } from "@xyflow/react";
 import "./nodes.css";
 
 /**
- * We'll define 3 node interfaces:
- *  - ProcessStep (like your old one)
- *  - TransportSystem (like your old one)
+ * We'll define 4 node interfaces:
+ *  - ProcessStep
+ *  - TransportSystem
+ *  - Resource
  *  - Material
  */
 
@@ -23,7 +24,9 @@ export type MaterialProcessStepNode = Node<
     "processStep"
 >;
 
-export function MaterialProcessStepNode({ data }: NodeProps<MaterialProcessStepNode>) {
+export function MaterialProcessStepNode({
+    data,
+}: NodeProps<MaterialProcessStepNode>) {
     return (
         <div className="processStepNode">
             <span className="location">{data.location}</span>
@@ -45,7 +48,9 @@ export type MaterialTransportSystemNode = Node<
     "transportSystem"
 >;
 
-export function MaterialTransportSystemNode({ data }: NodeProps<MaterialTransportSystemNode>) {
+export function MaterialTransportSystemNode({
+    data,
+}: NodeProps<MaterialTransportSystemNode>) {
     return (
         <div className="transportSystemNode">
             <span className="name">{data.name}</span>
@@ -56,7 +61,30 @@ export function MaterialTransportSystemNode({ data }: NodeProps<MaterialTranspor
 }
 
 // ----------------------------
-// 3) MATERIAL
+// 3) RESOURCE
+// ----------------------------
+export type MaterialResourceNode = Node<
+    {
+        name: string;
+        entity: object;
+    },
+    "resource"
+>;
+
+export function MaterialResourceNodeComponent({
+    data,
+}: NodeProps<MaterialResourceNode>) {
+    return (
+        <div className="resourceNode">
+            <span className="resourceName">{data.name}</span>
+            <Handle type="target" position={Position.Top} />
+            <Handle type="source" position={Position.Bottom} />
+        </div>
+    );
+}
+
+// ----------------------------
+// 4) MATERIAL
 // ----------------------------
 export type MaterialNode = Node<
     {
@@ -79,11 +107,13 @@ export function MaterialNodeComponent({ data }: NodeProps<MaterialNode>) {
 export type MaterialNodeType =
     | MaterialProcessStepNode
     | MaterialTransportSystemNode
+    | MaterialResourceNode
     | MaterialNode;
 
 export const MaterialFlowNodeTypes = {
     processStep: MaterialProcessStepNode,
     transportSystem: MaterialTransportSystemNode,
+    resource: MaterialResourceNodeComponent,
     material: MaterialNodeComponent,
 };
 
@@ -92,14 +122,18 @@ export const MaterialFlowNodeTypes = {
 // ---------------------------------
 export type MaterialSelectedEntity =
     | {
-          type: "processStep";
-          data: MaterialProcessStepNode["data"];
-      }
+        type: "processStep";
+        data: MaterialProcessStepNode["data"];
+    }
     | {
-          type: "transportSystem";
-          data: MaterialTransportSystemNode["data"];
-      }
+        type: "transportSystem";
+        data: MaterialTransportSystemNode["data"];
+    }
     | {
-          type: "material";
-          data: MaterialNode["data"];
-      };
+        type: "resource";
+        data: MaterialResourceNode["data"];
+    }
+    | {
+        type: "material";
+        data: MaterialNode["data"];
+    };

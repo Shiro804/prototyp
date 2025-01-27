@@ -21,6 +21,7 @@ import {
   NodeType,
   NodeTypes,
   ProcessStepNode,
+  ResourceNode,
   SelectedEntity,
   TransportSystemNode,
 } from "./nodes";
@@ -40,51 +41,92 @@ export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
     fetch("/api/entity-state")
       .then((res) => res.json())
       .then((entities: SimulationEntityState) => {
-        let newNodes: { [id: string]: ProcessStepNode | TransportSystemNode } =
-          {};
+        let newNodes: { [id: string]: ProcessStepNode | TransportSystemNode | ResourceNode } = {};
         let newEdges: { [id: string]: Edge } = {};
 
+        // Create ProcessStep nodes
         for (const l of entities.locations) {
           for (const ps of l.processSteps) {
-            newNodes[ps.id] = {
-              id: "ps-" + ps.id,
+            const psNodeId = "ps-" + ps.id;
+            newNodes[psNodeId] = {
+              id: psNodeId,
               data: { name: ps.name, location: l.name, entity: ps },
               position: { x: 0, y: 0 },
               type: "processStep",
             };
+
+            // Create Resource nodes for ProcessStep
+            if (ps.resources && ps.resources.length > 0) {
+              for (const res of ps.resources) {
+                const resNodeId = "res-" + res.id;
+                newNodes[resNodeId] = {
+                  id: resNodeId,
+                  data: { name: res.name ? res.name : "Undefined Name", entity: res },
+                  position: { x: 0, y: 0 },
+                  type: "resource",
+                };
+                const edgeId = `${psNodeId}-res-${res.id}`;
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: psNodeId,
+                  target: resNodeId,
+                  animated: false,
+                };
+              }
+            }
           }
         }
 
+        // Create TransportSystem nodes and their Resource nodes
         for (const l of entities.locations) {
-          for (const ts of l.processSteps.flatMap((ps) =>
-            ps.inputs.concat(ps.outputs),
-          )) {
-            const tsId = "ts-" + ts.id;
-            if (!newNodes[tsId]) {
-              newNodes[tsId] = {
-                id: tsId,
+          for (const ts of l.processSteps.flatMap((ps) => ps.inputs.concat(ps.outputs))) {
+            const tsNodeId = "ts-" + ts.id;
+            if (!newNodes[tsNodeId]) {
+              newNodes[tsNodeId] = {
+                id: tsNodeId,
                 data: { name: ts.name, entity: ts },
                 position: { x: 0, y: 0 },
                 type: "transportSystem",
               };
             }
 
+            // Create Resource nodes for TransportSystem
+            if (ts.resources && ts.resources.length > 0) {
+              for (const res of ts.resources) {
+                const resNodeId = "res-" + res.id;
+                newNodes[resNodeId] = {
+                  id: resNodeId,
+                  data: { name: res.name ? res.name : "Undefined Name", entity: res },
+                  position: { x: 0, y: 0 },
+                  type: "resource",
+                };
+                const edgeId = `${tsNodeId}-res-${res.id}`;
+                newEdges[edgeId] = {
+                  id: edgeId,
+                  source: tsNodeId,
+                  target: resNodeId,
+                  animated: false,
+                };
+              }
+            }
+
+            // Create edges between ProcessSteps and TransportSystems
             const inEdgeId = "ps-" + ts.startStepId + "-ts-" + ts.id;
             const outEdgeId = "ts-" + ts.id + "-ps-" + ts.endStepId;
 
-            if (!newEdges[inEdgeId]) {
+            if (!newEdges[inEdgeId] && ts.startStepId) {
               newEdges[inEdgeId] = {
-                id: "ps-" + ts.startStepId + "-ts-" + ts.id,
+                id: inEdgeId,
                 source: "ps-" + ts.startStepId,
-                target: tsId,
+                target: tsNodeId,
                 animated: true,
               };
             }
 
-            if (!newEdges[outEdgeId]) {
+            if (!newEdges[outEdgeId] && ts.endStepId) {
               newEdges[outEdgeId] = {
-                id: "ts-" + ts.id + "-ps-" + ts.endStepId,
-                source: tsId,
+                id: outEdgeId,
+                source: tsNodeId,
                 target: "ps-" + ts.endStepId,
                 animated: true,
               };
@@ -111,6 +153,12 @@ export function SimulationGraph({ }: Readonly<SimulationGraphProps>) {
         case "transportSystem":
           setSelectedEntity({
             type: "transportSystem",
+            data: node.data,
+          });
+          break;
+        case "resource":
+          setSelectedEntity({
+            type: "resource",
             data: node.data,
           });
           break;
