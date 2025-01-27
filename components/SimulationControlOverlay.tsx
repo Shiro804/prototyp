@@ -46,7 +46,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Button: Calculate/Reload Simulation (precompute 1 tick, for instance) */}
       <Tooltip label="Calculate Simulation" position="bottom" withArrow>
-        <Button color="indigo" onClick={() => load(1)} loading={loading}>
+        <Button color="#5300E8" onClick={() => load(1)} loading={loading}>
           <IconReload />
         </Button>
       </Tooltip>
@@ -58,7 +58,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
         withArrow
       >
         <Button
-          color="indigo"
+          color="#5300E8"
           disabled={!simulation}
           onClick={toggle}
           loading={loading}
@@ -72,7 +72,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Arrow Left */}
       <ActionIcon
-        color="indigo"
+        color="#5300E8"
         variant="outline"
         disabled={playing || frame <= 0 || !simulation}
         onClick={() => moveFrame(-1)}
@@ -101,7 +101,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Arrow Right */}
       <ActionIcon
-        color="indigo"
+        color="#5300E8"
         variant="outline"
         disabled={!simulation || playing}
         onClick={() => moveFrame(1)}
@@ -123,7 +123,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
       {/* Button: Jump to that Tick */}
       <Button
-        color="indigo"
+        color="#5300E8"
         variant="outline"
         disabled={!simulation || targetTick < 0}
         onClick={() => handleJumpToTick(targetTick)}

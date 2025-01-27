@@ -20,7 +20,7 @@ export const KPIItem: React.FC<KPIItemProps> = ({ label, value, tooltip }) => {
             shadow="md"
             p={kpiOverviewPaperPadding}
             style={{
-                backgroundColor: "#4263eb",
+                backgroundColor: "#5300E8",
                 color: "white",
                 minHeight: kpiOverviewPaperHeight,
             }}

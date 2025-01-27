@@ -85,7 +85,7 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
             case "pending":
                 return "#9B59B6";
             case "in_progress":
-                return "#4263eb";
+                return "#5300E8";
             default:
                 return "#95A5A6";
         }

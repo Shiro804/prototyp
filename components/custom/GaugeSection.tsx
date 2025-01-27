@@ -37,7 +37,7 @@ export const GaugeSection = React.memo(
                             fontSize: 40
                         },
                         [`& .${gaugeClasses.valueArc}`]: {
-                            fill: `${color ? color : "#4c6ef5"}`,
+                            fill: `${color ? color : "#5300E8"}`,
                         },
                         [`& .${gaugeClasses.referenceArc}`]: {
                             fill: theme.palette.text.disabled,

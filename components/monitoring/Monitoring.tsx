@@ -9,6 +9,7 @@ import {
     Flex,
     Badge,
     Stack,
+    Button,
 } from "@mantine/core";
 import { Order, TransportSystem } from "@prisma/client";
 
@@ -16,9 +17,6 @@ import { Order, TransportSystem } from "@prisma/client";
 import { MonitoringCard } from "@/components/monitoring/MonitoringCard";
 import { DetailedLocationCard } from "@/components/monitoring/DetailedLocationCard";
 
-// Types
-import { LocationFull } from "@/lib/simulation/Simulation";
-// import { SimulationData } from "@/types/..."; // adapt to your actual type location
 
 // Depending on the "mode" we either import the mock context or the live context
 import { useSimulationMock } from "@/components/context/SimulationContextMock";
@@ -43,6 +41,8 @@ interface MonitoringProps {
  */
 export function Monitoring({ mode }: MonitoringProps) {
     // 1) Get the simulation/frames from the correct context
+    const [selectedLayout, setSelectedLayout] = useState("");
+
     const { simulation, frame } =
         mode === "mock" ? useSimulationMock() : useSimulationLive();
 
@@ -63,6 +63,7 @@ export function Monitoring({ mode }: MonitoringProps) {
     // Extract the currentFrame from the simulation
     const currentFrame = simulation.frames[frame];
 
+
     /**
      * Function to determine the background color based on order status
      */
@@ -73,7 +74,7 @@ export function Monitoring({ mode }: MonitoringProps) {
             case "pending":
                 return "#9B59B6";
             case "in_progress":
-                return "#4263eb";
+                return "#5300E8";
             default:
                 return "#95A5A6";
         }
@@ -137,20 +138,22 @@ export function Monitoring({ mode }: MonitoringProps) {
                     </Paper>
                 ))}
             </SimpleGrid>
-            <Title order={3}>Locations</Title>
+            <Flex maw={200} justify={"space-between"} pb={20} gap={25} align={"center"}>
+                <Title order={3} mb={0}>Locations</Title>
+                <Flex gap={5} align={"center"}>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLayout("compact")}>Compact</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLayout("big")}>Big</Button>
+                </Flex>
+            </Flex>
 
             {/* Render Locations */}
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+            <SimpleGrid cols={{ base: 1, md: selectedLayout === "compact" ? 2 : 1 }} spacing="lg">
                 {currentFrame.state.locations.map((loc) => {
-                    // Only call `getTransportSystemsForLocation` if in mock mode
-                    const transportSystems =
-                        mode === "mock" ? getTransportSystemsForLocation(loc) : undefined;
 
                     return (
                         <MonitoringCard
                             key={loc.id}
                             location={loc}
-                            transportSystems={transportSystems}
                             onDetailsClick={() => setSelectedLocationId(loc.id)}
                         />
                     );
