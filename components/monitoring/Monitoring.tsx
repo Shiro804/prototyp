@@ -75,11 +75,14 @@ export function Monitoring({ mode }: MonitoringProps) {
             case "pending":
                 return "#9B59B6";
             case "in_progress":
-                return "#5300E8";
+                return BUTTON_COLOR;
             default:
                 return "#95A5A6";
         }
     };
+
+    const BUTTON_ACTIVE_COLOR = "rgb(209, 212, 255)"
+    const BUTTON_COLOR = "#5300E8"
 
 
     // If a location is selected, show the Detailed View
@@ -106,9 +109,9 @@ export function Monitoring({ mode }: MonitoringProps) {
             <Flex maw={400} justify={"space-between"} pb={20} gap={25} align={"center"}>
                 <Title order={3} mb={0}>Orders</Title>
                 <Flex gap={5} align={"center"}>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("compact")}>Compact</Button>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("medium")}>Medium</Button>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("big")}>Big</Button>
+                    <Button bg={`${selectedOrdersLayout === "compact" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedOrdersLayout("compact")}>Compact</Button>
+                    <Button bg={`${selectedOrdersLayout === "medium" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedOrdersLayout("medium")}>Medium</Button>
+                    <Button bg={`${selectedOrdersLayout === "big" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedOrdersLayout("big")}>Big</Button>
                 </Flex>
             </Flex>
             {/* Render Orders */}
@@ -158,25 +161,28 @@ export function Monitoring({ mode }: MonitoringProps) {
             <Flex maw={400} justify={"space-between"} pb={20} gap={25} align={"center"}>
                 <Title order={3} mb={0}>Locations</Title>
                 <Flex gap={5} align={"center"}>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("compact")}>Compact</Button>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("medium")}>Medium</Button>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("big")}>Big</Button>
+                    <Button bg={`${selectedLocationsLayout === "compact" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedLocationsLayout("compact")}>Compact</Button>
+                    <Button bg={`${selectedLocationsLayout === "medium" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedLocationsLayout("medium")}>Medium</Button>
+                    <Button bg={`${selectedLocationsLayout === "big" ? BUTTON_ACTIVE_COLOR : ""}`} color={BUTTON_COLOR} variant="outline" onClick={() => setSelectedLocationsLayout("big")}>Big</Button>
                 </Flex>
-            </Flex>
+            </Flex >
 
             {/* Render Locations */}
-            <SimpleGrid cols={{ base: 1, md: selectedLocationsLayout === "compact" ? 3 : selectedLocationsLayout === "medium" ? 2 : 1 }} spacing="lg">
-                {currentFrame.state.locations.map((loc) => {
+            < SimpleGrid cols={{ base: 1, md: selectedLocationsLayout === "compact" ? 3 : selectedLocationsLayout === "medium" ? 2 : 1 }
+            } spacing="lg" >
+                {
+                    currentFrame.state.locations.map((loc) => {
 
-                    return (
-                        <MonitoringCard
-                            key={loc.id}
-                            location={loc}
-                            onDetailsClick={() => setSelectedLocationId(loc.id)}
-                        />
-                    );
-                })}
-            </SimpleGrid>
+                        return (
+                            <MonitoringCard
+                                key={loc.id}
+                                location={loc}
+                                onDetailsClick={() => setSelectedLocationId(loc.id)}
+                            />
+                        );
+                    })
+                }
+            </SimpleGrid >
         </>
     );
 }
