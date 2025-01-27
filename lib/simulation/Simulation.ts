@@ -3,7 +3,7 @@ import {
   Prisma,
   Order,
   LogEntry,
-  Resource,
+  Resource as ResourceModel, // renamed to avoid naming collisions
 } from "@prisma/client";
 import { Event } from "./events";
 import { nextFreeInventoryEntryId } from "./inventories";
@@ -363,7 +363,7 @@ export class Simulation {
     this.currentState = Simulation.cloneState(lastFrame.state);
   }
 
-  public toggleResource(res: Resource): void {
+  public toggleResource(res: ResourceModel): void {
     const lastFrame = this.frames[this.frames.length - 1];
     const { locations } = lastFrame.state;
 
@@ -436,18 +436,21 @@ export class Simulation {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    // Attach ephemeral arrays
-    for (const loc of newState.locations) {
-      for (const ps of loc.processSteps) {
-        (ps as any).__ongoingProduction = (ps as any).__ongoingProduction || [];
-      }
-    }
+    // 1) Apply resource-based logic (scaling speeds, checking mandatory, etc.)
+    this.applyResourceLogic(newState);
 
-    // 1) Possibly handle new orders
+    // 2) Possibly handle new orders
     this.handleOrders(newState);
 
     if (!this.hasActiveOrders()) {
       return newState;
+    }
+
+    // ephemeral arrays for ongoing production
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
+        (ps as any).__ongoingProduction = (ps as any).__ongoingProduction || [];
+      }
     }
 
     // Maps to store durations
@@ -467,7 +470,6 @@ export class Simulation {
         if (!ps.active) continue;
         if (!ps.recipe) continue;
 
-        // ephemeralProd array
         const ephemeralProd = (ps as any)
           .__ongoingProduction as ProcessStepProduction[];
 
@@ -485,20 +487,27 @@ export class Simulation {
           }
         }
 
-        // try to start new production
+        // try to start new production => scaled by effectiveRecipeRate
         if (ephemeralProd.length === 0) {
+          // gather input consumption
           const itemsConsumedPerRun = ps.recipe.inputs
             .map((o) => o.quantity)
             .reduce((acc, cur) => acc + cur, 0);
           const itemsProducedPerRun = ps.recipe.outputs
             .map((o) => o.quantity)
             .reduce((acc, cur) => acc + cur, 0);
-          const capacityCheck = itemsProducedPerRun - itemsConsumedPerRun;
+
+          // "ps.recipeRate" => scaled by production multiplier
+          const effectiveRecipeRate = Math.floor(
+            ps.recipeRate * ((ps as any).__productionMultiplier || 0)
+          );
 
           for (
             let r = 0;
-            r < ps.recipeRate &&
-            ps.inventory.entries.length + capacityCheck <= ps.inventory.limit;
+            r < effectiveRecipeRate &&
+            ps.inventory.entries.length +
+              (itemsProducedPerRun - itemsConsumedPerRun) <=
+              ps.inventory.limit;
             r++
           ) {
             let inputsFulfilled = true;
@@ -527,6 +536,13 @@ export class Simulation {
 
             // 2) If inputs are available...
             if (inputsFulfilled) {
+              // Check resource injury logic (placeholder for now)
+              // We always let production succeed. If we wanted to injure,
+              // we could do it here per active worker resource.
+              if (!this.checkResourceFaulty(ps)) {
+                continue; // skip production if worker got injured
+              }
+
               // errorRate check
               if (!this.productionSucceeds(ps)) {
                 // skip
@@ -563,7 +579,7 @@ export class Simulation {
                   affectedOrderIds: Array.from(
                     new Set(inputEntries.map((e) => e.orderId))
                   ).filter((x): x is number => x != null),
-                  itemsProducedPerRun: itemsProducedPerRun,
+                  itemsProducedPerRun,
                   recipeOutputs: ps.recipe.outputs.map((o) => ({
                     material: o.material,
                     quantity: o.quantity,
@@ -582,10 +598,8 @@ export class Simulation {
         if (!ps.active) continue;
         if (ps.recipe) continue;
 
-        // ephemeral array
         const ephemeralProd = (ps as any)
           .__ongoingProduction as ProcessStepProduction[];
-
         // finalize if ongoing
         if (ephemeralProd.length > 0) {
           const currentProd = ephemeralProd[0];
@@ -612,13 +626,24 @@ export class Simulation {
       }
     }
 
-    // (C) Outlet (PS -> TS)
+    // (C) Outlet (PS -> TS) => scaled by inventory multiplier
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
+
+        // effectiveOutSpeed for item distribution
+        const effOutSpeed = Math.floor(
+          ps.outputSpeed * ((ps as any).__inventoryMultiplier || 0)
+        );
+        if (effOutSpeed <= 0) continue; // no item movement
+
         const activeOutputs = ps.outputs.filter((o) => o.active);
+        // the real output speed array
         const outputSpeeds = activeOutputs.map((o) =>
-          Math.min(ps.outputSpeed, o.inputSpeed)
+          Math.min(
+            effOutSpeed,
+            Math.floor(o.outputSpeed * ((o as any).__inventoryMultiplier || 1))
+          )
         );
 
         const itemsPerOutput = distributeRoundRobin(
@@ -638,6 +663,10 @@ export class Simulation {
 
         for (let i = 0; i < itemsPerOutput.length; i++) {
           const ts = ps.outputs[i];
+          const effTSOutSpeed = Math.floor(
+            ts.outputSpeed * ((ts as any).__inventoryMultiplier || 0)
+          );
+          if (effTSOutSpeed <= 0) continue;
 
           // sensor
           if (!this.sensorScan(ps, "scanner", "output", itemsPerOutput[i])) {
@@ -677,7 +706,7 @@ export class Simulation {
       }
     }
 
-    // (D) Intake (TS -> PS)
+    // (D) Intake (TS -> PS) => also scale speeds
     const sourceAvailability = new Map<number, boolean>();
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
@@ -699,18 +728,27 @@ export class Simulation {
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
+
+        const effInSpeed = Math.floor(
+          ps.inputSpeed * ((ps as any).__inventoryMultiplier || 0)
+        );
+        if (effInSpeed <= 0) continue;
+
         for (const input of ps.inputs) {
           if (!input.active) continue;
 
-          // Kapazität
+          // capacity
           const capacityNow = ps.inventory.limit - ps.inventory.entries.length;
           if (capacityNow <= 0) continue;
 
-          // Geschw.
-          const speedIn = Math.min(ps.inputSpeed, input.outputSpeed);
+          const speedIn = Math.min(
+            effInSpeed,
+            Math.floor(
+              input.outputSpeed * ((input as any).__inventoryMultiplier || 0)
+            )
+          );
           if (speedIn <= 0) continue;
 
-          // potenzielle Items
           const potentialItems = input.inventory.entries.filter((entry) => {
             if (!entry.orderId || !activeOrderIds.has(entry.orderId)) {
               return false;
@@ -743,9 +781,7 @@ export class Simulation {
             (a, b) => a.addedAt.getTime() - b.addedAt.getTime()
           );
 
-          // Hier jetzt EINZEL-Aufnahme:
           const acceptedItems: InventoryEntryWithDelay[] = [];
-
           for (const candidate of sortedPotentials) {
             if (acceptedItems.length >= speedIn) break;
             if (
@@ -754,21 +790,15 @@ export class Simulation {
             ) {
               break;
             }
-
-            // Test, ob wir dieses Item annehmen können
             const testItem: InventoryEntryWithDelay = {
               ...candidate,
               inventoryId: ps.inventory.id,
             };
             const testArray = [...acceptedItems, testItem];
-
             // final check canIntake
             if (!ps.recipe || this.canIntakeItems(ps, testArray)) {
-              // => akzeptieren
               acceptedItems.push(candidate);
             } else {
-              // => skip item, but do NOT break
-              // maybe we can still accept a later item
               continue;
             }
           }
@@ -799,7 +829,7 @@ export class Simulation {
             }
           }
 
-          // Verschieben
+          // move them
           const acceptedIds = new Set(acceptedItems.map((x) => x.id));
           input.inventory.entries = input.inventory.entries.filter(
             (e) => !acceptedIds.has(e.id)
@@ -835,142 +865,6 @@ export class Simulation {
         (it) => it.orderId && activeOrderIds.has(it.orderId)
       );
     }
-
-    // // ---------------------------------------------------------
-    // // (E) Outlet (TS->TS)
-    // // ---------------------------------------------------------
-    // for (const location of newState.locations) {
-    //   const allTS = location.processSteps.flatMap((ps) =>
-    //     ps.inputs.concat(ps.outputs)
-    //   );
-    //   for (const sourceTS of allTS) {
-    //     if (!sourceTS.active) continue;
-    //     if (sourceTS.endTSId == null) {
-    //       continue;
-    //     }
-    //     const targetTS = allTS.find((t) => t.id === sourceTS.endTSId);
-    //     if (!targetTS || !targetTS.active) continue;
-
-    //     const speedOut = Math.min(sourceTS.outputSpeed, targetTS.inputSpeed);
-
-    //     const sourceItems = sourceTS.inventory.entries
-    //       .filter((x) => x.orderId && activeOrderIds.has(x.orderId))
-    //       .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
-
-    //     let finalItems = sourceItems;
-    //     if (sourceTS.filter) {
-    //       finalItems = finalItems.filter((x) =>
-    //         sourceTS.filter!.entries.some((fe) => fe.material === x.material)
-    //       );
-    //     }
-    //     finalItems = finalItems.slice(0, speedOut);
-    //     if (finalItems.length === 0) continue;
-
-    //     if (!this.sensorScan(sourceTS, "scanner", "output", finalItems)) continue;
-    //     if (!this.sensorScan(targetTS, "scanner", "input", finalItems)) continue;
-
-    //     const outX = finalItems.map((it) => ({
-    //       ...it,
-    //       addedAt: new Date(),
-    //       arrivedTick: this.currentTick,
-    //       inventoryId: targetTS.inventory.id,
-    //     })) as InventoryEntryWithDelay[];
-
-    //     if (
-    //       outX.length + targetTS.inventory.entries.length <=
-    //       targetTS.inventory.limit
-    //     ) {
-    //       targetTS.inventory.entries.push(...outX);
-    //       const rmSet = new Set(outX.map((xx) => xx.id));
-    //       sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
-    //         (xx) => !rmSet.has(xx.id)
-    //       );
-    //       for (const mo of outX) {
-    //         if (mo.orderId) movedOrderIds.add(mo.orderId);
-    //       }
-    //     }
-    //   }
-    // }
-
-    // // ---------------------------------------------------------
-    // // (F) Intake (TS->TS)
-    // // ---------------------------------------------------------
-    // for (const location of newState.locations) {
-    //   const allTS = location.processSteps.flatMap((ps) =>
-    //     ps.inputs.concat(ps.outputs)
-    //   );
-    //   for (const targetTS of allTS) {
-    //     if (!targetTS.active) continue;
-
-    //     if (targetTS.startTSId == null) {
-    //       continue;
-    //     }
-    //     const sourceTS = allTS.find((t) => t.id === targetTS.startTSId);
-    //     if (!sourceTS || !sourceTS.active) continue;
-
-    //     const capacityNow =
-    //       targetTS.inventory.limit - targetTS.inventory.entries.length;
-    //     if (capacityNow <= 0) continue;
-
-    //     const speedIn = Math.min(targetTS.inputSpeed, sourceTS.outputSpeed);
-    //     if (speedIn <= 0) continue;
-
-    //     const itemsAvailable = sourceTS.inventory.entries.filter((x) => {
-    //       if (!x.orderId || !activeOrderIds.has(x.orderId)) {
-    //         return false;
-    //       }
-    //       const xx = x as InventoryEntryWithDelay;
-    //       if (xx.arrivedTick == null) return false;
-    //       const delayNeeded =
-    //         sourceTS.transportDelay != null && sourceTS.transportDelay >= 0
-    //           ? sourceTS.transportDelay
-    //           : this.transportDelay;
-    //       return this.currentTick - xx.arrivedTick >= delayNeeded;
-    //     });
-    //     if (itemsAvailable.length === 0) continue;
-
-    //     const moved = itemsAvailable
-    //       .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
-    //       .slice(0, speedIn)
-    //       .map((it) => {
-    //         const leftTick = Math.max(
-    //           this.currentTick,
-    //           (it as InventoryEntryWithDelay).arrivedTick ?? this.currentTick
-    //         );
-    //         return {
-    //           ...it,
-    //           addedAt: new Date(),
-    //           inventoryId: targetTS.inventory.id,
-    //           leftTick,
-    //         };
-    //       });
-
-    //     if (!this.sensorScan(sourceTS, "scanner", "output", moved)) continue;
-    //     if (!this.sensorScan(targetTS, "scanner", "input", moved)) continue;
-
-    //     // measure durations
-    //     for (const mv of moved) {
-    //       const typed = mv as InventoryEntryWithDelay;
-    //       if (typed.arrivedTick != null && typed.leftTick != null) {
-    //         const diff = typed.leftTick - typed.arrivedTick;
-    //         if (diff >= 0) {
-    //           const tsType = targetTS.type || "Unknown";
-    //           tsDurationMap[tsType] = tsDurationMap[tsType] || [];
-    //           tsDurationMap[tsType].push(diff);
-    //         }
-    //       }
-    //     }
-
-    //     targetTS.inventory.entries.push(...moved);
-    //     const rmSet = new Set(moved.map((xx) => xx.id));
-    //     sourceTS.inventory.entries = sourceTS.inventory.entries.filter(
-    //       (xx) => !rmSet.has(xx.id)
-    //     );
-    //     for (const mv2 of moved) {
-    //       if (mv2.orderId) movedOrderIds.add(mv2.orderId);
-    //     }
-    //   }
-    // }
 
     // 5) final checks
     this.checkAndCompleteOrders(newState);
@@ -1018,9 +912,108 @@ export class Simulation {
   }
 
   /**
+   * Apply resource-based logic to scale speeds or block processes
+   * for each ProcessStep and TransportSystem.
+   */
+  private applyResourceLogic(newState: SimulationEntityState) {
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
+        // We'll track production vs. inventory resources
+        const prodResources = ps.resources.filter((r) => r.productionResource);
+        const invResources = ps.resources.filter((r) => r.inventoryResource);
+
+        const activeProd = prodResources.filter((r) => r.active && !r.faulty);
+        const activeInv = invResources.filter((r) => r.active && !r.faulty);
+
+        // Check mandatory among production resources
+        // If there's exactly 1 mandatory resource, and it's inactive => production stops
+        let prodMultiplier = 1;
+        if (prodResources.length > 0) {
+          // if there is only 1 mandatory resource among them and it's inactive => 0
+          const mandatoryProd = prodResources.filter((r) => r.mandatory);
+          if (
+            mandatoryProd.length === 1 &&
+            (mandatoryProd[0].faulty || !mandatoryProd[0].active)
+          ) {
+            prodMultiplier = 0;
+          } else {
+            // else scale by ratio of active
+            prodMultiplier = prodResources.length
+              ? activeProd.length / prodResources.length
+              : 1;
+          }
+        }
+
+        // Check mandatory among inventory resources
+        let invMultiplier = 1;
+        if (invResources.length > 0) {
+          const mandatoryInv = invResources.filter((r) => r.mandatory);
+          if (
+            mandatoryInv.length === 1 &&
+            (mandatoryInv[0].faulty || !mandatoryInv[0].active)
+          ) {
+            invMultiplier = 0;
+          } else {
+            invMultiplier = invResources.length
+              ? activeInv.length / invResources.length
+              : 1;
+          }
+        }
+
+        // Store them as ephemeral fields for later usage
+        // Production multiplier affects recipeRate
+        (ps as any).__productionMultiplier = prodMultiplier;
+
+        // Inventory multiplier affects item movement (ps.inputSpeed, ps.outputSpeed)
+        (ps as any).__inventoryMultiplier = invMultiplier;
+      }
+
+      // For each TS inside each processStep
+      // Actually we gather them from ps.inputs/ps.outputs
+      for (const ps of loc.processSteps) {
+        for (const ts of ps.inputs.concat(ps.outputs)) {
+          const tsResources = ts.resources || [];
+          const activeTSRes = tsResources.filter((r) => r.active && !r.faulty);
+
+          // Check mandatory for TS
+          let tsMultiplier = 1;
+          if (tsResources.length > 0) {
+            const mandatoryTS = tsResources.filter((r) => r.mandatory);
+            if (
+              mandatoryTS.length === 1 &&
+              (mandatoryTS[0].faulty || !mandatoryTS[0].active)
+            ) {
+              tsMultiplier = 0;
+            } else {
+              tsMultiplier = tsResources.length
+                ? activeTSRes.length / tsResources.length
+                : 1;
+            }
+          }
+          (ts as any).__inventoryMultiplier = tsMultiplier; // used for inputSpeed/outputSpeed scaling
+        }
+      }
+    }
+  }
+
+  /**
+   * Placeholder to check if any worker becomes injured while producing.
+   * For now, always return true => no injuries occur.
+   */
+  private checkResourceFaulty(
+    res: ProcessStepFull | TransportSystemFull
+  ): boolean {
+    // If we wanted to implement random injuries:
+    // 1) find production resources
+    // 2) for each active resource, check if (Math.random() < resource.injuryRate)
+    // 3) if so => resource.injured = true => console.log(...) => return false, etc.
+
+    return true;
+  }
+
+  /**
    * Helper method to check if production succeeds
-   * based on ps.errorRate. Currently always returns true
-   * (i.e. no error), but you can expand later with random logic, etc.
+   * based on ps.errorRate (unrelated to injuries).
    */
   private productionSucceeds(ps: ProcessStepFull): boolean {
     if (!ps.errorRate) return true;
