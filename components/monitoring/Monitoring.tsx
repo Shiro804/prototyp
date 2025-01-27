@@ -41,7 +41,8 @@ interface MonitoringProps {
  */
 export function Monitoring({ mode }: MonitoringProps) {
     // 1) Get the simulation/frames from the correct context
-    const [selectedLayout, setSelectedLayout] = useState("");
+    const [selectedLocationsLayout, setSelectedLocationsLayout] = useState("compact");
+    const [selectedOrdersLayout, setSelectedOrdersLayout] = useState("compact");
 
     const { simulation, frame } =
         mode === "mock" ? useSimulationMock() : useSimulationLive();
@@ -102,52 +103,69 @@ export function Monitoring({ mode }: MonitoringProps) {
             <Title order={2}>
                 Monitoring Overview {mode === "mock" ? "(Mock Simulation)" : "(Live Simulation)"}
             </Title>
-
-            <Title order={3}>Orders</Title>
+            <Flex maw={400} justify={"space-between"} pb={20} gap={25} align={"center"}>
+                <Title order={3} mb={0}>Orders</Title>
+                <Flex gap={5} align={"center"}>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("compact")}>Compact</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("medium")}>Medium</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedOrdersLayout("big")}>Big</Button>
+                </Flex>
+            </Flex>
             {/* Render Orders */}
-            <SimpleGrid cols={10} spacing="xs" mb="xl">
+            <SimpleGrid cols={selectedOrdersLayout === "compact" ? 10 : selectedOrdersLayout === "medium" ? 8 : 5} spacing="xs" mb="xl">
                 {currentFrame.orders.map((order: Order) => (
                     <Paper
                         key={order.id}
                         shadow="md"
-                        p="md"
+                        p="xs"
                         pt="xs"
                         withBorder
                         style={{
-                            backgroundColor: getStatusColor(order.status),
-                            color: "white",
+                            backgroundColor: "rgb(40, 37, 45)",
+                            borderColor: getStatusColor(order.status),
+                            borderWidth: "3px",
+                            color: "white"
                         }}
                     >
-                        <Flex direction="column-reverse">
-                            <Text fw={500} size="xs">Order-ID: {order.id}</Text>
-                            <Flex justify="center" align="center">
-                                <Badge color="white" variant="light" fz={8} mb="xs">
-                                    {order.status}
-                                </Badge>
-                            </Flex>
+                        <Flex justify="center" align="center">
+                            <Badge color={getStatusColor(order.status)} style={{ borderColor: getStatusColor(order.status) }} fz={8} mb="xs">
+                                {order.status}
+                            </Badge>
                         </Flex>
-
-                        <Stack gap={5}>
-                            <Text size="xs">Quantity: {order.quantity}</Text>
+                        <Stack gap={4}>
+                            <Flex w={"100%"} justify={"space-between"}>
+                                <Text fw={700} size="xs">Order-ID:</Text>
+                                <Text fw={700} size="xs">{order.id}</Text>
+                            </Flex>
+                            <Flex w={"100%"} justify={"space-between"}>
+                                <Text fw={700} size="xs">Quantity:</Text>
+                                <Text fw={700} size="xs">{order.quantity}</Text>
+                            </Flex>
                             {order.completedAt && (
-                                <Text size="xs">
-                                    Completed At: {new Date(order.completedAt).toLocaleString()}
-                                </Text>
+                                <Flex w={"100%"} justify={"space-between"}>
+                                    <Text fw={700} size="xs">Completed:</Text>
+                                    <Text fw={700} size="xs">
+                                        {selectedOrdersLayout === "big"
+                                            ? new Date(order.completedAt).toLocaleString()
+                                            : new Date(order.completedAt).toLocaleTimeString()}
+                                    </Text>
+                                </Flex>
                             )}
                         </Stack>
                     </Paper>
                 ))}
             </SimpleGrid>
-            <Flex maw={200} justify={"space-between"} pb={20} gap={25} align={"center"}>
+            <Flex maw={400} justify={"space-between"} pb={20} gap={25} align={"center"}>
                 <Title order={3} mb={0}>Locations</Title>
                 <Flex gap={5} align={"center"}>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLayout("compact")}>Compact</Button>
-                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLayout("big")}>Big</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("compact")}>Compact</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("medium")}>Medium</Button>
+                    <Button color="#5300E8" variant="outline" onClick={() => setSelectedLocationsLayout("big")}>Big</Button>
                 </Flex>
             </Flex>
 
             {/* Render Locations */}
-            <SimpleGrid cols={{ base: 1, md: selectedLayout === "compact" ? 2 : 1 }} spacing="lg">
+            <SimpleGrid cols={{ base: 1, md: selectedLocationsLayout === "compact" ? 3 : selectedLocationsLayout === "medium" ? 2 : 1 }} spacing="lg">
                 {currentFrame.state.locations.map((loc) => {
 
                     return (
