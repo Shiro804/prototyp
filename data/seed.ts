@@ -878,33 +878,6 @@ async function main() {
 
   // For each existing DTS we can also add a machine resource if you want "at the end each DTS"
   // Minimal example: let's do it for "DTS - Rack -> PreAssembly Storage" and "DTS - Hall 5 to Hall 2 (Covers)"
-  if (tsDtsRackToPreAssemblyStorage) {
-    await prisma.resource.create({
-      data: {
-        name: "DTS Machine Rack->PreAssembly",
-        locationId: hall2.id,
-        transportSystemId: tsDtsRackToPreAssemblyStorage.id,
-        inventoryResource: true,
-        Machine: {
-          create: {},
-        },
-      },
-    });
-  }
-
-  if (tsDtsHall5ToHall2) {
-    await prisma.resource.create({
-      data: {
-        name: "DTS Machine Hall5->Hall2",
-        locationId: hall5.id,
-        transportSystemId: tsDtsHall5ToHall2.id,
-        inventoryResource: true,
-        Machine: {
-          create: {},
-        },
-      },
-    });
-  }
 
   // PS "Upholstery Storage" => 2 workers
   const upholsteryStoragePS = hall3.processSteps.find(
