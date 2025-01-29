@@ -24,6 +24,7 @@ import {
   IconDeviceDesktopAnalytics,
   IconGraph,
   IconHome,
+  IconLogs,
   IconSettings,
   IconTruck,
 } from "@tabler/icons-react";
@@ -47,23 +48,16 @@ const overviewLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
-  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
+  // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
 ];
 
 const mockSimulationLinks: LinkDescription[] = [
   { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
-  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
+  // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
 ];
 
-const crudLinks: LinkDescription[] = [
-  { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
-  { icon: IconAddressBook, label: "Resources", href: "/resources" },
-  { icon: IconBrandSteam, label: "Machines", href: "/machines" },
-  { icon: IconArrowBadgeRight, label: "Process Steps", href: "/process-steps" },
-  { icon: IconTruck, label: "Transportsystems", href: "/transport-systems" },
-];
 
 const reportsAndAnalytics: LinkDescription[] = [
   {
@@ -75,6 +69,11 @@ const reportsAndAnalytics: LinkDescription[] = [
     icon: IconGraph,
     label: "Material Flow Graph",
     href: "/material-flow-graph",
+  },
+  {
+    icon: IconGraph,
+    label: "Simulation Analysis",
+    href: "/simulation-analysis",
   },
   //   {
   //     icon: IconChartInfographic,
@@ -91,6 +90,15 @@ const reportsAndAnalytics: LinkDescription[] = [
   //     label: "Quality Control & Compliance Reports",
   //     href: "/placeholder3",
   //   },
+];
+
+const crudLinks: LinkDescription[] = [
+  { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
+  { icon: IconAddressBook, label: "Resources", href: "/resources" },
+  { icon: IconBrandSteam, label: "Machines", href: "/machines" },
+  { icon: IconArrowBadgeRight, label: "Process Steps", href: "/process-steps" },
+  { icon: IconTruck, label: "Transportsystems", href: "/transport-systems" },
+  { icon: IconLogs, label: "Simulation Records", href: "/simulation-records" },
 ];
 
 const settingsLinks: LinkDescription[] = [
@@ -179,15 +187,15 @@ export default function MainContainer({
                 <MenuLink key={l.href} link={l} />
               ))}
             </AppShell.Section>
-            <AppShell.Section my="sm">
-              CRUD
-              {crudLinks.map((l) => (
-                <MenuLink key={l.href} link={l} />
-              ))}
-            </AppShell.Section>
             <AppShell.Section my="md">
               Reports and Analytics
               {reportsAndAnalytics.map((l) => (
+                <MenuLink key={l.href} link={l} />
+              ))}
+            </AppShell.Section>
+            <AppShell.Section my="sm">
+              CRUD
+              {crudLinks.map((l) => (
                 <MenuLink key={l.href} link={l} />
               ))}
             </AppShell.Section>
