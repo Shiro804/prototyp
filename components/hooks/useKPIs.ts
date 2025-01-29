@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { Order, InventoryEntry, ProcessStep } from "@prisma/client";
 import {
-  LocationFull,
   SimulationRun,
   SimulationFrame,
 } from "@/lib/simulation/Simulation";
@@ -30,7 +29,7 @@ export interface KPIs {
 }
 
 interface UseKPIsProps {
-  simulation: SimulationRun;
+  simulation?: SimulationRun; // Made simulation optional
   frame: number;
   speed: number;
 }
@@ -48,25 +47,34 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
   // Basic KPI counts
   const pendingCount = useMemo(
     () =>
-      simulation.frames[frame].orders.filter((o) => o.status === "pending")
-        .length,
-    [simulation.frames, frame]
+      simulation
+        ? simulation.frames[frame].orders.filter((o) => o.status === "pending")
+            .length
+        : 0,
+    [simulation, frame]
   );
+
   const inProgressCount = useMemo(
     () =>
-      simulation.frames[frame].orders.filter((o) => o.status === "in_progress")
-        .length,
-    [simulation.frames, frame]
+      simulation
+        ? simulation.frames[frame].orders.filter((o) => o.status === "in_progress")
+            .length
+        : 0,
+    [simulation, frame]
   );
+
   const completedCount = useMemo(
     () =>
-      simulation.frames[frame].orders.filter((o) => o.status === "completed")
-        .length,
-    [simulation.frames, frame]
+      simulation
+        ? simulation.frames[frame].orders.filter((o) => o.status === "completed")
+            .length
+        : 0,
+    [simulation, frame]
   );
 
   // Completed Seats
   const completedSeatsCount = useMemo(() => {
+    if (!simulation) return 0;
     const shippingSteps = simulation.frames[frame].state.locations.flatMap(
       (loc) => loc.processSteps.filter((ps) => ps.name === "Shipping")
     );
@@ -77,10 +85,11 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       ).length;
     }
     return total;
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   // Average Time
   const averageTimeMinutes = useMemo(() => {
+    if (!simulation) return 0;
     const doneOrders = simulation.frames[frame].orders.filter(
       (o) =>
         o.status === "completed" &&
@@ -93,19 +102,21 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       return acc + ticks * speed;
     }, 0);
     return totalSeconds / 60 / doneOrders.length;
-  }, [simulation.frames, frame, speed]);
+  }, [simulation, frame, speed]);
 
   // firstCompleteFrame
   const firstCompleteFrame = useMemo(() => {
+    if (!simulation) return null;
     for (let i = 0; i <= frame; i++) {
       const allDone = areOrdersCompleteCheck(simulation.frames[i].orders);
       if (allDone) return i;
     }
     return null;
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   // Completed Seats / min
   const completedSeatsPerMinute = useMemo(() => {
+    if (!simulation) return 0;
     if (firstCompleteFrame !== null) {
       const mins = (firstCompleteFrame * speed) / 60;
       return mins > 0 ? completedSeatsCount / mins : 0;
@@ -113,10 +124,11 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       const mins = (frame * speed) / 60;
       return mins > 0 ? completedSeatsCount / mins : 0;
     }
-  }, [completedSeatsCount, firstCompleteFrame, frame, speed]);
+  }, [completedSeatsCount, firstCompleteFrame, frame, speed, simulation]);
 
   // Orders completed / min
   const averageOrdersPerMinute = useMemo(() => {
+    if (!simulation) return 0;
     if (firstCompleteFrame !== null) {
       const mins = (firstCompleteFrame * speed) / 60;
       return mins > 0 ? completedCount / mins : 0;
@@ -124,23 +136,26 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       const mins = (frame * speed) / 60;
       return mins > 0 ? completedCount / mins : 0;
     }
-  }, [completedCount, firstCompleteFrame, frame, speed]);
+  }, [completedCount, firstCompleteFrame, frame, speed, simulation]);
 
   // Open Assemblies
   const totalSeatsRequired = useMemo(() => {
+    if (!simulation) return 0;
     return simulation.frames[frame].orders.reduce(
       (acc, order) => acc + order.quantity,
       0
     );
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   const openAssemblies = useMemo(() => {
+    if (!simulation) return 0;
     const open = totalSeatsRequired - completedSeatsCount;
     return open >= 0 ? open : 0;
-  }, [totalSeatsRequired, completedSeatsCount]);
+  }, [totalSeatsRequired, completedSeatsCount, simulation]);
 
   // Combine TS durations
   const transportTypeDurations = useMemo(() => {
+    if (!simulation) return {};
     const aggregator: Record<string, number[]> = {};
     for (let i = 0; i <= frame; i++) {
       const fr = simulation.frames[i];
@@ -167,11 +182,11 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       }
     }
     return results;
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   // Combine Process Step durations
-  // We'll store them in a map: { psId -> all durations }, then compute average
   const processStepDurationsAverages = useMemo(() => {
+    if (!simulation) return {};
     const aggregator: Record<string, number[]> = {};
     for (let i = 0; i <= frame; i++) {
       const fr = simulation.frames[i];
@@ -195,10 +210,11 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       }
     }
     return result;
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   // numberOfProcessSteps + processStepNames
   const { numberOfProcessSteps, processStepNames } = useMemo(() => {
+    if (!simulation) return { numberOfProcessSteps: 0, processStepNames: new Map() };
     let countPS = 0;
     let names: Map<number, string> = new Map();
     const fr = simulation.frames[frame];
@@ -212,10 +228,11 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       numberOfProcessSteps: countPS,
       processStepNames: names,
     };
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   // TS counts
   const { transportSystemCounts, totalTransportSystems } = useMemo(() => {
+    if (!simulation) return { transportSystemCounts: {}, totalTransportSystems: 0 };
     const aggregator: Record<string, Set<number>> = {};
     const fr = simulation.frames[frame];
     for (const loc of fr.state.locations) {
@@ -244,7 +261,7 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
       transportSystemCounts: finalCounts,
       totalTransportSystems: totalCount,
     };
-  }, [simulation.frames, frame]);
+  }, [simulation, frame]);
 
   return {
     pendingCount,
