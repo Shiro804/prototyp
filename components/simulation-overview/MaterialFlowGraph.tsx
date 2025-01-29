@@ -16,18 +16,13 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useState } from "react";
-import { MaterialFlowNodeTypes, MaterialNodeType } from "./nodesMaterial";
-import { MaterialSelectedEntity } from "./nodesMaterial";
+import { MaterialFlowNodeTypes, MaterialNodeType } from "../simulation-overview/nodesMaterial";
+import { MaterialSelectedEntity } from "../simulation-overview/nodesMaterial";
 import { getLayoutedElements } from "../simulation-overview/layout";
 import { EntityInfo } from "../simulation-overview/EntityInfo";
 import { useSimulationMock } from "../context/SimulationContextMock";
+import { useSimulationLive } from "../context/SimulationContextLive";
 
-// Import your live simulation context hook
-
-/**
- * A new Graph that includes materials as nodes, in addition to process steps & transport systems.
- * On click, show data about the material or process step or transport system, similarly to SimulationGraph.
- */
 export interface MaterialFlowGraphProps { }
 
 export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
@@ -36,8 +31,8 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
     const [selectedEntity, setSelectedEntity] = useState<MaterialSelectedEntity>();
     const [layout, setLayout] = useState<"TB" | "LR">("TB");
 
-    // Access the live simulation from context
-    const { simulation, frame } = useSimulationMock();
+    // Access the simulation from context (mock or live)
+    const { simulation, frame } = useSimulationMock(); // Change to useSimulationLive() if needed
 
     useEffect(() => {
         if (!simulation) return; // If simulation not loaded yet, do nothing
@@ -63,6 +58,26 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
                         type: "processStep",
                     };
                 }
+
+                // Create Resource nodes for ProcessStep
+                if (ps.resources && ps.resources.length > 0) {
+                    for (const res of ps.resources) {
+                        const resNodeId = "res-" + res.id;
+                        newNodes[resNodeId] = {
+                            id: resNodeId,
+                            position: { x: 0, y: 0 },
+                            data: { name: res.name ? res.name : "Undefined Name", entity: res },
+                            type: "resource",
+                        };
+                        const edgeId = `${nodeId}-res-${res.id}`;
+                        newEdges[edgeId] = {
+                            id: edgeId,
+                            source: nodeId,
+                            target: resNodeId,
+                            animated: false,
+                        };
+                    }
+                }
             }
         }
 
@@ -80,10 +95,30 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
                         };
                     }
 
+                    // Create Resource nodes for TransportSystem
+                    if (ts.resources && ts.resources.length > 0) {
+                        for (const res of ts.resources) {
+                            const resNodeId = "res-" + res.id;
+                            newNodes[resNodeId] = {
+                                id: resNodeId,
+                                position: { x: 0, y: 0 },
+                                data: { name: res.name ? res.name : "Undefined Name", entity: res },
+                                type: "resource",
+                            };
+                            const edgeId = `${tsId}-res-${res.id}`;
+                            newEdges[edgeId] = {
+                                id: edgeId,
+                                source: tsId,
+                                target: resNodeId,
+                                animated: false,
+                            };
+                        }
+                    }
+
                     const inEdgeId = "ps-" + ts.startStepId + "-ts-" + ts.id;
                     const outEdgeId = "ts-" + ts.id + "-ps-" + ts.endStepId;
 
-                    if (!newEdges[inEdgeId]) {
+                    if (!newEdges[inEdgeId] && ts.startStepId) {
                         newEdges[inEdgeId] = {
                             id: inEdgeId,
                             source: "ps-" + ts.startStepId,
@@ -91,7 +126,8 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
                             animated: true,
                         };
                     }
-                    if (!newEdges[outEdgeId]) {
+
+                    if (!newEdges[outEdgeId] && ts.endStepId) {
                         newEdges[outEdgeId] = {
                             id: outEdgeId,
                             source: tsId,
@@ -168,6 +204,8 @@ export function MaterialFlowGraph({ }: Readonly<MaterialFlowGraphProps>) {
                 setSelectedEntity({ type: "transportSystem", data: node.data });
             } else if (node.type === "material") {
                 setSelectedEntity({ type: "material", data: node.data });
+            } else if (node.type === "resource") {
+                setSelectedEntity({ type: "resource", data: node.data });
             }
         } else {
             setSelectedEntity(undefined);

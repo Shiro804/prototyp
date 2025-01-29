@@ -42,6 +42,24 @@
   border-radius: 10px;
 }
 
+.react-flow__node-resource {
+  border-radius: 10px;
+  padding: 8px 12px;
+  background-color: var(--mantine-color-yellow-2);
+  border: 2px solid var(--mantine-color-yellow-5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--mantine-color-gray-9);
+}
+
+.react-flow__node-resource.selected {
+  border-width: 4px;
+  background-color: var(--mantine-color-yellow-4);
+}
+
 .react-flow__node-processStep span,
 .react-flow__node-transportSystem span {
   display: block;

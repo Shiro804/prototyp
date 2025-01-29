@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Handle, Node, NodeProps, Position } from "@xyflow/react";
-import "./nodes.css";
+import "./materialOverviewNodes.css";
 
 /**
  * We'll define 4 node interfaces:
