@@ -11,6 +11,7 @@ import {
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { groupInventory } from "@/components/helpers";
 import { useSimulationMock } from "../context/SimulationContextMock";
+import { PRIMARY, PROCESSSTEP_COLOR, SECONDARY, TABLE_HEADER_COLOR } from "@/lib/theme";
 
 /**
  * Minimal interface: we take a `LocationFull` and an optional `onDetailsClick`.
@@ -53,7 +54,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                             ml="auto"
                             variant="gradient"
                             onClick={onDetailsClick}
-                            bg={"#5300E8"}
+                            bg={PRIMARY}
                         >
                             View Details
                         </Button>
@@ -75,11 +76,11 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                             style={{ borderRadius: "10px" }}
                         >
                             <Flex align="center" justify="space-between">
-                                <Text my="md" fw={600}>
-                                    # Process Step: {ps.name}
+                                <Text my="md" color={PRIMARY} fw={600}>
+                                    {ps.name}
                                 </Text>
                                 <Switch
-                                    color="#5300E8"
+                                    color={PRIMARY}
                                     checked={ps.active}
                                     onChange={() => toggleProcessStep(ps.id)}
                                 />
@@ -96,8 +97,8 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                             direction="row"
                                             wrap="nowrap"
                                         >
-                                            <Table.Th fw={700}>Material</Table.Th>
-                                            <Table.Th fw={700}>Count</Table.Th>
+                                            <Table.Th style={{ color: SECONDARY }} fw={700}>Material</Table.Th>
+                                            <Table.Th fw={700} style={{ color: SECONDARY }}>Count</Table.Th>
                                         </Flex>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -134,8 +135,8 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                     direction="row"
                                                     wrap="nowrap"
                                                 >
-                                                    <Table.Th fw={700}>Transport System</Table.Th>
-                                                    <Table.Th fw={700}>Active</Table.Th>
+                                                    <Table.Th fw={700} style={{ color: SECONDARY }}> Transport System</Table.Th>
+                                                    <Table.Th fw={700} style={{ color: SECONDARY }}>Active</Table.Th>
                                                 </Flex>
                                             </Table.Tr>
                                         </Table.Thead>
@@ -152,7 +153,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                         <Table.Td fw={600}>{ts.name}</Table.Td>
                                                         <Table.Td fw={600}>
                                                             <Switch
-                                                                color="#5300E8"
+                                                                color={SECONDARY}
                                                                 checked={ts.active}
                                                                 onChange={() => toggleTransportSystem(ts.id)}
                                                             />
@@ -178,8 +179,8 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                     direction="row"
                                                     wrap="nowrap"
                                                 >
-                                                    <Table.Th fw={700}>Resource</Table.Th>
-                                                    <Table.Th fw={700}>Active</Table.Th>
+                                                    <Table.Th style={{ color: SECONDARY }} fw={700}>Resource</Table.Th>
+                                                    <Table.Th fw={700} style={{ color: SECONDARY }}>Active</Table.Th>
                                                 </Flex>
                                             </Table.Tr>
                                         </Table.Thead>
@@ -196,7 +197,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                         <Table.Td fw={600}>{r.name}</Table.Td>
                                                         <Table.Td fw={600}>
                                                             <Switch
-                                                                color="#5300E8"
+                                                                color={SECONDARY}
                                                                 key={r.id}
                                                                 checked={r.active}
                                                                 onChange={() => toggleResource(r)}
@@ -212,6 +213,6 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                         </Flex>
                     ))}
             </Flex>
-        </Paper>
+        </Paper >
     );
 };

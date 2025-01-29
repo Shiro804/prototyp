@@ -21,6 +21,7 @@ import { useKPIs } from "@/components/hooks/useKPIs";
 import { KPIsOverview } from "@/components/kpi/KPIsOverview";
 import { useSimulationMock } from "../context/SimulationContextMock";
 import { useTransportTypes } from "../hooks/useTransportTypes";
+import { OrdersList } from "../custom/OrderList";
 
 /**
  * A type to define whether we want the "mock" or "live" mode.
@@ -99,6 +100,15 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
                 KPIs {`${mode === "mock" ? "(Mock Simulation)" : "(Live Simulation)"}`}
             </Title>
 
+            {/* Orders Listing */}
+            <Title order={4} mb="sm" mt={"xl"}>
+                Orders
+            </Title>
+            <OrdersList
+                orders={currentFrame.orders as Order[]}
+                layout="compact" // or "medium"/"big" as you wish
+                detailed={true} // <== using the "detailed" style with tooltips
+            />
             {/* KPIs Overview Component */}
             <KPIsOverview
                 pendingCount={pendingCount}
@@ -119,62 +129,6 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
             // allTransportTypes={allTypes}
             />
 
-            {/* Orders Listing */}
-            <Title order={4} mb="sm" mt={"xl"}>
-                Orders
-            </Title>
-            <SimpleGrid cols={10} spacing="xs" mb="xl">
-                {simulation.frames[frame].orders.map((order: Order) => (
-                    <Paper
-                        key={order.id}
-                        shadow="md"
-                        p="xs"
-                        pt="xs"
-                        withBorder
-                        style={{
-                            backgroundColor: getStatusColor(order.status),
-                            color: "white",
-                        }}
-                    >
-                        <Flex direction="column-reverse" align="center" justify="center">
-                            <Badge color="white" variant="light" fz={8} mb="xs">
-                                {order.status}
-                            </Badge>
-                            <Flex justify="center" align="center" p={0} m={0}>
-                                <Flex w={30}></Flex>
-                                <Text ta="center" fw={500} size="xs" mr="auto" w="100%">
-                                    Order-ID: {order.id}
-                                </Text>
-                                <Flex w={30} p={0} m={0} align="center" justify="center">
-                                    <Tooltip
-                                        label={
-                                            <Flex direction="column" gap={10}>
-                                                {Object.entries(order).map(([key, value]) => (
-                                                    <Text key={key} size="xs">
-                                                        {key}: {value ? value.toString() : "-"}
-                                                    </Text>
-                                                ))}
-                                            </Flex>
-                                        }
-                                        multiline
-                                        maw={600}
-                                    >
-                                        <Button
-                                            m={0}
-                                            p={0}
-                                            size="xs"
-                                            variant="transparent"
-                                            color="white"
-                                        >
-                                            <IconInfoCircleFilled />
-                                        </Button>
-                                    </Tooltip>
-                                </Flex>
-                            </Flex>
-                        </Flex>
-                    </Paper>
-                ))}
-            </SimpleGrid>
 
             {/* Location KPI Details */}
             <Title order={4} mb="sm">

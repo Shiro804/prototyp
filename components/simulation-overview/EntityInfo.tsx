@@ -2,7 +2,7 @@
 
 import { Table, Title } from "@mantine/core";
 import { ReactNode } from "react";
-import { MaterialSelectedEntity } from "../material-flow-graph-overview/nodesMaterial";
+import { MaterialSelectedEntity } from "./nodesMaterial";
 
 const titles: { [key in MaterialSelectedEntity["type"]]: string } = {
     processStep: "Selected Process Step",

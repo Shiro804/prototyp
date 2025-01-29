@@ -4,6 +4,7 @@ import { Button, Card, Center, Flex, Loader, Modal, NumberInput, Text, TextInput
 import { useDisclosure } from "@mantine/hooks";
 import { IconAdjustmentsAlt as IconAdjustment } from "@tabler/icons-react";
 import ToBeDoneCard from "../custom/ToBeDoneCard";
+import { PRIMARY } from "@/lib/theme";
 
 interface AdjustSimulationParamsProps {
 }
@@ -34,7 +35,7 @@ const AdjustSimulationParamsModal: FunctionComponent<AdjustSimulationParamsProps
                 offset={10}
                 withArrow>
 
-                <Button color="#5300E8" onClick={open}>
+                <Button color={PRIMARY} onClick={open}>
                     <IconAdjustment />
                 </Button>
             </Tooltip>
