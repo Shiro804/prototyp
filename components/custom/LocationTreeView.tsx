@@ -1,4 +1,4 @@
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { Accordion, Text, Code } from "@mantine/core";
 import { InventoryEntriesAccordion } from "./InventoryEntriesAccordion";
 

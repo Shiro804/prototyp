@@ -1,4 +1,4 @@
-import { LocationFull } from "@/lib/simulation/simulationNew";
+import { LocationFull } from "@/lib/simulation/Simulation";
 import { Inventory, InventoryEntry, Prisma } from "@prisma/client";
 
 export function getIncomingCommodities(
