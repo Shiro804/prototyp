@@ -11,7 +11,7 @@ import "mantine-react-table/styles.css";
 
 export const metadata: Metadata = {
   title: "Projektseminar",
-  description: "Kp hab Anforderungen noch nicht angeschaut",
+  description: "Digitaler Zwilling für einen ausgewählten Intralogistikprozess",
 };
 
 export default function RootLayout({
