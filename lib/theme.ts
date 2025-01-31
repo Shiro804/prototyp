@@ -5,6 +5,7 @@ import {
   createTheme,
   darken,
   lighten,
+  NumberInput,
   Paper,
   Title,
 } from "@mantine/core";

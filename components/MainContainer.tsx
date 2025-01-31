@@ -34,7 +34,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 
-import SimulationControlOverlay from "./SimulationControlOverlay";
+import SimulationControlOverlay from "./SimulationControlOverlay/SimulationControlOverlay";
 import { SimulationProviderMock, useSimulationMock } from "./context/SimulationContextMock";
 import { SimulationProviderLive, useSimulationLive } from "./context/SimulationContextLive";
 

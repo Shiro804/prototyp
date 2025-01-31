@@ -10,7 +10,7 @@ const ToBeDoneCard: FunctionComponent<ToBeDoneCardProps> = () => {
   return (
     <Card shadow="xs" padding="md" radius="lg" withBorder>
       <Card.Section>
-        <Image src="/construction.jpg" height={200} alt="Crying Dolphin" />
+        <Image src="/construction.jpg" height={200} alt="Construction" />
       </Card.Section>
 
       <Group justify="space-between" mt="md" mb="xs">

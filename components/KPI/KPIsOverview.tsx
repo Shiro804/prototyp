@@ -4,9 +4,9 @@
 
 import React from "react";
 import { Flex, SimpleGrid, Text, Title } from "@mantine/core";
-import { KPIItem } from "./KPIItem";
 import { SimulationEntityState, SimulationRun } from "@/lib/simulation/Simulation";
 import { KPIs } from "../hooks/useKPIs";
+import { KPIItem } from "./KPIItem";
 
 interface TransportTypeStats {
     durations: number[];

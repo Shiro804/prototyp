@@ -20,8 +20,8 @@ import {
   IconDeviceFloppy,
 } from "@tabler/icons-react";
 import { FunctionComponent, useState } from "react";
-import { useSimulationMock } from "./context/SimulationContextMock";
-import AdjustSimulationParams from "./modals/AdjustSimulationParamsModal";
+import { useSimulationMock } from "../context/SimulationContextMock";
+import AdjustSimulationParams from "../modals/AdjustSimulationParamsModal";
 import { useKPIs } from "@/components/hooks/useKPIs";
 import { BG_COLOR, PRIMARY } from "@/lib/theme";
 
@@ -70,7 +70,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
 
   // Build the data array for sending to /api/simulations
   const kpiArray = simulation
-  ? [
+    ? [
       { key: "pendingCount", value: pendingCount ?? 0, name: "Pending Orders" },
       { key: "inProgressCount", value: inProgressCount ?? 0, name: "Running Orders" },
       { key: "completedCount", value: completedCount ?? 0, name: "Completed Orders" },
@@ -100,7 +100,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
         name: `${tsName} Count`,
       })),
     ]
-  : [];
+    : [];
 
 
   async function handleSaveKPIs() {
