@@ -68,9 +68,9 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                         <Button
                             miw="120px"
                             ml="auto"
-                            variant="gradient"
                             onClick={onDetailsClick}
-                            bg={PRIMARY}
+                            color={PRIMARY}
+                            variant="outline"
                         >
                             View Details
                         </Button>
@@ -99,10 +99,11 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                     <Text my="md" color={PRIMARY} fw={600}>
                                         {ps.name}
                                     </Text>
-                                    <Flex align={"center"}>
+                                    <Flex align={"center"} gap={5}>
                                         {/* The button that toggles the popover for this ProcessStep */}
                                         <Button
                                             variant="transparent"
+                                            p={0}
                                             onClick={() => handlePopoverToggle(processStepPopoverId)}
                                         >
                                             <IconAdjustmentsAlt color={PRIMARY} />
@@ -203,8 +204,9 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                             >
                                                                 <Table.Td fw={600}>{ts.name}</Table.Td>
                                                                 <Table.Td fw={600}>
-                                                                    <Flex align={"center"}>
+                                                                    <Flex align={"center"} gap={5}>
                                                                         <Button
+                                                                            p={0}
                                                                             variant="transparent"
                                                                             onClick={() =>
                                                                                 handlePopoverToggle(tsPopoverId)
@@ -280,9 +282,10 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                                             >
                                                                 <Table.Td fw={600}>{r.name}</Table.Td>
                                                                 <Table.Td fw={600}>
-                                                                    <Flex align={"center"}>
+                                                                    <Flex align={"center"} gap={5}>
                                                                         <Button
                                                                             variant="transparent"
+                                                                            p={0}
                                                                             onClick={() =>
                                                                                 handlePopoverToggle(resourcePopoverId)
                                                                             }

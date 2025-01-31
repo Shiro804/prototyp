@@ -26,6 +26,7 @@ import { GaugeSection } from "../custom/GaugeSection";
 // We now import our universal table
 import { UniversalTable } from "./Tables";  // <-- wherever the new Tables.tsx is located
 import { getTransportSystemsForProcessStep } from "../helpers";
+import { PRIMARY } from "@/lib/theme";
 
 /**
  * "DetailedLocationCard" shows a detailed view of one Location (including all process steps).
@@ -72,7 +73,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                     {name} - Detailed View
                 </Text>
                 {onBack && (
-                    <Button variant="gradient" onClick={onBack}>
+                    <Button variant="outline" color={PRIMARY} onClick={onBack}>
                         Back to Overview
                     </Button>
                 )}
