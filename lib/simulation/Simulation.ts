@@ -93,6 +93,12 @@ export type TransportSystemFull = Prisma.TransportSystemGetPayload<{
   };
 }>;
 
+export type SensorFull = Prisma.SensorGetPayload<{
+  include: {
+    logEntries: true;
+  };
+}>;
+
 export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
   include: {
     resources: {
@@ -537,15 +543,13 @@ export class Simulation {
             // 2) If inputs are available...
             if (inputsFulfilled) {
               // Check resource injury logic (placeholder for now)
-              // We always let production succeed. If we wanted to injure,
-              // we could do it here per active worker resource.
               if (!this.checkResourceFaulty(ps)) {
-                continue; // skip production if worker got injured
+                continue; // skip production if worker got injured (placeholder)
               }
 
               // errorRate check
               if (!this.productionSucceeds(ps)) {
-                // skip
+                // skip (could log an error event, etc.)
               } else {
                 // measure immediate "transformStart"
                 const transformStart = Math.min(
@@ -626,12 +630,12 @@ export class Simulation {
       }
     }
 
-    // (C) Outlet (PS -> TS) => scaled by inventory multiplier
+    // (C) Outlet (PS -> TS)
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
 
-        // effectiveOutSpeed for item distribution
+        // effectiveOutSpeed
         const effOutSpeed = Math.floor(
           ps.outputSpeed * ((ps as any).__inventoryMultiplier || 0)
         );
@@ -646,6 +650,7 @@ export class Simulation {
           )
         );
 
+        // distribute
         const itemsPerOutput = distributeRoundRobin(
           ps.inventory.entries
             .filter(
@@ -668,13 +673,9 @@ export class Simulation {
           );
           if (effTSOutSpeed <= 0) continue;
 
-          // sensor
-          if (!this.sensorScan(ps, "scanner", "output", itemsPerOutput[i])) {
-            continue;
-          }
-          if (!this.sensorScan(ts, "scanner", "input", itemsPerOutput[i])) {
-            continue;
-          }
+          // sensor logs for the PS "output" + TS "input"
+          this.sensorLog(ps, "output", itemsPerOutput[i]);
+          this.sensorLog(ts, "input", itemsPerOutput[i]);
 
           const entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
@@ -706,7 +707,7 @@ export class Simulation {
       }
     }
 
-    // (D) Intake (TS -> PS) => also scale speeds
+    // (D) Intake (TS -> PS)
     const sourceAvailability = new Map<number, boolean>();
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
@@ -761,6 +762,7 @@ export class Simulation {
                 : this.transportDelay;
             return this.currentTick - delayedEntry.arrivedTick >= delayNeeded;
           });
+
           if (potentialItems.length === 0) continue;
 
           // minQuantity
@@ -807,13 +809,9 @@ export class Simulation {
             continue;
           }
 
-          // sensor
-          if (!this.sensorScan(input, "scanner", "output", acceptedItems)) {
-            continue;
-          }
-          if (!this.sensorScan(ps, "scanner", "input", acceptedItems)) {
-            continue;
-          }
+          // sensor logs for the TS "output" + PS "input"
+          this.sensorLog(input, "output", acceptedItems);
+          this.sensorLog(ps, "input", acceptedItems);
 
           // measure durations
           for (const movedItem of acceptedItems) {
@@ -926,10 +924,8 @@ export class Simulation {
         const activeInv = invResources.filter((r) => r.active && !r.faulty);
 
         // Check mandatory among production resources
-        // If there's exactly 1 mandatory resource, and it's inactive => production stops
         let prodMultiplier = 1;
         if (prodResources.length > 0) {
-          // if there is only 1 mandatory resource among them and it's inactive => 0
           const mandatoryProd = prodResources.filter((r) => r.mandatory);
           if (
             mandatoryProd.length === 1 &&
@@ -937,7 +933,6 @@ export class Simulation {
           ) {
             prodMultiplier = 0;
           } else {
-            // else scale by ratio of active
             prodMultiplier = prodResources.length
               ? activeProd.length / prodResources.length
               : 1;
@@ -961,21 +956,16 @@ export class Simulation {
         }
 
         // Store them as ephemeral fields for later usage
-        // Production multiplier affects recipeRate
         (ps as any).__productionMultiplier = prodMultiplier;
-
-        // Inventory multiplier affects item movement (ps.inputSpeed, ps.outputSpeed)
         (ps as any).__inventoryMultiplier = invMultiplier;
       }
 
       // For each TS inside each processStep
-      // Actually we gather them from ps.inputs/ps.outputs
       for (const ps of loc.processSteps) {
         for (const ts of ps.inputs.concat(ps.outputs)) {
           const tsResources = ts.resources || [];
           const activeTSRes = tsResources.filter((r) => r.active && !r.faulty);
 
-          // Check mandatory for TS
           let tsMultiplier = 1;
           if (tsResources.length > 0) {
             const mandatoryTS = tsResources.filter((r) => r.mandatory);
@@ -990,7 +980,7 @@ export class Simulation {
                 : 1;
             }
           }
-          (ts as any).__inventoryMultiplier = tsMultiplier; // used for inputSpeed/outputSpeed scaling
+          (ts as any).__inventoryMultiplier = tsMultiplier;
         }
       }
     }
@@ -1003,11 +993,7 @@ export class Simulation {
   private checkResourceFaulty(
     res: ProcessStepFull | TransportSystemFull
   ): boolean {
-    // If we wanted to implement random injuries:
-    // 1) find production resources
-    // 2) for each active resource, check if (Math.random() < resource.injuryRate)
-    // 3) if so => resource.injured = true => console.log(...) => return false, etc.
-
+    // If you wanted to implement random injuries, do it here.
     return true;
   }
 
@@ -1026,24 +1012,30 @@ export class Simulation {
     production: ProcessStepProduction,
     movedOrderIds: Set<number>
   ) {
-    this.sensorIncrement(ps, "counter", production.itemsProducedPerRun);
-
+    // For each order in the production run, create the actual inventory items
+    // and also log them (inputType = "product") to the sensors of this PS.
     for (const oid of production.affectedOrderIds) {
       for (const out of production.recipeOutputs) {
         for (let i = 0; i < out.quantity; i++) {
-          ps.inventory.entries.push({
+          const newEntry = {
             id: nextFreeInventoryEntryId(newState),
             addedAt: new Date(),
             inventoryId: ps.inventory.id,
             material: out.material,
             orderId: oid,
-          });
+          } as InventoryEntryWithDelay;
+
+          ps.inventory.entries.push(newEntry);
+
+          // Log each produced item
+          this.sensorLog(ps, "product", [newEntry]);
         }
       }
       movedOrderIds.add(oid);
     }
+
     console.log(
-      `ProcessStep "${ps.name}" completed a production run with duration = ${ps.duration}. Produced: ${production.itemsProducedPerRun} item(s) for Orders: ${production.affectedOrderIds}`
+      `ProcessStep "${ps.name}" completed a production run (duration=${ps.duration}). Produced: ${production.itemsProducedPerRun} item(s) for Orders: ${production.affectedOrderIds}`
     );
   }
 
@@ -1062,60 +1054,61 @@ export class Simulation {
     }
 
     console.log(
-      `ProcessStep "${ps.name}" (no-recipe) waited duration = ${ps.duration}. Items: ${itemCount}`
+      `ProcessStep "${ps.name}" (no-recipe) waited duration=${ps.duration}. Items: ${itemCount}`
     );
   }
 
-  private sensorIncrement(
+  /**
+   * Unified method to log items to the sensor (type="scanner" now),
+   * and then update sensor.value = number of product log entries.
+   *
+   * @param psOrTS - The ProcessStep or TransportSystem
+   * @param logType - "input", "output", or "product"
+   * @param items - Array of items (InventoryEntryWithDelay) to log
+   * @returns boolean - always true for now
+   */
+  private sensorLog(
     psOrTS: ProcessStepFull | TransportSystemFull,
-    sensorType: string,
-    amount: number
-  ) {
-    if (!("sensors" in psOrTS) || !Array.isArray(psOrTS.sensors)) {
-      return;
-    }
-    const sensor = psOrTS.sensors.find((s) => s.type === sensorType);
-    if (sensor) {
-      sensor.value += amount;
-      console.log(
-        `[SENSOR] ${sensor.name} incremented by ${amount}, new value: ${sensor.value}`
-      );
-    }
-  }
-
-  private sensorScan(
-    psOrTS: ProcessStepFull | TransportSystemFull,
-    sensorType: string,
-    direction: "input" | "output",
-    items: InventoryEntry[]
+    logType: "input" | "output" | "product",
+    items: InventoryEntryWithDelay[]
   ): boolean {
     if (!("sensors" in psOrTS) || !Array.isArray(psOrTS.sensors)) {
       return true;
     }
-    const sensor = psOrTS.sensors.find((s) => s.type === sensorType);
-    if (!sensor) {
-      return true;
-    }
-
+    // If we are dealing with a ProcessStep
     const isProcessStep = (entity: any): entity is ProcessStepFull =>
       "recipe" in entity;
 
-    for (const i of items) {
-      const logEntry: LogEntry = {
-        id: sensor.logEntries.length + 1,
-        sensorId: sensor.id,
-        createdAt: new Date(),
-        materialId: i.id,
-        materialName: i.material,
-        inputType: direction,
-        processStepId: isProcessStep(psOrTS) ? psOrTS.id : null,
-        transportSystemId: !isProcessStep(psOrTS) ? psOrTS.id : null,
-      };
-      sensor.logEntries.push(logEntry);
+    for (const sensor of psOrTS.sensors) {
+      if (!sensor.active) continue; // skip inactive sensors
+
+      // Create new log entries for all items
+      for (const i of items) {
+        const newLog: LogEntry = {
+          id: sensor.logEntries.length + 1,
+          sensorId: sensor.id,
+          createdAt: new Date(),
+          materialId: i.id,
+          materialName: i.material,
+          inputType: logType,
+          processStepId: isProcessStep(psOrTS) ? psOrTS.id : null,
+          transportSystemId: !isProcessStep(psOrTS) ? psOrTS.id : null,
+        };
+        sensor.logEntries.push(newLog);
+        if(logType === "product") sensor.value++
+      }
+
+      // Now update sensor.value = total # of logEntries with `inputType = "product"`
+      // const productCount = sensor.logEntries.filter(
+      //   (l) => l.inputType === "product"
+      // ).length;
+      // sensor.value = productCount;
+
+      console.log(
+        `[SENSOR] ${sensor.name} logged ${items.length} items as "${logType}". sensor.value updated to: ${sensor.value}`
+      );
     }
-    console.log(
-      `[SCAN] ${sensor.name} scanning ${items.length} items as ${direction} => success`
-    );
+
     return true;
   }
 
@@ -1147,6 +1140,7 @@ export class Simulation {
     order: Order & { materialsReserved?: boolean }
   ): { material: string }[] | null {
     if (!order.quantity || order.quantity < 1) return null;
+    // Example base materials (you can adapt this logic)
     const baseMaterials = [
       "Seat Structure",
       "Backrest Structure",
@@ -1202,6 +1196,7 @@ export class Simulation {
   }
 
   private checkAndCompleteOrders(state: SimulationEntityState): void {
+    // Identify the "Shipping" process step(s)
     const shippingIds = state.locations
       .flatMap((l) => l.processSteps)
       .filter((p) => p.name === "Shipping")
@@ -1218,6 +1213,7 @@ export class Simulation {
             this.isSeatCompleted(e.material) &&
             shippingIds.includes(e.inventoryId)
         ).length;
+
       if (seats >= order.quantity) {
         order.status = "completed";
         order.completedAt = new Date();
@@ -1364,5 +1360,142 @@ export class Simulation {
     orders: (Order & { materialsReserved?: boolean })[]
   ): Order[] {
     return orders.map((order) => ({ ...order }));
+  }
+
+  /**
+   * Update various fields of a ProcessStep in-memory.
+   * Called from the mock context's updateProcessStep method.
+   */
+  public updateProcessStep(
+    psId: number,
+    data: {
+      errorRate?: number;
+      outputSpeed?: number;
+      inputSpeed?: number;
+      recipeRate?: number;
+      duration?: number;
+      active?: boolean;
+      inventoryLimit?: number; // custom
+    }
+  ) {
+    const lastFrame = this.frames[this.frames.length - 1];
+    const { locations } = lastFrame.state;
+
+    // Find the process step
+    const allSteps = locations.flatMap((loc) => loc.processSteps);
+    const foundPS = allSteps.find((ps) => ps.id === psId);
+
+    if (foundPS) {
+      if (data.errorRate != null) foundPS.errorRate = data.errorRate;
+      if (data.outputSpeed != null) foundPS.outputSpeed = data.outputSpeed;
+      if (data.inputSpeed != null) foundPS.inputSpeed = data.inputSpeed;
+      if (data.recipeRate != null) foundPS.recipeRate = data.recipeRate;
+      if (data.duration != null) foundPS.duration = data.duration;
+      if (data.active != null) foundPS.active = data.active;
+
+      // If updating the inventory limit
+      if (data.inventoryLimit != null && foundPS.inventory) {
+        foundPS.inventory.limit = data.inventoryLimit;
+      }
+
+      console.log(`ProcessStep ID=${psId} updated with:`, data);
+    } else {
+      console.log(`ProcessStep ID=${psId} not found for update`);
+    }
+
+    // Discard future frames, update current state
+    this.discardFutureFrames();
+    this.currentState = Simulation.cloneState(lastFrame.state);
+  }
+
+  /**
+   * Update various fields of a TransportSystem in-memory.
+   * Called from the mock context's updateTransportSystem method.
+   */
+  public updateTransportSystem(
+    tsId: number,
+    data: {
+      inputSpeed?: number;
+      outputSpeed?: number;
+      active?: boolean;
+      minQuantity?: number;
+      transportDelay?: number;
+    }
+  ) {
+    const lastFrame = this.frames[this.frames.length - 1];
+    const { locations } = lastFrame.state;
+
+    const allSteps = locations.flatMap((loc) => loc.processSteps);
+    const allTS = allSteps.flatMap((step) => [...step.inputs, ...step.outputs]);
+    const foundTS = allTS.find((ts) => ts.id === tsId);
+
+    if (foundTS) {
+      if (data.inputSpeed != null) foundTS.inputSpeed = data.inputSpeed;
+      if (data.outputSpeed != null) foundTS.outputSpeed = data.outputSpeed;
+      if (data.active != null) foundTS.active = data.active;
+      if (data.minQuantity != null) foundTS.minQuantity = data.minQuantity;
+      if (data.transportDelay != null)
+        foundTS.transportDelay = data.transportDelay;
+
+      console.log(`TransportSystem ID=${tsId} updated with:`, data);
+    } else {
+      console.log(`TransportSystem ID=${tsId} not found for update`);
+    }
+
+    this.discardFutureFrames();
+    this.currentState = Simulation.cloneState(lastFrame.state);
+  }
+
+  /**
+   * Update various fields of a Resource in-memory.
+   * Called from the mock context's updateResource method.
+   */
+  public updateResource(
+    resId: number,
+    data: {
+      faultyRate?: number;
+    }
+  ) {
+    const lastFrame = this.frames[this.frames.length - 1];
+    const { locations } = lastFrame.state;
+
+    let foundRes: ResourceModel | undefined;
+
+    // We'll search in processSteps resources + TS resources
+    outer: for (const loc of locations) {
+      for (const ps of loc.processSteps) {
+        const r = ps.resources.find((rr) => rr.id === resId);
+        if (r) {
+          foundRes = r;
+          break outer;
+        }
+        // also check ts
+        for (const inpTS of ps.inputs) {
+          const rr = inpTS.resources?.find((xx) => xx.id === resId);
+          if (rr) {
+            foundRes = rr;
+            break outer;
+          }
+        }
+        for (const outTS of ps.outputs) {
+          const rr = outTS.resources?.find((xx) => xx.id === resId);
+          if (rr) {
+            foundRes = rr;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if (foundRes) {
+      if (data.faultyRate != null) foundRes.faultyRate = data.faultyRate;
+
+      console.log(`Resource ID=${resId} updated with:`, data);
+    } else {
+      console.log(`Resource ID=${resId} not found for update`);
+    }
+
+    this.discardFutureFrames();
+    this.currentState = Simulation.cloneState(lastFrame.state);
   }
 }
