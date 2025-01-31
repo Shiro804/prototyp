@@ -1,13 +1,40 @@
 -- CreateTable
+CREATE TABLE "SimulationRecord" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "name" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "KpiRecord" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" REAL NOT NULL,
+    "name" TEXT,
+    "simulationId" INTEGER NOT NULL,
+    CONSTRAINT "KpiRecord_simulationId_fkey" FOREIGN KEY ("simulationId") REFERENCES "SimulationRecord" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "Resource" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "name" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
+    "mandatory" BOOLEAN NOT NULL DEFAULT false,
+    "productionResource" BOOLEAN NOT NULL DEFAULT false,
+    "inventoryResource" BOOLEAN NOT NULL DEFAULT false,
     "locationId" INTEGER NOT NULL,
-    "processStepId" INTEGER NOT NULL,
-    CONSTRAINT "Resource_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    "processStepId" INTEGER,
+    "transportSystemId" INTEGER,
+    "faulty" BOOLEAN DEFAULT false,
+    "faultyRate" REAL NOT NULL DEFAULT 0.01,
+    CONSTRAINT "Resource_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Resource_transportSystemId_fkey" FOREIGN KEY ("transportSystemId") REFERENCES "TransportSystem" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Resource_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -21,6 +48,9 @@ CREATE TABLE "Machine" (
 -- CreateTable
 CREATE TABLE "Worker" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "workerNumber" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
     "resourceId" INTEGER NOT NULL,
     CONSTRAINT "Worker_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "Resource" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -47,7 +77,9 @@ CREATE TABLE "InventoryEntry" (
     "addedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "material" TEXT NOT NULL,
     "inventoryId" INTEGER NOT NULL,
-    CONSTRAINT "InventoryEntry_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "orderId" INTEGER,
+    CONSTRAINT "InventoryEntry_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "InventoryEntry_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -65,7 +97,8 @@ CREATE TABLE "ProcessStep" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "name" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'IDLING',
+    "active" BOOLEAN NOT NULL DEFAULT true,
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
     "recipeRate" INTEGER NOT NULL DEFAULT 10,
@@ -73,6 +106,7 @@ CREATE TABLE "ProcessStep" (
     "locationId" INTEGER NOT NULL,
     "inventoryId" INTEGER NOT NULL,
     "recipeId" INTEGER,
+    "errorRate" REAL DEFAULT 0.0,
     CONSTRAINT "ProcessStep_recipeId_fkey" FOREIGN KEY ("recipeId") REFERENCES "Recipe" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "ProcessStep_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "ProcessStep_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -105,13 +139,32 @@ CREATE TABLE "RecipeOutput" (
 );
 
 -- CreateTable
+CREATE TABLE "LogEntry" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "inputType" TEXT NOT NULL,
+    "sensorId" INTEGER,
+    "materialId" INTEGER NOT NULL,
+    "materialName" TEXT NOT NULL,
+    "processStepId" INTEGER,
+    "transportSystemId" INTEGER,
+    CONSTRAINT "LogEntry_sensorId_fkey" FOREIGN KEY ("sensorId") REFERENCES "Sensor" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "Sensor" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "name" TEXT NOT NULL,
-    "processStepId" INTEGER NOT NULL,
-    CONSTRAINT "Sensor_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "type" TEXT NOT NULL,
+    "value" INTEGER NOT NULL DEFAULT 0,
+    "sensorDelay" INTEGER NOT NULL DEFAULT 0,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "processStepId" INTEGER,
+    "transportSystemId" INTEGER,
+    CONSTRAINT "Sensor_processStepId_fkey" FOREIGN KEY ("processStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Sensor_transportSystemId_fkey" FOREIGN KEY ("transportSystemId") REFERENCES "TransportSystem" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -129,6 +182,7 @@ CREATE TABLE "Filter" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "transportSystemId" INTEGER NOT NULL,
+    "orderId" INTEGER,
     CONSTRAINT "Filter_transportSystemId_fkey" FOREIGN KEY ("transportSystemId") REFERENCES "TransportSystem" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -142,11 +196,33 @@ CREATE TABLE "TransportSystem" (
     "inputSpeed" INTEGER NOT NULL,
     "outputSpeed" INTEGER NOT NULL,
     "inventoryId" INTEGER NOT NULL,
+    "minQuantity" INTEGER DEFAULT 1,
+    "transportDelay" INTEGER DEFAULT 1,
     "startStepId" INTEGER,
     "endStepId" INTEGER,
+    "type" TEXT NOT NULL,
+    "startTSId" INTEGER,
+    "endTSId" INTEGER,
     CONSTRAINT "TransportSystem_endStepId_fkey" FOREIGN KEY ("endStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "TransportSystem_startStepId_fkey" FOREIGN KEY ("startStepId") REFERENCES "ProcessStep" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "TransportSystem_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "Inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Order" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "priority" INTEGER NOT NULL DEFAULT 1,
+    "dueDate" DATETIME,
+    "description" TEXT,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "startedAt" DATETIME,
+    "startedTick" INTEGER,
+    "completedTick" INTEGER,
+    "completedAt" DATETIME,
+    "canceledAt" DATETIME
 );
 
 -- CreateTable
@@ -155,6 +231,22 @@ CREATE TABLE "_WorkerToWorkerRole" (
     "B" INTEGER NOT NULL,
     CONSTRAINT "_WorkerToWorkerRole_A_fkey" FOREIGN KEY ("A") REFERENCES "Worker" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "_WorkerToWorkerRole_B_fkey" FOREIGN KEY ("B") REFERENCES "WorkerRole" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "_OrderToProcessStep" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+    CONSTRAINT "_OrderToProcessStep_A_fkey" FOREIGN KEY ("A") REFERENCES "Order" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "_OrderToProcessStep_B_fkey" FOREIGN KEY ("B") REFERENCES "ProcessStep" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "_OrderToTransportSystem" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+    CONSTRAINT "_OrderToTransportSystem_A_fkey" FOREIGN KEY ("A") REFERENCES "Order" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "_OrderToTransportSystem_B_fkey" FOREIGN KEY ("B") REFERENCES "TransportSystem" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -183,3 +275,15 @@ CREATE UNIQUE INDEX "_WorkerToWorkerRole_AB_unique" ON "_WorkerToWorkerRole"("A"
 
 -- CreateIndex
 CREATE INDEX "_WorkerToWorkerRole_B_index" ON "_WorkerToWorkerRole"("B");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "_OrderToProcessStep_AB_unique" ON "_OrderToProcessStep"("A", "B");
+
+-- CreateIndex
+CREATE INDEX "_OrderToProcessStep_B_index" ON "_OrderToProcessStep"("B");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "_OrderToTransportSystem_AB_unique" ON "_OrderToTransportSystem"("A", "B");
+
+-- CreateIndex
+CREATE INDEX "_OrderToTransportSystem_B_index" ON "_OrderToTransportSystem"("B");
