@@ -135,36 +135,6 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                             )
                                         })}
                                     </Flex>
-                                    {/* <Flex direction={"column"} w={"100%"}>
-                                        <Title order={5}>
-                                            Transport System(s)
-                                        </Title>
-                                        {getTransportSystemsForProcessStep(ps).map(ts => {
-                                            return (
-                                                <Paper p={"xs"} shadow="xl" mb="xl" withBorder bg="white">
-                                                    <Flex>
-                                                        <Title order={6} mr={"xs"}>Name:</Title>
-                                                        {KPI("", ts.name)}
-                                                    </Flex>
-                                                    <Flex w={"100%"} justify={"space-between"} p={"xs"} pr={"xl"} >
-                                                        <Flex justify={"center"} align={"center"}>
-                                                            <SimpleGrid cols={{ base: 2, sm: 1, md: 2, lg: 3 }}>
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                            </SimpleGrid>
-                                                        </Flex>
-                                                        <Flex>
-                                                            <GaugeSection percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" />
-                                                        </Flex>
-                                                    </Flex>
-                                                </Paper>
-                                            )
-                                        })}
-                                    </Flex> */}
                                 </Flex>
                             </Flex>
                         </Paper>

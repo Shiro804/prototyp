@@ -14,14 +14,14 @@ import {
     Tooltip,
 } from "@mantine/core";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
-import { DetailedKPICard } from "@/components/kpi/DetailedKPICard";
 import { Order } from "@prisma/client";
 import { IconInfoCircleFilled } from "@tabler/icons-react";
 import { useKPIs } from "@/components/hooks/useKPIs";
-import { KPIsOverview } from "@/components/kpi/KPIsOverview";
 import { useSimulationMock } from "../context/SimulationContextMock";
 import { useTransportTypes } from "../hooks/useTransportTypes";
 import { OrdersList } from "../custom/OrderList";
+import { KPIsOverview } from "./KPIsOverview";
+import { DetailedKPICard } from "./DetailedKPICard";
 
 /**
  * A type to define whether we want the "mock" or "live" mode.
