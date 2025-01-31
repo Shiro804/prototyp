@@ -4,7 +4,7 @@ import { Button, Card, Center, Flex, Loader, Modal, NumberInput, Text, TextInput
 import { useDisclosure } from "@mantine/hooks";
 import { IconAdjustmentsAlt as IconAdjustment } from "@tabler/icons-react";
 import ToBeDoneCard from "../custom/ToBeDoneCard";
-import { useSimulationMock } from "../SimulationContextOld";
+import { PRIMARY } from "@/lib/theme";
 
 interface AdjustSimulationParamsProps {
 }
@@ -15,7 +15,7 @@ const AdjustSimulationParamsModal: FunctionComponent<AdjustSimulationParamsProps
 
     return (
         <>
-            <Modal size="md" bg="white" opened={opened} onClose={close} title="Adjust Simulation Parameters">
+            <Modal size="md" bg="#5300E8" opened={opened} onClose={close} title="Adjust Simulation Parameters">
                 {/* <Flex mt="10px" gap="md" justify="flex-start" align="flex-start" direction="row">
                     <Text>Speed: </Text>
                     <NumberInput defaultValue={speed} allowDecimal={true} onChange={value => {
@@ -30,12 +30,12 @@ const AdjustSimulationParamsModal: FunctionComponent<AdjustSimulationParamsProps
             </Modal >
             <Tooltip label="Open Simulation Configuration"
                 position="bottom"
-                color="indigo"
+                color="#5300E8"
                 radius="md"
                 offset={10}
                 withArrow>
 
-                <Button color="indigo" onClick={open}>
+                <Button color={PRIMARY} onClick={open}>
                     <IconAdjustment />
                 </Button>
             </Tooltip>
