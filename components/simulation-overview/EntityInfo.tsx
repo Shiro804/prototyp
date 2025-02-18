@@ -2,9 +2,9 @@
 
 import { Table, Title } from "@mantine/core";
 import { ReactNode } from "react";
-import { MaterialSelectedEntity } from "./nodesMaterial";
+import { SelectedEntity } from "./nodes";
 
-const titles: { [key in MaterialSelectedEntity["type"]]: string } = {
+const titles: { [key in SelectedEntity["type"]]: string } = {
     processStep: "Selected Process Step",
     transportSystem: "Selected Transport System",
     resource: "Selected Resource",
@@ -20,7 +20,7 @@ function renderCell(key: string, content: any): ReactNode {
 }
 
 export interface EntityInfoProps {
-    entity: MaterialSelectedEntity;
+    entity: SelectedEntity;
 }
 
 export function EntityInfo({ entity }: EntityInfoProps) {

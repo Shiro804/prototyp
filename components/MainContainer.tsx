@@ -63,12 +63,7 @@ const reportsAndAnalytics: LinkDescription[] = [
   {
     icon: IconGraph,
     label: "Process Graph",
-    href: "/simulation-overview",
-  },
-  {
-    icon: IconGraph,
-    label: "Material Flow Graph",
-    href: "/material-flow-graph",
+    href: "/process-graph",
   },
   {
     icon: IconGraph,

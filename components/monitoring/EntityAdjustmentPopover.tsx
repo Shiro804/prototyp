@@ -29,6 +29,7 @@ interface EntityAdjustmentPopoverProps {
 
     /** Whether the popover is currently open or closed */
     opened: boolean;
+    
     /** Callback to set the popover state from the parent. */
     onOpenedChange: (val: boolean) => void;
 

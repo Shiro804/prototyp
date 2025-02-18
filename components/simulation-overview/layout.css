@@ -8,31 +8,9 @@
   align-items: center;
   text-align: center;
 }
-
-.react-flow__node-material {
-  border-radius: 50%;
-  padding: 10px;
-  background-color: var(--mantine-color-red-2);
-  border: 2px solid var(--mantine-color-red-3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.react-flow__node-material.selected {
-  border-width: 4px;
-  background-color: var(--mantine-color-red-3);
-}
-
 .react-flow__node-processStep.selected {
   border-width: 4px;
   background-color: var(--mantine-color-blue-3);
-}
-
-.react-flow__node-transportSystem.selected {
-  border-width: 4px;
-  background-color: var(--mantine-color-green-4);
 }
 
 .react-flow__node-transportSystem {
@@ -40,6 +18,10 @@
   border: 2px solid var(--mantine-color-green-5);
   padding: 10px;
   border-radius: 10px;
+}
+.react-flow__node-transportSystem.selected {
+  border-width: 4px;
+  background-color: var(--mantine-color-green-4);
 }
 
 .react-flow__node-resource {
@@ -54,23 +36,36 @@
   font-size: 0.9em;
   color: var(--mantine-color-gray-9);
 }
-
 .react-flow__node-resource.selected {
   border-width: 4px;
   background-color: var(--mantine-color-yellow-4);
 }
 
-.react-flow__node-processStep span,
-.react-flow__node-transportSystem span {
-  display: block;
+.react-flow__node-material {
+  border-radius: 50%;
+  padding: 10px;
+  background-color: var(--mantine-color-red-2);
+  border: 2px solid var(--mantine-color-red-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-align: center;
+}
+.react-flow__node-material.selected {
+  border-width: 4px;
+  background-color: var(--mantine-color-red-3);
 }
 
 .react-flow__node-processStep .location {
   color: var(--mantine-color-blue-9);
 }
-
 .react-flow__node-processStep .name,
 .react-flow__node-transportSystem .name {
   font-size: 1.2em;
+}
+
+/* Gray out inactive nodes */
+.react-flow__node.inactive {
+  filter: grayscale(100%);
+  opacity: 0.5;
 }
