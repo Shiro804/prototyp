@@ -78,7 +78,7 @@ export function ProcessGraph({ }: Readonly<ProcessGraphProps>) {
                                 entity: res,
                             },
                             type: "resource",
-                            className: ps.active ? undefined : "inactive",
+                            className: res.active ? undefined : "inactive",
                         };
                         const edgeId = `${nodeId}-res-${res.id}`;
                         newEdges[edgeId] = {
@@ -103,7 +103,7 @@ export function ProcessGraph({ }: Readonly<ProcessGraphProps>) {
                             position: { x: 0, y: 0 },
                             data: { name: ts.name, entity: ts },
                             type: "transportSystem",
-                            className: ps.active ? undefined : "inactive",
+                            className: ts.active ? undefined : "inactive",
                         };
                     }
 
@@ -119,7 +119,7 @@ export function ProcessGraph({ }: Readonly<ProcessGraphProps>) {
                                     entity: res,
                                 },
                                 type: "resource",
-                                className: ps.active ? undefined : "inactive",
+                                className: res.active ? undefined : "inactive",
                             };
                             const edgeId = `${tsId}-res-${res.id}`;
                             newEdges[edgeId] = {
