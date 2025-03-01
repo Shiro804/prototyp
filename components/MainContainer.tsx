@@ -70,6 +70,11 @@ const reportsAndAnalytics: LinkDescription[] = [
     label: "Simulation Analysis",
     href: "/simulation-analysis",
   },
+  {
+    icon: IconGraph,
+    label: "Inventory Visualization",
+    href: "/inventory-visualization",
+  },
   //   {
   //     icon: IconChartInfographic,
   //     label: "Operational Efficiency Reports",

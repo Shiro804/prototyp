@@ -250,18 +250,12 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                         </Accordion.Panel>
                                     </Accordion.Item>
                                 </Accordion>
-
-                                {/* Sub-Accordion for grouped materials => we'll do 
-                    a "grouped" approach, or simply show a table of them all. */}
                                 <Accordion multiple variant="contained" mt="md">
                                     <Accordion.Item value={`inventory-ps-${ps.id}`}>
                                         <Accordion.Control>
                                             Materials ({ps.inventory.entries.length})
                                         </Accordion.Control>
                                         <Accordion.Panel>
-                                            {/* If you want a grouped approach, you'd do so. 
-                          But we can just show them as a universal table. 
-                          Or you can keep the grouping logic + universal table inside. */}
                                             <UniversalTable<InventoryEntry>
                                                 data={ps.inventory.entries}
                                                 columns={getInventoryEntryColumns()}
@@ -358,6 +352,10 @@ function getInventoryEntryColumns() {
         {
             accessorKey: "inventoryId",
             header: "Inventory ID",
+        },
+        {
+            accessorKey: "slotNumber",
+            header: "Slot",
         },
     ];
     return columns;

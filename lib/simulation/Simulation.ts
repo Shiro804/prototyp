@@ -168,11 +168,13 @@ export interface SimulationRun {
 }
 
 /**
- * Extended InventoryEntry (runtime) with arrivedTick/leftTick.
+ * Extended InventoryEntry (runtime) with arrivedTick/leftTick and slotNumber (neu).
  */
 export type InventoryEntryWithDelay = InventoryEntry & {
   arrivedTick?: number;
   leftTick?: number;
+  // [NEU] Slot assignment in the inventory
+  slotNumber?: number;
 };
 
 /**
@@ -221,6 +223,9 @@ export class Simulation {
       materialsReserved: false,
     }));
 
+    // [NEU] Belege Slots für bereits vorhandene Materialien (sofern keine Slots)
+    this.assignInitialSlots(this.currentState);
+
     // Initialize first frame at tick=0
     this.frames.push({
       state: Simulation.cloneState(this.currentState),
@@ -247,6 +252,10 @@ export class Simulation {
   public reset(): void {
     this.currentTick = 0;
     this.currentState = Simulation.cloneState(this.initialState);
+
+    // [NEU] Beim Reset auch Slots initial belegen, falls nötig
+    this.assignInitialSlots(this.currentState);
+
     this.frames = [
       {
         state: Simulation.cloneState(this.currentState),
@@ -570,8 +579,14 @@ export class Simulation {
                   Math.max(0, transformationDuration)
                 );
 
-                // remove input items
+                // [NEU] free their slots (since we remove these items):
                 const inputSet = new Set(inputEntries);
+                const toRemove = ps.inventory.entries.filter((e) =>
+                  inputSet.has(e)
+                );
+                Simulation.freeSlots(ps.inventory, toRemove);
+
+                // remove input items
                 ps.inventory.entries = ps.inventory.entries.filter(
                   (e) => !inputSet.has(e)
                 );
@@ -677,11 +692,25 @@ export class Simulation {
           this.sensorLog(ps, "output", itemsPerOutput[i]);
           this.sensorLog(ts, "input", itemsPerOutput[i]);
 
+          // [NEU] free those slots from ps.inventory
+          const outIds = new Set(itemsPerOutput[i].map((x) => x.id));
+          const removingEntries = ps.inventory.entries.filter((e) =>
+            outIds.has(e.id)
+          );
+          Simulation.freeSlots(ps.inventory, removingEntries);
+
+          // remove from PS
+          ps.inventory.entries = ps.inventory.entries.filter(
+            (e) => !outIds.has(e.id)
+          );
+
+          // Add to TS inventory (with new slot assignment)
           const entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
             addedAt: new Date(),
             inventoryId: ts.inventory.id,
             arrivedTick: this.currentTick,
+            slotNumber: undefined, // will be assigned below
           })) as InventoryEntryWithDelay[];
 
           if (
@@ -689,14 +718,11 @@ export class Simulation {
             ts.inventory.limit
           ) {
             ts.inventory.entries.push(...entriesOut);
+            // [NEU] assign new slots
+            Simulation.assignSlots(ts.inventory, entriesOut);
           } else {
             continue;
           }
-
-          const outIds = new Set(entriesOut.map((x) => x.id));
-          ps.inventory.entries = ps.inventory.entries.filter(
-            (e) => !outIds.has(e.id)
-          );
 
           for (const eo of entriesOut) {
             if (eo.orderId != null) {
@@ -739,7 +765,8 @@ export class Simulation {
           if (!input.active) continue;
 
           // capacity
-          const capacityNow = ps.inventory.limit - ps.inventory.entries.length;
+          const capacityNow =
+            ps.inventory.limit - ps.inventory.entries.length;
           if (capacityNow <= 0) continue;
 
           const speedIn = Math.min(
@@ -827,19 +854,29 @@ export class Simulation {
             }
           }
 
-          // move them
+          // [NEU] free these slots from the TS
           const acceptedIds = new Set(acceptedItems.map((x) => x.id));
+          const removingEntries = input.inventory.entries.filter((e) =>
+            acceptedIds.has(e.id)
+          );
+          Simulation.freeSlots(input.inventory, removingEntries);
+
+          // remove from TS
           input.inventory.entries = input.inventory.entries.filter(
             (e) => !acceptedIds.has(e.id)
           );
 
+          // push into PS
           for (const item of acceptedItems) {
             const newItem: InventoryEntryWithDelay = {
               ...item,
               addedAt: new Date(),
               inventoryId: ps.inventory.id,
+              slotNumber: undefined, // will be assigned
             };
             ps.inventory.entries.push(newItem);
+            // [NEU] assign slot for each item
+            Simulation.assignSlots(ps.inventory, [newItem]);
 
             if (newItem.orderId != null) {
               movedOrderIds.add(newItem.orderId);
@@ -1023,9 +1060,12 @@ export class Simulation {
             inventoryId: ps.inventory.id,
             material: out.material,
             orderId: oid,
+            slotNumber: undefined, // [NEU]
           } as InventoryEntryWithDelay;
 
           ps.inventory.entries.push(newEntry);
+          // [NEU] assign slot
+          Simulation.assignSlots(ps.inventory, [newEntry]);
 
           // Log each produced item
           this.sensorLog(ps, "product", [newEntry]);
@@ -1095,14 +1135,8 @@ export class Simulation {
           transportSystemId: !isProcessStep(psOrTS) ? psOrTS.id : null,
         };
         sensor.logEntries.push(newLog);
-        if(logType === "product") sensor.value++
+        if (logType === "product") sensor.value++;
       }
-
-      // Now update sensor.value = total # of logEntries with `inputType = "product"`
-      // const productCount = sensor.logEntries.filter(
-      //   (l) => l.inputType === "product"
-      // ).length;
-      // sensor.value = productCount;
 
       console.log(
         `[SENSOR] ${sensor.name} logged ${items.length} items as "${logType}". sensor.value updated to: ${sensor.value}`
@@ -1333,6 +1367,51 @@ export class Simulation {
       );
   }
 
+  // [NEU] Hilfsfunktion zum Initialisieren von usedSlots
+  private static ensureUsedSlotsForInventory(inv: any) {
+    if (!inv.usedSlots) {
+      inv.usedSlots = [];
+      // Falls es schon Einträge mit slotNumber gibt, nehmen wir sie auf:
+      for (const e of inv.entries) {
+        if (e.slotNumber != null && !inv.usedSlots.includes(e.slotNumber)) {
+          inv.usedSlots.push(e.slotNumber);
+        }
+      }
+    }
+  }
+
+  // [NEU] We assign slots to any existing items that lack a slot.
+  private assignInitialSlots(state: SimulationEntityState) {
+    // For each location, process step, and also transport systems, etc.
+    for (const loc of state.locations) {
+      for (const ps of loc.processSteps) {
+        // processStep inventory
+        Simulation.ensureUsedSlotsForInventory(ps.inventory);
+        this.assignSlotsIfNeeded(ps.inventory);
+
+        // all input TS
+        for (const input of ps.inputs) {
+          Simulation.ensureUsedSlotsForInventory(input.inventory);
+          this.assignSlotsIfNeeded(input.inventory);
+        }
+
+        // all output TS
+        for (const output of ps.outputs) {
+          Simulation.ensureUsedSlotsForInventory(output.inventory);
+          this.assignSlotsIfNeeded(output.inventory);
+        }
+      }
+    }
+  }
+
+  // [NEU] For each item in "inv" that doesn't have a slotNumber, we call assignSlots (the same logic we do on new items).
+  private assignSlotsIfNeeded(inv: any) {
+    const unassigned = inv.entries.filter((e: InventoryEntryWithDelay) => e.slotNumber == null);
+    if (unassigned.length > 0) {
+      Simulation.assignSlots(inv, unassigned);
+    }
+  }
+
   // Converts references => real pointers
   private static objectsToReferences(state: SimulationEntityState): void {
     const transportSystems = Object.fromEntries(
@@ -1342,10 +1421,20 @@ export class Simulation {
         .filter((ts, i, arr) => arr.map((x) => x.id).indexOf(ts.id) === i)
         .map((ts) => [ts.id, ts])
     );
+
     for (const loc of state.locations) {
       for (const ps of loc.processSteps) {
         ps.inputs = ps.inputs.map((inp) => transportSystems[inp.id]);
         ps.outputs = ps.outputs.map((out) => transportSystems[out.id]);
+
+        // [NEU] Ensure usedSlots array exists
+        Simulation.ensureUsedSlotsForInventory(ps.inventory);
+        for (const inp of ps.inputs) {
+          Simulation.ensureUsedSlotsForInventory(inp.inventory);
+        }
+        for (const out of ps.outputs) {
+          Simulation.ensureUsedSlotsForInventory(out.inventory);
+        }
       }
     }
   }
@@ -1360,6 +1449,50 @@ export class Simulation {
     orders: (Order & { materialsReserved?: boolean })[]
   ): Order[] {
     return orders.map((order) => ({ ...order }));
+  }
+
+  /**
+   * [NEU] Belegt Slots für neu hinzukommende Items.
+   * Jedes Item erhält den kleinsten freien Slot von 0..limit-1.
+   * Falls keiner frei ist (sollte nicht vorkommen, wegen Kapazitätsprüfungen), gibt es ein Warn-Log.
+   */
+  private static assignSlots(inventory: any, entries: InventoryEntryWithDelay[]) {
+    if (!inventory.usedSlots) {
+      inventory.usedSlots = [];
+    }
+    for (const item of entries) {
+      // Suche den ersten freien Slot von 0..limit-1
+      let slotFound: number | null = null;
+      for (let i = 0; i < inventory.limit; i++) {
+        if (!inventory.usedSlots.includes(i)) {
+          slotFound = i;
+          break;
+        }
+      }
+      if (slotFound == null) {
+        console.warn(`Kein freier Stellplatz (Slot) mehr in Inventory ${inventory.id}.`);
+      } else {
+        item.slotNumber = slotFound;
+        inventory.usedSlots.push(slotFound);
+      }
+    }
+  }
+
+  /**
+   * [NEU] Gibt Slots von entfernten Items wieder frei.
+   */
+  private static freeSlots(inventory: any, entries: InventoryEntryWithDelay[]) {
+    if (!inventory.usedSlots) {
+      inventory.usedSlots = [];
+    }
+    for (const item of entries) {
+      if (item.slotNumber != null) {
+        inventory.usedSlots = inventory.usedSlots.filter(
+          (s: number) => s !== item.slotNumber
+        );
+        item.slotNumber = undefined;
+      }
+    }
   }
 
   /**
