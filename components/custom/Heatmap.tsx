@@ -1,81 +1,93 @@
 "use client";
 
 import React, { FC, ReactNode } from "react";
-import { Box, Flex } from "@mantine/core";
+import { Box, Flex, Tooltip } from "@mantine/core";
 import { createStyles } from "@mantine/styles";
+import { InventoryEntryWithDelay } from "@/lib/simulation/Simulation";
 
-/** 
- * We define a simple interface for our heatmap slots. 
- * Typically, the length of the array = inventory.limit 
+/**
+ * Each HeatmapSlot can carry whether it's used plus an optional entry reference
+ * so we can show a tooltip with that entry’s data.
  */
 export interface HeatmapSlot {
-    used: boolean; // e.g. "true" if slot is occupied
+  used: boolean;
+  entry?: InventoryEntryWithDelay;
 }
 
 /**
  * Props for the Heatmap component.
- * - data: an array of HeatmapSlot (or booleans if you prefer).
- * - columns: how many columns to use (optional, defaults to 10).
- * - aboveChildren / belowChildren: optional React elements to render above/below the grid.
+ * - data: an array of HeatmapSlot
+ * - columns: how many columns to use (defaults to 10)
+ * - aboveChildren / belowChildren: optional React elements to render above/below the grid
  */
 interface HeatmapProps {
-    data: HeatmapSlot[];
-    columns?: number;
-    aboveChildren?: ReactNode;
-    belowChildren?: ReactNode;
+  data: HeatmapSlot[];
+  columns?: number;
+  aboveChildren?: ReactNode;
+  belowChildren?: ReactNode;
 }
 
 /**
- * Example minimal "heatmap" using a grid of boxes.
+ * A minimal heatmap using a grid of boxes, with an optional tooltip per slot.
  */
 export const Heatmap: FC<HeatmapProps> = ({
-    data,
-    columns = 10,
-    aboveChildren,
-    belowChildren,
+  data,
+  columns = 10,
+  aboveChildren,
+  belowChildren,
 }) => {
-    const { classes } = useStyles();
+  const { classes } = useStyles();
 
-    return (
-        <Flex direction="row" align="center" justify="center">
-            {aboveChildren && <Box mb="sm">{aboveChildren}</Box>}
+  return (
+    <Flex direction="column" align="center" justify="center">
+      {aboveChildren && <Box mb="sm">{aboveChildren}</Box>}
 
-            <Box className={classes.gridContainer}>
-                {data.map((slot, idx) => {
-                    const bgColor = slot.used ? "#fa5252" : "#51cf66"; // red vs. green
-                    return (
-                        <Box
-                            key={idx}
-                            className={classes.cell}
-                            style={{
-                                backgroundColor: bgColor,
-                                width: 20,
-                                height: 20,
-                            }}
-                        />
-                    );
-                })}
-            </Box>
+      {/* Dynamically set columns via inline style */}
+      <Box
+        className={classes.gridContainer}
+        style={{ gridTemplateColumns: `repeat(${columns}, 20px)` }}
+      >
+        {data.map((slot, idx) => {
+          const bgColor = slot.used ? "#fa5252" : "#51cf66"; // red vs. green
 
-            {belowChildren && <Box mt="sm">{belowChildren}</Box>}
-        </Flex>
-    );
+          // Using a React element with whiteSpace: "pre-line" to respect "\n" in the string
+          const tooltipLabel = slot.used ? (
+            <div style={{ whiteSpace: "pre-line" }}>
+              {`Material: ${slot.entry?.material}\nOrderID: ${
+                slot.entry?.orderId ?? "N/A"
+              }\nSlot: ${slot.entry?.slotNumber}`}
+            </div>
+          ) : (
+            "Empty slot"
+          );
+
+          return (
+            <Tooltip key={idx} label={tooltipLabel} position="top" withArrow withinPortal>
+              <Box
+                className={classes.cell}
+                style={{
+                  backgroundColor: bgColor,
+                  width: 20,
+                  height: 20,
+                }}
+              />
+            </Tooltip>
+          );
+        })}
+      </Box>
+
+      {belowChildren && <Box mt="sm">{belowChildren}</Box>}
+    </Flex>
+  );
 };
 
 const useStyles = createStyles(() => ({
-    gridContainer: {
-        display: "grid",
-        gap: "3px",
-        // We repeat 'columns' times, each cell is 20px wide
-        // e.g. if columns=10, we get 10 columns of 20px
-        // then it flows to a new row automatically.
-        gridTemplateColumns: `repeat(25, 20px)`,
-        justifyContent: "start",
-    },
-    cell: {
-        cursor: "pointer",
-        width: 20,
-        height: 20,
-    },
+  gridContainer: {
+    display: "grid",
+    gap: "3px",
+    justifyContent: "start",
+  },
+  cell: {
+    cursor: "pointer",
+  },
 }));
-

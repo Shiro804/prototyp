@@ -7,14 +7,22 @@ export interface LayoutOptions {
 
 export const getLayoutedElements = <
   N extends Node = Node,
-  E extends Edge = Edge,
+  E extends Edge = Edge
 >(
   nodes: N[],
   edges: E[],
-  options: LayoutOptions,
+  options: LayoutOptions
 ) => {
   const g = new graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: options.direction });
+
+  g.setGraph({
+    rankdir: options.direction, // "TB"
+    align: "DL", // left-align nodes in each rank
+    ranksep: 100, // vertical space between layers
+    nodesep: 15, // horizontal space between nodes
+    marginx: 10,
+    marginy: 10,
+  });
 
   edges.forEach((edge) => g.setEdge(edge.source, edge.target));
   nodes.forEach((node) =>
@@ -22,7 +30,8 @@ export const getLayoutedElements = <
       ...node,
       width: node.measured?.width ?? 0,
       height: node.measured?.height ?? 0,
-    }),
+      rank: 10, 
+    })
   );
 
   layout(g);

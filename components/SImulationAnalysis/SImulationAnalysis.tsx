@@ -11,7 +11,7 @@ import {
     Button,
 } from "@mantine/core";
 import { Prisma, SimulationRecord, KpiRecord } from "@prisma/client";
-import { KPIItem } from "../kpi/KPIItem";
+import { KPIItem } from "../KPI/KPIItem";
 import { ACTIVE_BUTTON_COLOR, PRIMARY } from "@/lib/theme";
 import { IconReload } from "@tabler/icons-react";
 

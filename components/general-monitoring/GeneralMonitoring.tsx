@@ -3,10 +3,11 @@
 import { Switch } from "@mantine/core";
 import { IconChartInfographic, IconDeviceDesktopAnalytics } from "@tabler/icons-react";
 import { useState } from "react";
-import KpiLive from "../kpi/KPILive";
-import KpiMock from "../kpi/KPIMock";
+
 import MonitoringLive from "../monitoring/MonitoringLive";
 import MonitoringMock from "../monitoring/MonitoringMock";
+import KpiMock from "../KPI/KPIMock";
+import KpiLive from "../KPI/KPILive";
 
 type MonitoringMode = "mock" | "live";
 

@@ -1,71 +1,99 @@
+/* ProcessStep nodes (blue) */
 .react-flow__node-processStep {
-  border-radius: 50%;
-  padding: 20px;
+  /* Make them slightly rounded, not full circles */
+  border-radius: 8px;
+  padding: 10px 14px;
   background-color: var(--mantine-color-blue-2);
   border: 2px solid var(--mantine-color-blue-5);
+
+  /* Keep consistent sizing so the node shape doesn’t distort */
+  min-width: 120px;
+  text-align: center;
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
+  color: var(--mantine-color-gray-9);
 }
+
 .react-flow__node-processStep.selected {
   border-width: 4px;
   background-color: var(--mantine-color-blue-3);
 }
 
+/* TransportSystem nodes (green) */
 .react-flow__node-transportSystem {
   background-color: var(--mantine-color-green-2);
   border: 2px solid var(--mantine-color-green-5);
-  padding: 10px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--mantine-color-gray-9);
+  /* Keep them roughly the same min-width as processSteps */
+  min-width: 120px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
 .react-flow__node-transportSystem.selected {
   border-width: 4px;
   background-color: var(--mantine-color-green-4);
 }
 
+/* Resource nodes (yellow) */
 .react-flow__node-resource {
-  border-radius: 10px;
-  padding: 8px 12px;
   background-color: var(--mantine-color-yellow-2);
   border: 2px solid var(--mantine-color-yellow-5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 100px;
   text-align: center;
   font-size: 0.9em;
   color: var(--mantine-color-gray-9);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
 .react-flow__node-resource.selected {
   border-width: 4px;
   background-color: var(--mantine-color-yellow-4);
 }
 
+/* Material nodes (red) */
 .react-flow__node-material {
-  border-radius: 50%;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 8px 12px;
   background-color: var(--mantine-color-red-2);
   border: 2px solid var(--mantine-color-red-3);
+  min-width: 80px;
+  text-align: center;
+
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
 }
+
 .react-flow__node-material.selected {
   border-width: 4px;
   background-color: var(--mantine-color-red-3);
 }
 
-.react-flow__node-processStep .location {
-  color: var(--mantine-color-blue-9);
-}
-.react-flow__node-processStep .name,
-.react-flow__node-transportSystem .name {
-  font-size: 1.2em;
-}
-
-/* Gray out inactive nodes */
+/* Grayed-out for inactive (shared across all node types) */
 .react-flow__node.inactive {
   filter: grayscale(100%);
   opacity: 0.5;
+}
+
+/* Show a bold red highlight if there's a queue */
+.queue {
+  background-color: red !important;
+  border: 2px solid red !important;
+  color: #fff; /* optional: white text if you like */
+}
+
+/* If a node is both inactive and queued, show a dashed red border, etc. */
+.inactive.queue {
+  border: 2px dashed darkred !important;
 }

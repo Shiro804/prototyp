@@ -173,28 +173,18 @@ export interface SimulationRun {
 export type InventoryEntryWithDelay = InventoryEntry & {
   arrivedTick?: number;
   leftTick?: number;
-  // [NEU] Slot assignment in the inventory
-  slotNumber?: number;
+  slotNumber?: number; // used for "slots" in the inventory
 };
 
 /**
- * Ephemeral structure to store "work in progress" in a ProcessStep:
- * We also reuse it for no-recipe steps (like a "holding pattern").
+ * Ephemeral structure to store "work in progress" in a ProcessStep
+ * (including no-recipe steps).
  */
 interface ProcessStepProduction {
-  /** The orders involved in the current run (IDs). */
   affectedOrderIds: number[];
-
-  /** When does this production (or holding) finish? Tick number. */
   finishTick: number;
-
-  /** For recipe steps: how many items are produced upon completion. */
   itemsProducedPerRun: number;
-
-  /** For no-recipe steps: how many raw items we’re just holding, if needed. */
   rawItems?: InventoryEntryWithDelay[];
-
-  /** The recipe outputs we create (if recipe-based). */
   recipeOutputs: { material: string; quantity: number }[];
 }
 
@@ -209,7 +199,7 @@ export class Simulation {
   private currentTick: number = 0;
   private currentState: SimulationEntityState;
   private isStopped: boolean = false;
-  private notificationsEnabled: boolean = false;
+  private notificationsEnabled: boolean = false; // we set this true for demonstration
   private initialState: SimulationEntityState;
 
   // Default Transport-System delay in ticks
@@ -223,10 +213,10 @@ export class Simulation {
       materialsReserved: false,
     }));
 
-    // [NEU] Belege Slots für bereits vorhandene Materialien (sofern keine Slots)
+    // Initialize slot usage if needed
     this.assignInitialSlots(this.currentState);
 
-    // Initialize first frame at tick=0
+    // Initial frame
     this.frames.push({
       state: Simulation.cloneState(this.currentState),
       tick: this.currentTick,
@@ -234,6 +224,7 @@ export class Simulation {
     });
   }
 
+  // --------------- Simulation Controls ---------------
   public getSimulationRun(): SimulationRun {
     return {
       frames: this.frames.concat(this.futureFrames),
@@ -253,7 +244,7 @@ export class Simulation {
     this.currentTick = 0;
     this.currentState = Simulation.cloneState(this.initialState);
 
-    // [NEU] Beim Reset auch Slots initial belegen, falls nötig
+    // Re-assign slots for pre-existing items
     this.assignInitialSlots(this.currentState);
 
     this.frames = [
@@ -301,7 +292,6 @@ export class Simulation {
           this.tickForward();
         }
       } else if (targetTick < this.frames[0].tick) {
-        // Too far back => reset
         this.reset();
       }
     }
@@ -312,12 +302,13 @@ export class Simulation {
     const nextFrame = this.futureFrames.find((f) => f.tick === nextTick);
 
     if (nextFrame) {
+      // Load that precomputed frame
       this.currentTick = nextFrame.tick;
       this.currentState = Simulation.cloneState(nextFrame.state);
       this.frames.push(nextFrame);
       this.futureFrames = this.futureFrames.filter((f) => f.tick > nextTick);
     } else {
-      // Compute a new state from the old one
+      // Generate new state
       const newState = this.computeNextTick(this.currentState);
       this.currentTick += 1;
       this.currentState = Simulation.cloneState(newState);
@@ -331,12 +322,13 @@ export class Simulation {
       console.log("New Frame:", newFrame);
     }
 
-    // If no active orders, stop
+    // Check if everything is done
     if (!this.hasActiveOrders() && !this.isStopped) {
       this.handleSimulationStop();
     }
   }
 
+  // --------------- Toggles ---------------
   public toggleTransportSystem(tsId: number): void {
     const lastFrame = this.frames[this.frames.length - 1];
     const { locations } = lastFrame.state;
@@ -442,19 +434,17 @@ export class Simulation {
     }
   }
 
-  // --------------------------------------------------------
-  //                  computeNextTick
-  // --------------------------------------------------------
+  // --------------- computeNextTick ---------------
   private computeNextTick(
     oldState: SimulationEntityState
   ): SimulationEntityState {
     let newState = Simulation.cloneState(oldState);
     Simulation.objectsToReferences(newState);
 
-    // 1) Apply resource-based logic (scaling speeds, checking mandatory, etc.)
+    // 1) resource logic
     this.applyResourceLogic(newState);
 
-    // 2) Possibly handle new orders
+    // 2) handle new orders
     this.handleOrders(newState);
 
     if (!this.hasActiveOrders()) {
@@ -468,7 +458,7 @@ export class Simulation {
       }
     }
 
-    // Maps to store durations
+    // Collect durations
     const tsDurationMap: Record<string, number[]> = {};
     const psDurationMap: Record<string, number[]> = {};
 
@@ -479,11 +469,13 @@ export class Simulation {
         .map((o) => o.id)
     );
 
-    // (A) Recipe-based steps
+    // [QUEUE CODE] Dequeue from PS & TS
+    this.dequeueItems(newState);
+
+    // ---------------- (A) RECIPE STEPS ----------------
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
-        if (!ps.active) continue;
-        if (!ps.recipe) continue;
+        if (!ps.active || !ps.recipe) continue;
 
         const ephemeralProd = (ps as any)
           .__ongoingProduction as ProcessStepProduction[];
@@ -502,9 +494,8 @@ export class Simulation {
           }
         }
 
-        // try to start new production => scaled by effectiveRecipeRate
+        // start new
         if (ephemeralProd.length === 0) {
-          // gather input consumption
           const itemsConsumedPerRun = ps.recipe.inputs
             .map((o) => o.quantity)
             .reduce((acc, cur) => acc + cur, 0);
@@ -512,7 +503,6 @@ export class Simulation {
             .map((o) => o.quantity)
             .reduce((acc, cur) => acc + cur, 0);
 
-          // "ps.recipeRate" => scaled by production multiplier
           const effectiveRecipeRate = Math.floor(
             ps.recipeRate * ((ps as any).__productionMultiplier || 0)
           );
@@ -528,7 +518,6 @@ export class Simulation {
             let inputsFulfilled = true;
             const inputEntries: InventoryEntry[] = [];
 
-            // 1) gather needed inputs
             for (const recipeInput of ps.recipe.inputs) {
               const possible: InventoryEntry[] = [];
               for (const entry of ps.inventory.entries) {
@@ -549,18 +538,13 @@ export class Simulation {
               }
             }
 
-            // 2) If inputs are available...
             if (inputsFulfilled) {
-              // Check resource injury logic (placeholder for now)
               if (!this.checkResourceFaulty(ps)) {
-                continue; // skip production if worker got injured (placeholder)
+                continue;
               }
-
-              // errorRate check
               if (!this.productionSucceeds(ps)) {
-                // skip (could log an error event, etc.)
+                // skip
               } else {
-                // measure immediate "transformStart"
                 const transformStart = Math.min(
                   ...inputEntries.map(
                     (xx) =>
@@ -571,7 +555,6 @@ export class Simulation {
                 const transformationDuration =
                   this.currentTick - transformStart;
 
-                // record in psDurationMap (for KPI)
                 if (!psDurationMap[ps.name]) {
                   psDurationMap[ps.name] = [];
                 }
@@ -579,19 +562,17 @@ export class Simulation {
                   Math.max(0, transformationDuration)
                 );
 
-                // [NEU] free their slots (since we remove these items):
+                // remove inputs
                 const inputSet = new Set(inputEntries);
                 const toRemove = ps.inventory.entries.filter((e) =>
                   inputSet.has(e)
                 );
                 Simulation.freeSlots(ps.inventory, toRemove);
 
-                // remove input items
                 ps.inventory.entries = ps.inventory.entries.filter(
                   (e) => !inputSet.has(e)
                 );
 
-                // schedule production
                 const finishTick = this.currentTick + (ps.duration || 1);
                 ephemeralProd.push({
                   finishTick,
@@ -611,15 +592,14 @@ export class Simulation {
       }
     }
 
-    // (B) No-recipe steps
+    // ---------------- (B) NO-RECIPE STEPS ----------------
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
-        if (!ps.active) continue;
-        if (ps.recipe) continue;
+        if (!ps.active || ps.recipe) continue;
 
         const ephemeralProd = (ps as any)
           .__ongoingProduction as ProcessStepProduction[];
-        // finalize if ongoing
+
         if (ephemeralProd.length > 0) {
           const currentProd = ephemeralProd[0];
           if (this.currentTick >= currentProd.finishTick) {
@@ -628,7 +608,6 @@ export class Simulation {
           }
         }
 
-        // see if new items arrived => start "holding"
         if (ephemeralProd.length === 0) {
           const rawItems = [...ps.inventory.entries];
           if (rawItems.length > 0) {
@@ -645,19 +624,17 @@ export class Simulation {
       }
     }
 
-    // (C) Outlet (PS -> TS)
+    // ---------------- (C) OUTLET: PS -> TS ----------------
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
 
-        // effectiveOutSpeed
         const effOutSpeed = Math.floor(
           ps.outputSpeed * ((ps as any).__inventoryMultiplier || 0)
         );
-        if (effOutSpeed <= 0) continue; // no item movement
+        if (effOutSpeed <= 0) continue;
 
         const activeOutputs = ps.outputs.filter((o) => o.active);
-        // the real output speed array
         const outputSpeeds = activeOutputs.map((o) =>
           Math.min(
             effOutSpeed,
@@ -665,7 +642,6 @@ export class Simulation {
           )
         );
 
-        // distribute
         const itemsPerOutput = distributeRoundRobin(
           ps.inventory.entries
             .filter(
@@ -688,55 +664,60 @@ export class Simulation {
           );
           if (effTSOutSpeed <= 0) continue;
 
-          // sensor logs for the PS "output" + TS "input"
           this.sensorLog(ps, "output", itemsPerOutput[i]);
           this.sensorLog(ts, "input", itemsPerOutput[i]);
 
-          // [NEU] free those slots from ps.inventory
           const outIds = new Set(itemsPerOutput[i].map((x) => x.id));
           const removingEntries = ps.inventory.entries.filter((e) =>
             outIds.has(e.id)
           );
           Simulation.freeSlots(ps.inventory, removingEntries);
 
-          // remove from PS
           ps.inventory.entries = ps.inventory.entries.filter(
             (e) => !outIds.has(e.id)
           );
 
-          // Add to TS inventory (with new slot assignment)
           const entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
             addedAt: new Date(),
             inventoryId: ts.inventory.id,
             arrivedTick: this.currentTick,
-            slotNumber: undefined, // will be assigned below
+            slotNumber: undefined,
           })) as InventoryEntryWithDelay[];
 
+          // If TS is full or inactive, queue them
           if (
-            entriesOut.length + ts.inventory.entries.length <=
-            ts.inventory.limit
+            ts.inventory.entries.length + entriesOut.length >
+              ts.inventory.limit ||
+            !ts.active
           ) {
-            ts.inventory.entries.push(...entriesOut);
-            // [NEU] assign new slots
-            Simulation.assignSlots(ts.inventory, entriesOut);
-          } else {
-            continue;
-          }
+            (ts as any).__queue.push(...entriesOut);
 
-          for (const eo of entriesOut) {
-            if (eo.orderId != null) {
-              movedOrderIds.add(eo.orderId);
+            // [QUEUE NOTIF] for TS
+            if (this.notificationsEnabled && entriesOut.length > 0) {
+              handleNotification(
+                "Queue",
+                `${entriesOut.length} item(s) queued in TransportSystem (${ts.name})`,
+                "warning"
+              );
+            }
+          } else {
+            ts.inventory.entries.push(...entriesOut);
+            Simulation.assignSlots(ts.inventory, entriesOut);
+            for (const eo of entriesOut) {
+              if (eo.orderId != null) {
+                movedOrderIds.add(eo.orderId);
+              }
             }
           }
         }
       }
     }
 
-    // (D) Intake (TS -> PS)
+    // ---------------- (D) INTAKE: TS -> PS ----------------
     const sourceAvailability = new Map<number, boolean>();
-    for (const location of newState.locations) {
-      for (const ps of location.processSteps) {
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
         if (!ps.active) continue;
         for (const inp of ps.inputs) {
           if (!inp.active || !inp.startStepId) continue;
@@ -752,8 +733,8 @@ export class Simulation {
       }
     }
 
-    for (const location of newState.locations) {
-      for (const ps of location.processSteps) {
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
         if (!ps.active) continue;
 
         const effInSpeed = Math.floor(
@@ -764,9 +745,7 @@ export class Simulation {
         for (const input of ps.inputs) {
           if (!input.active) continue;
 
-          // capacity
-          const capacityNow =
-            ps.inventory.limit - ps.inventory.entries.length;
+          const capacityNow = ps.inventory.limit - ps.inventory.entries.length;
           if (capacityNow <= 0) continue;
 
           const speedIn = Math.min(
@@ -792,7 +771,6 @@ export class Simulation {
 
           if (potentialItems.length === 0) continue;
 
-          // minQuantity
           if (
             input.minQuantity != null &&
             input.minQuantity > 0 &&
@@ -805,7 +783,7 @@ export class Simulation {
             }
           }
 
-          // FIFO
+          // We'll do a simple FIFO
           const sortedPotentials = potentialItems.sort(
             (a, b) => a.addedAt.getTime() - b.addedAt.getTime()
           );
@@ -817,18 +795,25 @@ export class Simulation {
               ps.inventory.entries.length + acceptedItems.length >=
               ps.inventory.limit
             ) {
-              break;
+              // [QUEUE CODE + NOTIF] If PS is full => queue items
+              (ps as any).__queue.push(candidate);
+
+              if (this.notificationsEnabled) {
+                handleNotification(
+                  "Queue",
+                  `1 item queued in ProcessStep (${ps.name}) - capacity full`,
+                  "warning"
+                );
+              }
+              continue;
             }
             const testItem: InventoryEntryWithDelay = {
               ...candidate,
               inventoryId: ps.inventory.id,
             };
             const testArray = [...acceptedItems, testItem];
-            // final check canIntake
             if (!ps.recipe || this.canIntakeItems(ps, testArray)) {
               acceptedItems.push(candidate);
-            } else {
-              continue;
             }
           }
 
@@ -836,11 +821,9 @@ export class Simulation {
             continue;
           }
 
-          // sensor logs for the TS "output" + PS "input"
           this.sensorLog(input, "output", acceptedItems);
           this.sensorLog(ps, "input", acceptedItems);
 
-          // measure durations
           for (const movedItem of acceptedItems) {
             const typed = movedItem as InventoryEntryWithDelay;
             if (typed.arrivedTick != null) {
@@ -854,28 +837,24 @@ export class Simulation {
             }
           }
 
-          // [NEU] free these slots from the TS
           const acceptedIds = new Set(acceptedItems.map((x) => x.id));
           const removingEntries = input.inventory.entries.filter((e) =>
             acceptedIds.has(e.id)
           );
           Simulation.freeSlots(input.inventory, removingEntries);
 
-          // remove from TS
           input.inventory.entries = input.inventory.entries.filter(
             (e) => !acceptedIds.has(e.id)
           );
 
-          // push into PS
           for (const item of acceptedItems) {
             const newItem: InventoryEntryWithDelay = {
               ...item,
               addedAt: new Date(),
               inventoryId: ps.inventory.id,
-              slotNumber: undefined, // will be assigned
+              slotNumber: undefined,
             };
             ps.inventory.entries.push(newItem);
-            // [NEU] assign slot for each item
             Simulation.assignSlots(ps.inventory, [newItem]);
 
             if (newItem.orderId != null) {
@@ -893,7 +872,7 @@ export class Simulation {
     ): boolean {
       if (!sourceStepId) return false;
       const sourceStep = state.locations
-        .flatMap((loc) => loc.processSteps)
+        .flatMap((xx) => xx.processSteps)
         .find((procStep) => procStep.id === sourceStepId);
       if (!sourceStep) return false;
       return sourceStep.inventory.entries.some(
@@ -901,22 +880,24 @@ export class Simulation {
       );
     }
 
-    // 5) final checks
+    // final checks
     this.checkAndCompleteOrders(newState);
     this.updateOrderRelationships(newState);
 
+    // If we moved items from pending orders => mark them in_progress
     for (const oid of movedOrderIds) {
       const orderObj = this.orders.find((o) => o.id === oid);
       if (orderObj && orderObj.status === "pending") {
         orderObj.status = "in_progress";
         orderObj.startedAt = new Date();
         orderObj.startedTick = this.currentTick;
-        this.notificationsEnabled &&
+        if (this.notificationsEnabled) {
           handleNotification(
             "Order Status",
             `Order ${orderObj.id} ist jetzt in Bearbeitung (erstes Material bewegt).`,
             "info"
           );
+        }
       }
     }
 
@@ -946,21 +927,74 @@ export class Simulation {
     return newState;
   }
 
-  /**
-   * Apply resource-based logic to scale speeds or block processes
-   * for each ProcessStep and TransportSystem.
-   */
+  // --------------- QUEUEING / DEQUEUEING ---------------
+  private dequeueItems(newState: SimulationEntityState) {
+    for (const loc of newState.locations) {
+      for (const ps of loc.processSteps) {
+        // If ps has a queue
+        if (!(ps as any).__queue) continue;
+        if (!ps.active) continue;
+
+        const capNow = ps.inventory.limit - ps.inventory.entries.length;
+        if (capNow <= 0) continue;
+
+        const psQueue = (ps as any).__queue as InventoryEntryWithDelay[];
+        const toMove = psQueue.splice(0, capNow);
+        if (toMove.length > 0) {
+          // Unqueued from a process step
+          if (this.notificationsEnabled) {
+            handleNotification(
+              "Queue",
+              `${toMove.length} item(s) unqueued from ProcessStep (${ps.name})`,
+              "info"
+            );
+          }
+
+          ps.inventory.entries.push(...toMove);
+          Simulation.assignSlots(ps.inventory, toMove);
+        }
+      }
+
+      // For each TS in each processStep
+      for (const ps of loc.processSteps) {
+        for (const ts of ps.inputs.concat(ps.outputs)) {
+          if (!(ts as any).__queue) continue;
+          if (!ts.active) continue;
+
+          const capNow = ts.inventory.limit - ts.inventory.entries.length;
+          if (capNow <= 0) continue;
+
+          const tsQueue = (ts as any).__queue as InventoryEntryWithDelay[];
+          const toMove = tsQueue.splice(0, capNow);
+          if (toMove.length > 0) {
+            // Unqueued from a transport system
+            if (this.notificationsEnabled) {
+              handleNotification(
+                "Queue",
+                `${toMove.length} item(s) unqueued from ${
+                  ts.type || "TransportSystem"
+                } (${ts.name})`,
+                "info"
+              );
+            }
+            ts.inventory.entries.push(...toMove);
+            Simulation.assignSlots(ts.inventory, toMove);
+          }
+        }
+      }
+    }
+  }
+
+  // --------------- Resource Logic ---------------
   private applyResourceLogic(newState: SimulationEntityState) {
     for (const loc of newState.locations) {
       for (const ps of loc.processSteps) {
-        // We'll track production vs. inventory resources
         const prodResources = ps.resources.filter((r) => r.productionResource);
         const invResources = ps.resources.filter((r) => r.inventoryResource);
 
         const activeProd = prodResources.filter((r) => r.active && !r.faulty);
         const activeInv = invResources.filter((r) => r.active && !r.faulty);
 
-        // Check mandatory among production resources
         let prodMultiplier = 1;
         if (prodResources.length > 0) {
           const mandatoryProd = prodResources.filter((r) => r.mandatory);
@@ -976,7 +1010,6 @@ export class Simulation {
           }
         }
 
-        // Check mandatory among inventory resources
         let invMultiplier = 1;
         if (invResources.length > 0) {
           const mandatoryInv = invResources.filter((r) => r.mandatory);
@@ -992,12 +1025,10 @@ export class Simulation {
           }
         }
 
-        // Store them as ephemeral fields for later usage
         (ps as any).__productionMultiplier = prodMultiplier;
         (ps as any).__inventoryMultiplier = invMultiplier;
       }
 
-      // For each TS inside each processStep
       for (const ps of loc.processSteps) {
         for (const ts of ps.inputs.concat(ps.outputs)) {
           const tsResources = ts.resources || [];
@@ -1023,21 +1054,14 @@ export class Simulation {
     }
   }
 
-  /**
-   * Placeholder to check if any worker becomes injured while producing.
-   * For now, always return true => no injuries occur.
-   */
+  // --------------- Helper Logic ---------------
   private checkResourceFaulty(
     res: ProcessStepFull | TransportSystemFull
   ): boolean {
-    // If you wanted to implement random injuries, do it here.
+    // Placeholder
     return true;
   }
 
-  /**
-   * Helper method to check if production succeeds
-   * based on ps.errorRate (unrelated to injuries).
-   */
   private productionSucceeds(ps: ProcessStepFull): boolean {
     if (!ps.errorRate) return true;
     return Math.random() > ps.errorRate;
@@ -1049,8 +1073,6 @@ export class Simulation {
     production: ProcessStepProduction,
     movedOrderIds: Set<number>
   ) {
-    // For each order in the production run, create the actual inventory items
-    // and also log them (inputType = "product") to the sensors of this PS.
     for (const oid of production.affectedOrderIds) {
       for (const out of production.recipeOutputs) {
         for (let i = 0; i < out.quantity; i++) {
@@ -1060,14 +1082,12 @@ export class Simulation {
             inventoryId: ps.inventory.id,
             material: out.material,
             orderId: oid,
-            slotNumber: undefined, // [NEU]
+            slotNumber: undefined,
           } as InventoryEntryWithDelay;
 
           ps.inventory.entries.push(newEntry);
-          // [NEU] assign slot
           Simulation.assignSlots(ps.inventory, [newEntry]);
 
-          // Log each produced item
           this.sensorLog(ps, "product", [newEntry]);
         }
       }
@@ -1098,15 +1118,6 @@ export class Simulation {
     );
   }
 
-  /**
-   * Unified method to log items to the sensor (type="scanner" now),
-   * and then update sensor.value = number of product log entries.
-   *
-   * @param psOrTS - The ProcessStep or TransportSystem
-   * @param logType - "input", "output", or "product"
-   * @param items - Array of items (InventoryEntryWithDelay) to log
-   * @returns boolean - always true for now
-   */
   private sensorLog(
     psOrTS: ProcessStepFull | TransportSystemFull,
     logType: "input" | "output" | "product",
@@ -1115,14 +1126,12 @@ export class Simulation {
     if (!("sensors" in psOrTS) || !Array.isArray(psOrTS.sensors)) {
       return true;
     }
-    // If we are dealing with a ProcessStep
     const isProcessStep = (entity: any): entity is ProcessStepFull =>
       "recipe" in entity;
 
     for (const sensor of psOrTS.sensors) {
-      if (!sensor.active) continue; // skip inactive sensors
+      if (!sensor.active) continue;
 
-      // Create new log entries for all items
       for (const i of items) {
         const newLog: LogEntry = {
           id: sensor.logEntries.length + 1,
@@ -1142,7 +1151,6 @@ export class Simulation {
         `[SENSOR] ${sensor.name} logged ${items.length} items as "${logType}". sensor.value updated to: ${sensor.value}`
       );
     }
-
     return true;
   }
 
@@ -1174,7 +1182,6 @@ export class Simulation {
     order: Order & { materialsReserved?: boolean }
   ): { material: string }[] | null {
     if (!order.quantity || order.quantity < 1) return null;
-    // Example base materials (you can adapt this logic)
     const baseMaterials = [
       "Seat Structure",
       "Backrest Structure",
@@ -1230,7 +1237,6 @@ export class Simulation {
   }
 
   private checkAndCompleteOrders(state: SimulationEntityState): void {
-    // Identify the "Shipping" process step(s)
     const shippingIds = state.locations
       .flatMap((l) => l.processSteps)
       .filter((p) => p.name === "Shipping")
@@ -1252,12 +1258,13 @@ export class Simulation {
         order.status = "completed";
         order.completedAt = new Date();
         order.completedTick = this.currentTick;
-        this.notificationsEnabled &&
+        if (this.notificationsEnabled) {
           handleNotification(
             "Order Completed",
             `Order ${order.id} wurde abgeschlossen.`,
             "success"
           );
+        }
       }
     }
   }
@@ -1305,6 +1312,7 @@ export class Simulation {
     console.log("Order relationships updated:", state.locations);
   }
 
+  // --------------- Utility Checks ---------------
   private canIntakeItems(
     ps: ProcessStepFull,
     inputItems: InventoryEntryWithDelay[]
@@ -1313,12 +1321,11 @@ export class Simulation {
     const limit = ps.inventory.limit;
     const newEntries = [...currentEntries, ...inputItems];
 
-    // if no recipe, just capacity check
+    // if no recipe => capacity check only
     if (!ps.recipe) {
       return newEntries.length <= limit;
     }
 
-    // gather required
     const requiredMaterials: Record<string, number> = ps.recipe.inputs.reduce(
       (acc: Record<string, number>, input) => {
         acc[input.material] = (acc[input.material] || 0) + input.quantity;
@@ -1327,7 +1334,6 @@ export class Simulation {
       {}
     );
 
-    // gather current
     const currentMaterials: Record<string, number> = newEntries.reduce(
       (acc: Record<string, number>, entry) => {
         acc[entry.material] = (acc[entry.material] || 0) + 1;
@@ -1359,19 +1365,19 @@ export class Simulation {
 
   private handleSimulationStop(): void {
     this.isStopped = true;
-    this.notificationsEnabled &&
+    if (this.notificationsEnabled) {
       handleNotification(
         "Simulation Stopped",
         "Alle Orders sind abgeschlossen. Keine weitere Berechnung.",
         "info"
       );
+    }
   }
 
-  // [NEU] Hilfsfunktion zum Initialisieren von usedSlots
+  // --------------- Assign Slots Logic ---------------
   private static ensureUsedSlotsForInventory(inv: any) {
     if (!inv.usedSlots) {
       inv.usedSlots = [];
-      // Falls es schon Einträge mit slotNumber gibt, nehmen wir sie auf:
       for (const e of inv.entries) {
         if (e.slotNumber != null && !inv.usedSlots.includes(e.slotNumber)) {
           inv.usedSlots.push(e.slotNumber);
@@ -1380,40 +1386,36 @@ export class Simulation {
     }
   }
 
-  // [NEU] We assign slots to any existing items that lack a slot.
   private assignInitialSlots(state: SimulationEntityState) {
-    // For each location, process step, and also transport systems, etc.
     for (const loc of state.locations) {
       for (const ps of loc.processSteps) {
-        // processStep inventory
         Simulation.ensureUsedSlotsForInventory(ps.inventory);
         this.assignSlotsIfNeeded(ps.inventory);
 
-        // all input TS
-        for (const input of ps.inputs) {
-          Simulation.ensureUsedSlotsForInventory(input.inventory);
-          this.assignSlotsIfNeeded(input.inventory);
+        for (const inp of ps.inputs) {
+          Simulation.ensureUsedSlotsForInventory(inp.inventory);
+          this.assignSlotsIfNeeded(inp.inventory);
         }
-
-        // all output TS
-        for (const output of ps.outputs) {
-          Simulation.ensureUsedSlotsForInventory(output.inventory);
-          this.assignSlotsIfNeeded(output.inventory);
+        for (const out of ps.outputs) {
+          Simulation.ensureUsedSlotsForInventory(out.inventory);
+          this.assignSlotsIfNeeded(out.inventory);
         }
       }
     }
   }
 
-  // [NEU] For each item in "inv" that doesn't have a slotNumber, we call assignSlots (the same logic we do on new items).
   private assignSlotsIfNeeded(inv: any) {
-    const unassigned = inv.entries.filter((e: InventoryEntryWithDelay) => e.slotNumber == null);
+    const unassigned = inv.entries.filter(
+      (e: InventoryEntryWithDelay) => e.slotNumber == null
+    );
     if (unassigned.length > 0) {
       Simulation.assignSlots(inv, unassigned);
     }
   }
 
-  // Converts references => real pointers
+  // --------------- Internal Tools ---------------
   private static objectsToReferences(state: SimulationEntityState): void {
+    // turn TS into references
     const transportSystems = Object.fromEntries(
       state.locations
         .flatMap((l) => l.processSteps)
@@ -1427,13 +1429,24 @@ export class Simulation {
         ps.inputs = ps.inputs.map((inp) => transportSystems[inp.id]);
         ps.outputs = ps.outputs.map((out) => transportSystems[out.id]);
 
-        // [NEU] Ensure usedSlots array exists
         Simulation.ensureUsedSlotsForInventory(ps.inventory);
+
+        // create ephemeral queue if missing
+        if (!(ps as any).__queue) {
+          (ps as any).__queue = [];
+        }
+
         for (const inp of ps.inputs) {
           Simulation.ensureUsedSlotsForInventory(inp.inventory);
+          if (!(inp as any).__queue) {
+            (inp as any).__queue = [];
+          }
         }
         for (const out of ps.outputs) {
           Simulation.ensureUsedSlotsForInventory(out.inventory);
+          if (!(out as any).__queue) {
+            (out as any).__queue = [];
+          }
         }
       }
     }
@@ -1448,20 +1461,20 @@ export class Simulation {
   private static cloneOrders(
     orders: (Order & { materialsReserved?: boolean })[]
   ): Order[] {
-    return orders.map((order) => ({ ...order }));
+    return orders.map((o) => ({ ...o }));
   }
 
   /**
-   * [NEU] Belegt Slots für neu hinzukommende Items.
-   * Jedes Item erhält den kleinsten freien Slot von 0..limit-1.
-   * Falls keiner frei ist (sollte nicht vorkommen, wegen Kapazitätsprüfungen), gibt es ein Warn-Log.
+   * Finds the next free slot and assigns it to the items
    */
-  private static assignSlots(inventory: any, entries: InventoryEntryWithDelay[]) {
+  private static assignSlots(
+    inventory: any,
+    entries: InventoryEntryWithDelay[]
+  ) {
     if (!inventory.usedSlots) {
       inventory.usedSlots = [];
     }
     for (const item of entries) {
-      // Suche den ersten freien Slot von 0..limit-1
       let slotFound: number | null = null;
       for (let i = 0; i < inventory.limit; i++) {
         if (!inventory.usedSlots.includes(i)) {
@@ -1470,7 +1483,9 @@ export class Simulation {
         }
       }
       if (slotFound == null) {
-        console.warn(`Kein freier Stellplatz (Slot) mehr in Inventory ${inventory.id}.`);
+        console.warn(
+          `Kein freier Stellplatz (Slot) mehr in Inventory ${inventory.id}.`
+        );
       } else {
         item.slotNumber = slotFound;
         inventory.usedSlots.push(slotFound);
@@ -1478,9 +1493,6 @@ export class Simulation {
     }
   }
 
-  /**
-   * [NEU] Gibt Slots von entfernten Items wieder frei.
-   */
   private static freeSlots(inventory: any, entries: InventoryEntryWithDelay[]) {
     if (!inventory.usedSlots) {
       inventory.usedSlots = [];
@@ -1495,10 +1507,7 @@ export class Simulation {
     }
   }
 
-  /**
-   * Update various fields of a ProcessStep in-memory.
-   * Called from the mock context's updateProcessStep method.
-   */
+  // --------------- Updaters ---------------
   public updateProcessStep(
     psId: number,
     data: {
@@ -1508,13 +1517,11 @@ export class Simulation {
       recipeRate?: number;
       duration?: number;
       active?: boolean;
-      inventoryLimit?: number; // custom
+      inventoryLimit?: number;
     }
   ) {
     const lastFrame = this.frames[this.frames.length - 1];
     const { locations } = lastFrame.state;
-
-    // Find the process step
     const allSteps = locations.flatMap((loc) => loc.processSteps);
     const foundPS = allSteps.find((ps) => ps.id === psId);
 
@@ -1526,25 +1533,18 @@ export class Simulation {
       if (data.duration != null) foundPS.duration = data.duration;
       if (data.active != null) foundPS.active = data.active;
 
-      // If updating the inventory limit
       if (data.inventoryLimit != null && foundPS.inventory) {
         foundPS.inventory.limit = data.inventoryLimit;
       }
-
       console.log(`ProcessStep ID=${psId} updated with:`, data);
     } else {
       console.log(`ProcessStep ID=${psId} not found for update`);
     }
 
-    // Discard future frames, update current state
     this.discardFutureFrames();
     this.currentState = Simulation.cloneState(lastFrame.state);
   }
 
-  /**
-   * Update various fields of a TransportSystem in-memory.
-   * Called from the mock context's updateTransportSystem method.
-   */
   public updateTransportSystem(
     tsId: number,
     data: {
@@ -1557,7 +1557,6 @@ export class Simulation {
   ) {
     const lastFrame = this.frames[this.frames.length - 1];
     const { locations } = lastFrame.state;
-
     const allSteps = locations.flatMap((loc) => loc.processSteps);
     const allTS = allSteps.flatMap((step) => [...step.inputs, ...step.outputs]);
     const foundTS = allTS.find((ts) => ts.id === tsId);
@@ -1569,7 +1568,6 @@ export class Simulation {
       if (data.minQuantity != null) foundTS.minQuantity = data.minQuantity;
       if (data.transportDelay != null)
         foundTS.transportDelay = data.transportDelay;
-
       console.log(`TransportSystem ID=${tsId} updated with:`, data);
     } else {
       console.log(`TransportSystem ID=${tsId} not found for update`);
@@ -1579,10 +1577,6 @@ export class Simulation {
     this.currentState = Simulation.cloneState(lastFrame.state);
   }
 
-  /**
-   * Update various fields of a Resource in-memory.
-   * Called from the mock context's updateResource method.
-   */
   public updateResource(
     resId: number,
     data: {
@@ -1594,7 +1588,6 @@ export class Simulation {
 
     let foundRes: ResourceModel | undefined;
 
-    // We'll search in processSteps resources + TS resources
     outer: for (const loc of locations) {
       for (const ps of loc.processSteps) {
         const r = ps.resources.find((rr) => rr.id === resId);
@@ -1602,7 +1595,6 @@ export class Simulation {
           foundRes = r;
           break outer;
         }
-        // also check ts
         for (const inpTS of ps.inputs) {
           const rr = inpTS.resources?.find((xx) => xx.id === resId);
           if (rr) {
@@ -1622,7 +1614,6 @@ export class Simulation {
 
     if (foundRes) {
       if (data.faultyRate != null) foundRes.faultyRate = data.faultyRate;
-
       console.log(`Resource ID=${resId} updated with:`, data);
     } else {
       console.log(`Resource ID=${resId} not found for update`);

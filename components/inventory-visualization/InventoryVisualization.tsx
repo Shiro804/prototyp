@@ -7,23 +7,25 @@ import { GaugeSection } from "../custom/GaugeSection";
 import { Heatmap, HeatmapSlot } from "../custom/Heatmap";
 import { useSimulationMock } from "../context/SimulationContextMock";
 
-interface InventoryVisualizationProps {
-}
+/**
+ * The InventoryVisualization view:
+ * - Select a Location
+ * - For each ProcessStep in that location, show a Heatmap + Gauge
+ */
+interface InventoryVisualizationProps { }
 
 export const InventoryVisualization: FC<InventoryVisualizationProps> = () => {
-
-
+    // Grab data from your simulation context (mock)
     const { simulation, frame } = useSimulationMock();
 
     if (!simulation) {
-        return (
-            <Text>Please press on the calculate button.</Text>
-        )
+        return <Text>Please press on the calculate button.</Text>;
     }
 
     const currentFrame = simulation.frames[frame];
     const locations = currentFrame.state.locations;
 
+    // We'll store the selected location ID in state. Default to the first location if available.
     const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
         locations.length > 0 ? String(locations[0].id) : null
     );
@@ -34,31 +36,28 @@ export const InventoryVisualization: FC<InventoryVisualizationProps> = () => {
     );
 
     /**
-     * For a given inventory (limit, entries),
-     * build the data array for the heatmap:
-     *  - length of array = inventory.limit
-     *  - each index's "used" is true if a slotNumber in the entries matches i
+     * Build an array of HeatmapSlot (used + optional entry) for each slot in the inventory.
      */
-    function buildHeatmapData(
-        limit: number,
-        usedSlotNumbers: number[] | Set<number>
-    ): HeatmapSlot[] {
+    function buildHeatmapData(limit: number, entries: InventoryEntryWithDelay[]): HeatmapSlot[] {
         const data: HeatmapSlot[] = [];
         for (let i = 0; i < limit; i++) {
-            data.push({ used: Array.isArray(usedSlotNumbers) ? usedSlotNumbers.includes(i) : usedSlotNumbers.has(i) });
+            // Find the one entry (if any) that has slotNumber = i
+            const foundEntry = entries.find((e) => e.slotNumber === i);
+            data.push({
+                used: !!foundEntry,
+                entry: foundEntry,
+            });
         }
         return data;
     }
 
-    /**
-     * Return fraction 0..1 of how full the inventory is
-     */
+    /** Returns fraction 0..1 of how full the inventory is */
     function calculateVisualization(limit: number, usedCount: number): number {
         if (limit <= 0) return 0;
         return Math.min(usedCount / limit, 1);
     }
 
-    // If there's no location selected or no list, handle that gracefully
+    // If there's no location selected, show a fallback
     if (!selectedLocation) {
         return (
             <Paper p="md">
@@ -79,7 +78,7 @@ export const InventoryVisualization: FC<InventoryVisualizationProps> = () => {
 
     return (
         <Paper p="md" shadow="md">
-            {/* Location selector at top */}
+            {/* Location selector at the top */}
             <Select
                 label="Select Location"
                 value={selectedLocationId}
@@ -97,21 +96,16 @@ export const InventoryVisualization: FC<InventoryVisualizationProps> = () => {
             </Text>
 
             {/* We'll show each processStep's inventory in a grid with 2 columns */}
-            <SimpleGrid cols={2} spacing="xl">
+            <SimpleGrid cols={1} spacing="xl">
                 {selectedLocation.processSteps.map((ps) => {
                     const { limit, entries } = ps.inventory;
-                    // Gather used slotNumbers
-                    const usedSlots = new Set<number>(
-                        entries
-                            .filter((e: InventoryEntryWithDelay) => e.slotNumber !== undefined && e.slotNumber !== null)
-                            .map((e: InventoryEntryWithDelay) => e.slotNumber as number)
-                    );
 
-                    // Build our "HeatmapSlot[]" array
-                    const heatmapData = buildHeatmapData(limit, usedSlots);
+                    // Build the heatmap data
+                    const heatmapData = buildHeatmapData(limit, entries as InventoryEntryWithDelay[]);
 
-                    // Calculate how full
-                    const Visualization = calculateVisualization(limit, usedSlots.size);
+                    // Calculate how full it is
+                    const usedCount = heatmapData.filter((s) => s.used).length;
+                    const fullness = calculateVisualization(limit, usedCount);
 
                     return (
                         <Box key={ps.id}>
@@ -120,16 +114,12 @@ export const InventoryVisualization: FC<InventoryVisualizationProps> = () => {
                                 {ps.name} (ID: {ps.id})
                             </Text>
 
-                            {/* We put a small row with Heatmap and Gauge side by side */}
-                            <Flex direction="row" align="flex-start" gap="lg">
-                                {/* The heatmap itself */}
-                                <Heatmap
-                                    data={heatmapData}
-                                    columns={10} // or some default
-                                />
-
-                                {/* The gauge chart to the right */}
-                                <GaugeSection percent={Visualization} width={120} />
+                            {/* Show Heatmap + Gauge side by side */}
+                            <Flex direction="row" align="center" justify={"space-between"} gap="lg">
+                                <Heatmap data={heatmapData} columns={40} />
+                                <Flex w={"100%"} h={"100%"} justify={"center"}>
+                                    <GaugeSection percent={fullness} width={500} />
+                                </Flex>
                             </Flex>
                         </Box>
                     );
