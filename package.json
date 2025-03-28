@@ -30,13 +30,15 @@
     "@xyflow/react": "^12.3.6",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "elkjs": "^0.10.0",
     "mantine-react-table": "^2.0.0-beta.6",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
     "react-gauge-chart": "^0.5.1",
     "recharts": "^2.12.7",
-    "swr": "^2.2.5"
+    "swr": "^2.2.5",
+    "web-worker": "^1.5.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

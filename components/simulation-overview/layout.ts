@@ -1,51 +1,107 @@
-import { Node, Edge } from "@xyflow/react";
-import { graphlib, layout } from "@dagrejs/dagre";
+import { Edge, Node, useNodesInitialized, useReactFlow } from "@xyflow/react";
+import type { LayoutOptions as ELKOptions, ElkNode } from "elkjs";
+import ELK from "elkjs/lib/elk.bundled.js";
+import { useEffect } from "react";
+import { NodeType } from "./nodes";
 
 export interface LayoutOptions {
-  direction: string;
+  direction: "DOWN" | "RIGHT";
 }
 
-export const getLayoutedElements = <
+export interface LayoutedGraph<N extends Node = Node, E extends Edge = Edge> {
+  nodes: N[];
+  edges: E[];
+}
+
+const elk = new ELK();
+
+export async function getLayoutedElements<
   N extends Node = Node,
-  E extends Edge = Edge
+  E extends Edge = Edge,
 >(
   nodes: N[],
   edges: E[],
-  options: LayoutOptions
-) => {
-  const g = new graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+  options: LayoutOptions,
+): Promise<LayoutedGraph<N, E>> {
+  const elkOptions: ELKOptions = {
+    "elk.algorithm": "layered",
+    "elk.direction": options.direction,
+    "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+    "elk.spacing.nodeNode": "80",
+  };
 
-  g.setGraph({
-    rankdir: options.direction, // "TB"
-    align: "DL", // left-align nodes in each rank
-    ranksep: 100, // vertical space between layers
-    nodesep: 15, // horizontal space between nodes
-    marginx: 10,
-    marginy: 10,
-  });
+  const graph: ElkNode = {
+    id: "root",
+    layoutOptions: elkOptions,
+    children: nodes.map((n) => ({
+      ...n,
+      width: n.measured?.width,
+      height: n.measured?.height,
+    })),
+    edges: edges.map((e) => ({
+      ...e,
+      sources: [e.source],
+      targets: [e.target],
+    })),
+  };
 
-  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
-  nodes.forEach((node) =>
-    g.setNode(node.id, {
-      ...node,
-      width: node.measured?.width ?? 0,
-      height: node.measured?.height ?? 0,
-      rank: 10, 
-    })
-  );
-
-  layout(g);
+  let children: ElkNode[] = [];
+  try {
+    const result = await elk.layout(graph);
+    children = result.children ?? [];
+  } catch (e) {
+    console.error(e);
+  }
 
   return {
-    nodes: nodes.map((node) => {
-      const position = g.node(node.id);
-      // We are shifting the dagre node position (anchor=center center) to the top left
-      // so it matches the React Flow node anchor point (top left).
-      const x = position.x - (node.measured?.width ?? 0) / 2;
-      const y = position.y - (node.measured?.height ?? 0) / 2;
+    nodes: nodes.map((n) => {
+      const child = children.find((c) => c.id === n.id);
 
-      return { ...node, position: { x, y } };
+      if (child && child.x && child.y) {
+        n.position.x = child.x;
+        n.position.y = child.y;
+      }
+
+      return n;
     }),
     edges,
   };
-};
+}
+
+export function useLayout({ direction }: LayoutOptions) {
+  const { getNodes, setNodes, getEdges, setEdges } = useReactFlow<NodeType>();
+  const nodesInitialized = useNodesInitialized();
+
+  useEffect(() => {
+    const nodes = getNodes();
+
+    if (nodesInitialized && nodes.some((n) => n.id.endsWith("-unlayouted"))) {
+      getLayoutedElements(nodes, getEdges(), { direction }).then((g) => {
+        setNodes([
+          ...g.nodes
+            .filter((n) => n.id.endsWith("-unlayouted"))
+            .map((n) => {
+              if (n.style?.opacity !== undefined) {
+                n.style.opacity = 1;
+              }
+              n.id = n.id.replace(/-unlayouted$/, "");
+              return n;
+            }),
+        ]);
+        setEdges([
+          ...g.edges
+            .filter((e) => e.id.endsWith("-unlayouted"))
+            .map((e) => {
+              if (e.style?.opacity !== undefined) {
+                e.style = { ...e.style, opacity: 1 };
+              }
+              e.id = e.id.replace(/-unlayouted$/, "");
+              e.source = e.source.replace(/-unlayouted$/, "");
+              e.target = e.target.replace(/-unlayouted$/, "");
+              return e;
+            }),
+        ]);
+      });
+    }
+  }, [direction, getEdges, getNodes, nodesInitialized, setEdges, setNodes]);
+}
