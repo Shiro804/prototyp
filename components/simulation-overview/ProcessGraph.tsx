@@ -5,6 +5,7 @@ import {
   Background,
   Controls,
   Edge,
+  MarkerType,
   OnSelectionChangeFunc,
   Panel,
   ReactFlow,
@@ -15,7 +16,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useState } from "react";
 import { MaterialFlowNodeTypes, NodeType, SelectedEntity } from "./nodes";
-import { getLayoutedElements } from "./layout";
+import { useLayout } from "./layout";
 import { EntityInfo } from "./EntityInfo";
 import { useSimulationMock } from "../context/SimulationContextMock";
 // or useSimulationLive if you prefer
@@ -30,9 +31,12 @@ export interface ProcessGraphProps {}
 export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeType>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity>();
-  const [layout, setLayout] = useState<"TB" | "LR">("TB");
   const [detailed, setDetailed] = useState<boolean>(true);
+
+  const [layout, setLayout] = useState<"DOWN" | "RIGHT">("DOWN");
+  useLayout({ direction: layout });
 
   // Grab simulation data (mock or live)
   const { simulation, frame } = useSimulationMock();
@@ -50,7 +54,7 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
     // A) Process Steps as nodes
     for (const loc of entities.locations) {
       for (const ps of loc.processSteps) {
-        const nodeId = "ps-" + ps.id;
+        const nodeId = "ps-" + ps.id + "-unlayouted";
 
         // [QUEUE CLASS] Check the queue length
         const queueSize = (ps as any).__queue ? (ps as any).__queue.length : 0;
@@ -63,15 +67,22 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
         newNodes[nodeId] = {
           id: nodeId,
           position: { x: 0, y: 0 },
-          data: { name: ps.name, location: loc.name, entity: ps },
+          data: {
+            name: ps.name,
+            location: loc.name,
+            entity: ps,
+          },
           type: "processStep",
           className,
+          style: {
+            opacity: 0,
+          },
         };
 
         // Also create Resource nodes for the PS
         if (ps.resources && ps.resources.length > 0) {
           for (const res of ps.resources) {
-            const resNodeId = "res-" + res.id;
+            const resNodeId = "res-" + res.id + "-unlayouted";
             newNodes[resNodeId] = {
               id: resNodeId,
               position: { x: 0, y: 0 },
@@ -81,13 +92,20 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
               },
               type: "resource",
               className: res.active ? undefined : "inactive",
+              style: {
+                opacity: 0,
+              },
             };
-            const edgeId = `${nodeId}-res-${res.id}`;
+
+            const edgeId = `${nodeId}-res-${res.id}-unlayouted`;
             newEdges[edgeId] = {
               id: edgeId,
               source: nodeId,
               target: resNodeId,
               animated: false,
+              style: {
+                opacity: 0,
+              },
             };
           }
         }
@@ -98,10 +116,12 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
     for (const loc of entities.locations) {
       for (const ps of loc.processSteps) {
         for (const ts of ps.inputs.concat(ps.outputs)) {
-          const tsId = "ts-" + ts.id;
+          const tsId = "ts-" + ts.id + "-unlayouted";
 
           // [QUEUE CLASS] Check the queue length
-          const queueSize = (ts as any).__queue ? (ts as any).__queue.length : 0;
+          const queueSize = (ts as any).__queue
+            ? (ts as any).__queue.length
+            : 0;
           let className = ts.active ? undefined : "inactive";
           if (queueSize > 0) {
             className = className ? `${className} queue` : "queue";
@@ -114,48 +134,79 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
               data: { name: ts.name, entity: ts },
               type: "transportSystem",
               className,
+              style: {
+                opacity: 0,
+              },
             };
           }
 
           // Resource nodes for the TS
           if (ts.resources && ts.resources.length > 0) {
             for (const res of ts.resources) {
-              const resNodeId = "res-" + res.id;
+              const resNodeId = "res-" + res.id + "-unlayouted";
               newNodes[resNodeId] = {
                 id: resNodeId,
                 position: { x: 0, y: 0 },
-                data: { name: res.name || "Undefined Resource", entity: res },
+                data: {
+                  name: res.name || "Undefined Resource",
+                  entity: res,
+                },
                 type: "resource",
                 className: res.active ? undefined : "inactive",
+                style: {
+                  opacity: 0,
+                },
               };
-              const edgeId = `${tsId}-res-${res.id}`;
+
+              const edgeId = `${tsId}-res-${res.id}-unlayouted`;
               newEdges[edgeId] = {
                 id: edgeId,
                 source: tsId,
                 target: resNodeId,
                 animated: false,
+                style: {
+                  opacity: 0,
+                },
               };
             }
           }
 
           // Edges from startStep => TS => endStep
-          const inEdgeId = `ps-${ts.startStepId}-ts-${ts.id}`;
-          const outEdgeId = `ts-${ts.id}-ps-${ts.endStepId}`;
+          const inEdgeId = `ps-${ts.startStepId}-ts-${ts.id}-unlayouted`;
+          const outEdgeId = `ts-${ts.id}-ps-${ts.endStepId}-unlayouted`;
 
           if (!newEdges[inEdgeId] && ts.startStepId) {
             newEdges[inEdgeId] = {
               id: inEdgeId,
-              source: "ps-" + ts.startStepId,
+              source: "ps-" + ts.startStepId + "-unlayouted",
               target: tsId,
               animated: true,
+              markerEnd: {
+                type: MarkerType.Arrow,
+                color: "black",
+              },
+              style: {
+                strokeWidth: 1,
+                stroke: "black",
+                opacity: 0,
+              },
             };
           }
           if (!newEdges[outEdgeId] && ts.endStepId) {
             newEdges[outEdgeId] = {
               id: outEdgeId,
               source: tsId,
-              target: "ps-" + ts.endStepId,
+              target: "ps-" + ts.endStepId + "-unlayouted",
               animated: true,
+              markerEnd: {
+                type: MarkerType.Arrow,
+                color: "black",
+              },
+              style: {
+                strokeWidth: 1,
+                stroke: "black",
+                opacity: 0,
+              },
             };
           }
         }
@@ -168,22 +219,32 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
         for (const ps of loc.processSteps) {
           // Materials in PS
           for (const item of ps.inventory.entries.filter(
-            (i) => i.orderId != null
+            (i) => i.orderId != null,
           )) {
-            const matNodeId = "mat-" + item.id;
+            const matNodeId = "mat-" + item.id + "-unlayouted";
             newNodes[matNodeId] = {
               id: matNodeId,
               position: { x: 0, y: 0 },
-              data: { materialName: item.material, entity: item },
+              data: {
+                materialName: item.material,
+                entity: item,
+              },
               type: "material",
+              style: {
+                opacity: 0,
+              },
             };
-            const edgeId = `ps-${ps.id}-mat-${item.id}`;
+
+            const edgeId = `ps-${ps.id}-mat-${item.id}-unlayouted`;
             if (!newEdges[edgeId]) {
               newEdges[edgeId] = {
                 id: edgeId,
-                source: "ps-" + ps.id,
+                source: "ps-" + ps.id + "-unlayouted",
                 target: matNodeId,
                 animated: true,
+                style: {
+                  opacity: 0,
+                },
               };
             }
           }
@@ -191,22 +252,31 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
           // Materials in TS
           for (const ts of ps.inputs.concat(ps.outputs)) {
             for (const item of ts.inventory.entries.filter(
-              (i) => i.orderId != null
+              (i) => i.orderId != null,
             )) {
-              const matNodeId = "mat-" + item.id;
+              const matNodeId = "mat-" + item.id + "-unlayouted";
               newNodes[matNodeId] = {
                 id: matNodeId,
                 position: { x: 0, y: 0 },
-                data: { materialName: item.material, entity: item },
+                data: {
+                  materialName: item.material,
+                  entity: item,
+                },
                 type: "material",
+                style: {
+                  opacity: 0,
+                },
               };
-              const edgeId = `ts-${ts.id}-mat-${item.id}`;
+              const edgeId = `ts-${ts.id}-mat-${item.id}-unlayouted`;
               if (!newEdges[edgeId]) {
                 newEdges[edgeId] = {
                   id: edgeId,
-                  source: "ts-" + ts.id,
+                  source: "ts-" + ts.id + "-unlayouted",
                   target: matNodeId,
                   animated: true,
+                  style: {
+                    opacity: 0,
+                  },
                 };
               }
             }
@@ -215,9 +285,9 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
       }
     }
 
-    setNodes(Object.values(newNodes));
-    setEdges(Object.values(newEdges));
-  }, [simulation, frame, detailed]);
+    setNodes((prev) => [...prev, ...Object.values(newNodes)]);
+    setEdges((prev) => [...prev, ...Object.values(newEdges)]);
+  }, [simulation, frame, detailed, setEdges, setNodes]);
 
   const onSelectionChange = useCallback<OnSelectionChangeFunc>(({ nodes }) => {
     if (nodes[0]) {
@@ -236,16 +306,11 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
     }
   }, []);
 
-  const layoutedGraph =
-    nodes.length > 0 && edges.length > 0
-      ? getLayoutedElements(nodes, edges, { direction: layout })
-      : { nodes: [], edges: [] };
-
   return (
     <Box w="100%" h={700}>
       <ReactFlow
-        nodes={layoutedGraph.nodes}
-        edges={layoutedGraph.edges}
+        nodes={nodes}
+        edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
@@ -256,10 +321,10 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
         <Background />
         <Controls />
         <Panel position="top-right">
-          <Button size="xs" mr={10} onClick={() => setLayout("TB")}>
+          <Button size="xs" mr={10} onClick={() => setLayout("DOWN")}>
             Vertical layout
           </Button>
-          <Button size="xs" mr={10} onClick={() => setLayout("LR")}>
+          <Button size="xs" mr={10} onClick={() => setLayout("RIGHT")}>
             Horizontal layout
           </Button>
           <Switch
