@@ -204,7 +204,6 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                                             columns={getInventoryEntryColumns()}
                                                                             tableOptions={{
                                                                                 // For example: enableColumnResizing, row selection, etc.
-                                                                                enableColumnResizing: true,
                                                                             }}
                                                                         />
                                                                     </Flex>

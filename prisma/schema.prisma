@@ -1,14 +1,14 @@
-generator client {
-    provider = "prisma-client-js"
-}
-
 generator zod {
     provider = "zod-prisma-types"
 }
 
 datasource db {
     provider = "sqlite"
-    url      = "file:./dev.db"
+    url      = "file:./mock.db"
+}
+
+generator client {
+    provider = "prisma-client-js"
 }
 
 model SimulationRecord {

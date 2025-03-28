@@ -169,7 +169,7 @@ export default function MainContainer({
                   hiddenFrom="sm"
                   size="sm"
                 />
-                <Logo />
+                {/* <Logo /> */}
               </Group>
               <SimulationControlOverlay />
             </Flex>
