@@ -52,6 +52,7 @@ export function UniversalTable<T extends object>({
             getRowId={getRowId}
             // Merge in any other custom table options
             {...tableOptions}
+            
         />
     );
 }

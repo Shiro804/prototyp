@@ -13,40 +13,58 @@ import {
 } from "@mantine/core";
 import { IconInfoCircleFilled } from "@tabler/icons-react";
 import { Order } from "@prisma/client";
-import { BG_COLOR, COMPLETED, PENDING, PRIMARY, SECONDARY } from "@/lib/theme";
+import { BG_COLOR, COMPLETED, PENDING, PRIMARY } from "@/lib/theme";
+
+// Import our mappings and helpers
+import {
+    getFriendlyStatusLabel,
+    getFriendlyLabel,
+    getFriendlyValue,
+} from "./utils/friendlyMappings";
+
+// 1) Import the skip array
+import { PROPERTIES_TO_SKIP } from "./utils/technicalKeywords";
 
 interface OrdersListProps {
     /** The orders array to display */
     orders: Order[];
     /** The current layout mode: "compact", "medium", or "big" */
     layout: "compact" | "medium" | "big";
-    /** A function that returns a color string for a given order status */
     /** If true, display a tooltip with extended order info (the "detailed" style) */
     detailed?: boolean;
 }
 
 /**
- * A reusable OrdersList component for displaying Orders in different styles:
- * - If `detailed` is false (default), uses the "Monitoring" style (dark background, stack).
- * - If `detailed` is true, uses the "KPI" style (colored background, tooltips).
+ * A reusable OrdersList component for displaying Orders in different styles.
  */
 export function OrdersList({
     orders,
     layout,
     detailed = false,
 }: OrdersListProps) {
-
+    // A helper to convert the raw status into a color
     const getStatusColor = (status: string): string => {
-        switch (status) {
-            case "completed":
-                return COMPLETED;
-            case "pending":
-                return PENDING;
-            case "in_progress":
-                return PRIMARY;
+        const friendlyStatus = getFriendlyStatusLabel(status);
+        switch (friendlyStatus) {
+            case "Completed":
+                return COMPLETED; // e.g. "#2ECC40"
+            case "Pending":
+                return PENDING; // e.g. "#9B59B6"
+            case "In Progress":
+                return PRIMARY; // e.g. "#5300E8"
             default:
                 return "#95A5A6";
         }
+    };
+
+    // A helper to detect if a value is a valid date string
+    const isDateString = (val: any) => {
+        // Attempt to parse; if it gives a valid date, we'll format it
+        if (typeof val === "string") {
+            const parsed = Date.parse(val);
+            return !isNaN(parsed);
+        }
+        return false;
     };
 
     return (
@@ -70,10 +88,9 @@ export function OrdersList({
                         pt="xs"
                         withBorder
                         style={{
-                            // In "detailed" mode, no border highlight. Otherwise, show colored border.
                             color: "white",
                             borderWidth: "3px",
-                            borderColor: getStatusColor(order.status)
+                            borderColor: getStatusColor(order.status),
                         }}
                         bg={BG_COLOR}
                     >
@@ -88,7 +105,7 @@ export function OrdersList({
                                         style={{ borderColor: getStatusColor(order.status) }}
                                         mb="xs"
                                     >
-                                        {order.status}
+                                        {getFriendlyStatusLabel(order.status)}
                                     </Badge>
                                 </Flex>
                                 <Stack gap={4}>
@@ -124,14 +141,20 @@ export function OrdersList({
                             </>
                         )}
 
-                        {/* If detailed => original "KPI" style with tooltip */}
+                        {/* If detailed => "KPI" style with tooltip */}
                         {detailed && (
                             <Flex direction="column-reverse" align="center" justify="center">
-                                <Badge color={getStatusColor(order.status)} variant="light" fz={8} style={{ borderColor: getStatusColor(order.status) }} mb="xs">
-                                    {order.status}
+                                <Badge
+                                    color={getStatusColor(order.status)}
+                                    variant="light"
+                                    fz={8}
+                                    style={{ borderColor: getStatusColor(order.status) }}
+                                    mb="xs"
+                                >
+                                    {getFriendlyStatusLabel(order.status)}
                                 </Badge>
                                 <Flex justify="center" align="center" p={0} m={0}>
-                                    <Flex w={30}></Flex>
+                                    <Flex w={30} />
                                     <Text
                                         ta="center"
                                         fw={500}
@@ -145,11 +168,29 @@ export function OrdersList({
                                         <Tooltip
                                             label={
                                                 <Flex direction="column" gap={10}>
-                                                    {Object.entries(order).map(([key, value]) => (
-                                                        <Text key={key} size="xs">
-                                                            {key}: {value ? value.toString() : "-"}
-                                                        </Text>
-                                                    ))}
+                                                    {/* 2) Filter out null values and all properties in PROPERTIES_TO_SKIP */}
+                                                    {Object.entries(order)
+                                                        .filter(([key, value]) => {
+                                                            // skip if in the array
+                                                            if (PROPERTIES_TO_SKIP.includes(key)) {
+                                                                return false;
+                                                            }
+                                                            // skip if null
+                                                            if (value === null) {
+                                                                return false;
+                                                            }
+                                                            return true;
+                                                        })
+                                                        .map(([key, value]) => {
+                                                            // If it's a valid date string, format it
+                                                            let displayValue: string = getFriendlyValue(key, value);
+
+                                                            return (
+                                                                <Text key={key} size="xs">
+                                                                    {getFriendlyLabel(key)}: {displayValue}
+                                                                </Text>
+                                                            );
+                                                        })}
                                                 </Flex>
                                             }
                                             multiline

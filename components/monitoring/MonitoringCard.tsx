@@ -12,7 +12,7 @@ import {
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { groupInventory } from "@/components/helpers";
 import { useSimulationMock } from "../context/SimulationContextMock";
-import { PRIMARY, SECONDARY } from "@/lib/theme";
+import { BG_COLOR, PRIMARY, SECONDARY } from "@/lib/theme";
 import { IconAdjustmentsAlt } from "@tabler/icons-react";
 
 // Import your new popover
@@ -90,7 +90,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
                                 w="100%"
                                 direction="column"
                                 key={ps.id}
-                                bg="#28252D"
+                                bg={BG_COLOR}
                                 p={10}
                                 mb={20}
                                 style={{ borderRadius: "10px" }}

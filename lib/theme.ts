@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Accordion,
   Button,
   createTheme,
   darken,
@@ -32,6 +33,32 @@ export const theme = createTheme({
     Paper: Paper.extend({
       styles: (prev) => ({
         root: {},
+      }),
+    }),
+    Accordion: Accordion.extend({
+      styles: (prev) => ({
+        item: {
+          backgroundColor: BG_COLOR,
+          border: "1px solid #4d93ff",
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
+        control: {
+          backgroundColor: BG_COLOR,
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
+        panel: {
+          backgroundColor: BG_COLOR,
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
       }),
     }),
   },

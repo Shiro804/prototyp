@@ -26,7 +26,7 @@ import { GaugeSection } from "../custom/GaugeSection";
 // We now import our universal table
 import { UniversalTable } from "./Tables";  // <-- wherever the new Tables.tsx is located
 import { getTransportSystemsForProcessStep } from "../helpers";
-import { PRIMARY } from "@/lib/theme";
+import { BG_COLOR, PRIMARY } from "@/lib/theme";
 
 /**
  * "DetailedLocationCard" shows a detailed view of one Location (including all process steps).
@@ -66,7 +66,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
     }
 
     return (
-        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg="white">
+        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg={BG_COLOR} c="white">
             {/* Header */}
             <Flex justify="space-between" align="center" mb="lg">
                 <Text fw="bold" size="xl">
@@ -281,7 +281,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                     );
                 })}
             </Accordion>
-        </Paper>
+        </Paper >
     );
 };
 

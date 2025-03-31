@@ -9,9 +9,10 @@ import {
     Switch,
     Text,
     Divider,
+    Tooltip,
 } from "@mantine/core";
 import { useSimulationMock } from "../context/SimulationContextMock";
-import { IconCheck, IconPlayerPause, IconX } from "@tabler/icons-react";
+import { IconCheck, IconPlayerPause, IconX, IconInfoCircle } from "@tabler/icons-react";
 import {
     ProcessStep as ProcessStepModel,
     TransportSystem as TransportSystemModel,
@@ -29,7 +30,7 @@ interface EntityAdjustmentPopoverProps {
 
     /** Whether the popover is currently open or closed */
     opened: boolean;
-    
+
     /** Callback to set the popover state from the parent. */
     onOpenedChange: (val: boolean) => void;
 
@@ -59,17 +60,15 @@ export function EntityAdjustmentPopover({
     const [transportDelay, setTransportDelay] = useState<number>(0);
     const [recipeRate, setRecipeRate] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
-    
+
     const [faultyRate, setFaultyRate] = useState<number>(0);
     const [inventoryLimit, setInventoryLimit] = useState<number>(0);
-    // sensorDelay not used in example, but could be added similarly
 
     // Populate local state from `entity` whenever it changes
     useEffect(() => {
         if (entityType === "processStep") {
             // If you have a "ProcessStepFull" with inventory, you can cast it:
             const ps = entity as unknown as ProcessStepFull;
-            // or if it's not guaranteed to have the full inventory, handle carefully
             setErrorRate(ps.errorRate ?? 0);
             setOutputSpeed(ps.outputSpeed ?? 0);
             setInputSpeed(ps.inputSpeed ?? 0);
@@ -112,7 +111,7 @@ export function EntityAdjustmentPopover({
                 inputSpeed,
                 outputSpeed,
                 minQuantity,
-                transportDelay
+                transportDelay,
             });
         } else if (entityType === "resource") {
             const r = entity as ResourceModel;
@@ -124,28 +123,49 @@ export function EntityAdjustmentPopover({
         onOpenedChange(false);
     };
 
-    // Local functional component to eliminate redundancies
+    /**
+     * Local component to standardize label + number input + optional tooltip.
+     */
     const LabeledNumberInput: React.FC<{
         label: string;
+        tooltip?: string; // new prop for tooltip text
         value: number;
         onChange: (val: number) => void;
         min?: number;
         step?: number;
         disabled?: boolean;
-    }> = ({ label, value, onChange, min = 0, step, disabled = false }) => (
-        <Flex align={"center"} gap={10} justify={"space-between"}>
-            <Text fz={12}>{label}</Text>
-            <NumberInput
-                w={100}
-                value={value}
-                onChange={(val) => onChange(Number(val) ?? 0)}
-                min={min}
-                step={step}
-                disabled={disabled}
-                styles={{ root: { display: "flex" } }}
-            />
-        </Flex>
-    );
+    }> = ({
+        label,
+        tooltip,
+        value,
+        onChange,
+        min = 0,
+        step,
+        disabled = false,
+    }) => (
+            <Flex align={"center"} gap={10} justify={"space-between"}>
+                {/* Label + optional tooltip icon */}
+                <Flex align="center" justify={"space-between"} w={"60%"}>
+                    <Text fz={12}>{label}</Text>
+                    {tooltip && (
+                        <Tooltip label={tooltip} multiline maw={500} radius={5}>
+                            <IconInfoCircle style={{ cursor: "pointer" }} />
+                        </Tooltip>
+                    )}
+                </Flex>
+
+                {/* Actual number input */}
+                <NumberInput
+                    w={100}
+                    value={value}
+                    onChange={(val) => onChange(Number(val) ?? 0)}
+                    min={min}
+                    step={step}
+                    disabled={disabled}
+                    styles={{ root: { display: "flex" } }}
+                />
+            </Flex>
+        );
 
     return (
         <Popover
@@ -170,6 +190,7 @@ export function EntityAdjustmentPopover({
                             </Text>
                             <LabeledNumberInput
                                 label="Error Rate"
+                                tooltip="Probability that a defective item is produced"
                                 value={errorRate}
                                 onChange={setErrorRate}
                                 step={0.01}
@@ -178,6 +199,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Output Speed"
+                                tooltip="How quickly items are output per minute"
                                 value={outputSpeed}
                                 onChange={setOutputSpeed}
                                 min={0}
@@ -185,6 +207,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Input Speed"
+                                tooltip="Max inbound materials per minute"
                                 value={inputSpeed}
                                 onChange={setInputSpeed}
                                 min={0}
@@ -192,6 +215,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Recipe Rate"
+                                tooltip="How many input materials needed per run"
                                 value={recipeRate}
                                 onChange={setRecipeRate}
                                 min={1}
@@ -199,6 +223,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Duration"
+                                tooltip="Time (in ticks) the step needs per cycle"
                                 value={duration}
                                 onChange={setDuration}
                                 min={1}
@@ -206,6 +231,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Inventory Limit"
+                                tooltip="Max items that can be stored here"
                                 value={inventoryLimit}
                                 onChange={setInventoryLimit}
                                 min={0}
@@ -221,6 +247,7 @@ export function EntityAdjustmentPopover({
                             </Text>
                             <LabeledNumberInput
                                 label="Output Speed"
+                                tooltip="Items out per minute"
                                 value={outputSpeed}
                                 onChange={setOutputSpeed}
                                 min={0}
@@ -228,6 +255,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Input Speed"
+                                tooltip="Items in per minute"
                                 value={inputSpeed}
                                 onChange={setInputSpeed}
                                 min={0}
@@ -235,6 +263,7 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Min. Quantity"
+                                tooltip="Minimum items required before transport starts"
                                 value={minQuantity}
                                 onChange={setMinQuantity}
                                 min={0}
@@ -242,12 +271,12 @@ export function EntityAdjustmentPopover({
                             />
                             <LabeledNumberInput
                                 label="Transport Delay"
+                                tooltip="Time (in ticks) it takes to complete one transport"
                                 value={transportDelay}
                                 onChange={setTransportDelay}
                                 min={0}
                                 disabled={playing}
                             />
-                            {/* minQuantity, transportDelay, etc. can also go here */}
                         </>
                     )}
 
@@ -258,6 +287,7 @@ export function EntityAdjustmentPopover({
                             </Text>
                             <LabeledNumberInput
                                 label="Faulty Rate"
+                                tooltip="Chance that the resource breaks or produces an error"
                                 value={faultyRate}
                                 onChange={setFaultyRate}
                                 step={0.01}

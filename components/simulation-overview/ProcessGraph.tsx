@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Switch } from "@mantine/core";
+import { Box, Button, Flex, Switch } from "@mantine/core";
 import {
   Background,
   Controls,
@@ -19,21 +19,24 @@ import { MaterialFlowNodeTypes, NodeType, SelectedEntity } from "./nodes";
 import { useLayout } from "./layout";
 import { EntityInfo } from "./EntityInfo";
 import { useSimulationMock } from "../context/SimulationContextMock";
-// or useSimulationLive if you prefer
+// or import { useSimulationLive } if needed
 
-export interface ProcessGraphProps {}
+export interface ProcessGraphProps { }
 
 /**
  * A graph component that can render in two modes:
  * 1) Detailed (includes material nodes)
  * 2) Simple (excludes material nodes)
  */
-export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
+export function ProcessGraph({ }: Readonly<ProcessGraphProps>) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeType>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity>();
-  const [detailed, setDetailed] = useState<boolean>(true);
+  const [detailed, setDetailed] = useState<boolean>(false);
+
+  // NEW: Switch to activate or deactivate the "technical" onclick detail view
+  const [technicalView, setTechnicalView] = useState<boolean>(false);
 
   const [layout, setLayout] = useState<"DOWN" | "RIGHT">("DOWN");
   useLayout({ direction: layout });
@@ -219,7 +222,7 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
         for (const ps of loc.processSteps) {
           // Materials in PS
           for (const item of ps.inventory.entries.filter(
-            (i) => i.orderId != null,
+            (i) => i.orderId != null
           )) {
             const matNodeId = "mat-" + item.id + "-unlayouted";
             newNodes[matNodeId] = {
@@ -252,7 +255,7 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
           // Materials in TS
           for (const ts of ps.inputs.concat(ps.outputs)) {
             for (const item of ts.inventory.entries.filter(
-              (i) => i.orderId != null,
+              (i) => i.orderId != null
             )) {
               const matNodeId = "mat-" + item.id + "-unlayouted";
               newNodes[matNodeId] = {
@@ -290,6 +293,12 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
   }, [simulation, frame, detailed, setEdges, setNodes]);
 
   const onSelectionChange = useCallback<OnSelectionChangeFunc>(({ nodes }) => {
+    // Only allow selecting an entity if "technicalView" is ON
+    if (!technicalView) {
+      setSelectedEntity(undefined);
+      return;
+    }
+
     if (nodes[0]) {
       const node = nodes[0] as NodeType;
       if (node.type === "processStep") {
@@ -304,7 +313,7 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
     } else {
       setSelectedEntity(undefined);
     }
-  }, []);
+  }, [technicalView]);
 
   return (
     <Box w="100%" h={700}>
@@ -321,21 +330,35 @@ export function ProcessGraph({}: Readonly<ProcessGraphProps>) {
         <Background />
         <Controls />
         <Panel position="top-right">
-          <Button size="xs" mr={10} onClick={() => setLayout("DOWN")}>
-            Vertical layout
-          </Button>
-          <Button size="xs" mr={10} onClick={() => setLayout("RIGHT")}>
-            Horizontal layout
-          </Button>
-          <Switch
-            label="Detailed view"
-            checked={detailed}
-            onChange={(event) => setDetailed(event.currentTarget.checked)}
-            size="md"
-          />
+          <Flex align={"center"} justify={"center"} gap={10}>
+            <Button size="xs" mr={10} onClick={() => setLayout("DOWN")}>
+              Vertical layout
+            </Button>
+            <Button size="xs" mr={10} onClick={() => setLayout("RIGHT")}>
+              Horizontal layout
+            </Button>
+
+            {/* Existing "Detailed View" switch */}
+            <Switch
+              label="Detailed view"
+              checked={detailed}
+              onChange={(event) => setDetailed(event.currentTarget.checked)}
+              size="md"
+            />
+
+            {/* NEW switch for technical/EntityInfo view */}
+            <Switch
+              label="Technical View"
+              checked={technicalView}
+              onChange={(event) => setTechnicalView(event.currentTarget.checked)}
+              size="md"
+            />
+          </Flex>
         </Panel>
       </ReactFlow>
-      {selectedEntity && <EntityInfo entity={selectedEntity} />}
+
+      {/* Render the detail only if we have a selection AND the tech switch is on */}
+      {technicalView && selectedEntity && <EntityInfo entity={selectedEntity} />}
     </Box>
   );
 }

@@ -131,7 +131,7 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
 
 
             {/* Location KPI Details */}
-            <Title order={4} mb="sm">
+            <Title order={4} mb="sm" mt={"xl"}>
                 Location KPI Details
             </Title>
             {locations.length === 0 ? (
