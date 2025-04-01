@@ -188,11 +188,11 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                                     {/* Materials of TS => Use UniversalTable */}
                                                                     <Flex
                                                                         direction={"column"}
-                                                                        w={"50%"}
-                                                                        h={"100%"}
-                                                                        align={"flex-start"}
-                                                                        justify={"flex-start"}
-                                                                        mr={60}
+                                                                        w={"100%"}
+                                                                        // h={"100%"}
+                                                                        // align={"flex-start"}
+                                                                        // justify={"flex-start"}
+                                                                        // mr={60}
                                                                     >
                                                                         <Title order={6} mb="xs">
                                                                             Materials within the Transport System
