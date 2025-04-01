@@ -78,10 +78,10 @@ export const GaugeSection = React.memo(
                             // but here's a dynamic color from green to red:
                             fill: color ?? dynamicColor,
                         },
-                        [`& .${gaugeClasses.valueText}`]: {
+                        [`& .${gaugeClasses.valueText} text`]: {
                             fontSize: 40,
                             fontWeight: 700,
-                            color: "white",
+                            fill: "white",
                         },
                         [`& .${gaugeClasses.referenceArc}`]: {
                             fill: "white",

@@ -31,8 +31,11 @@ export const theme = createTheme({
       },
     }),
     Paper: Paper.extend({
-      styles: (prev) => ({
-        root: {},
+      defaultProps: { c: "white" },
+      styles: () => ({
+        root: {
+          "--mrt-base-background-color": BG_COLOR,
+        },
       }),
     }),
     Accordion: Accordion.extend({
