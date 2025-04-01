@@ -35,6 +35,7 @@ export const theme = createTheme({
       styles: () => ({
         root: {
           "--mrt-base-background-color": BG_COLOR,
+          "--mrt-row-hover-background-color": lighten(BG_COLOR, 0.1),
         },
       }),
     }),
