@@ -66,7 +66,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
     }
 
     return (
-        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg={BG_COLOR} c="white">
+        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg={BG_COLOR}>
             {/* Header */}
             <Flex justify="space-between" align="center" mb="lg">
                 <Text fw="bold" size="xl">
