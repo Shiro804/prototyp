@@ -255,7 +255,7 @@ export default function SimulationAnalysis() {
 
             {/* KPI Display */}
             {kpis.length > 0 && (
-                <Paper shadow="md" p="md" withBorder>
+                <Paper shadow="md" p="md" withBorder c="black">
                     <Title order={4} mb="sm">
                         KPIs for Simulation #{selectedSimId}
                         {selectedCompareSimId && ` vs #${selectedCompareSimId}`}
