@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Prisma } from '../../client/client2';
+import type { Prisma } from '@prisma/client';
 
 /////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -15,6 +15,8 @@ export const TransactionIsolationLevelSchema = z.enum(['Serializable']);
 export const SimulationRecordScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name']);
 
 export const KpiRecordScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','key','value','name','simulationId']);
+
+export const BottleneckRecordScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','tick','name','simulationId']);
 
 export const ResourceScalarFieldEnumSchema = z.enum(['id','createdAt','updatedAt','name','active','mandatory','productionResource','inventoryResource','locationId','processStepId','transportSystemId','faulty','faultyRate']);
 
@@ -85,6 +87,21 @@ export const KpiRecordSchema = z.object({
 })
 
 export type KpiRecord = z.infer<typeof KpiRecordSchema>
+
+/////////////////////////////////////////
+// BOTTLENECK RECORD SCHEMA
+/////////////////////////////////////////
+
+export const BottleneckRecordSchema = z.object({
+  id: z.number().int(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  tick: z.number().int(),
+  name: z.string(),
+  simulationId: z.number().int(),
+})
+
+export type BottleneckRecord = z.infer<typeof BottleneckRecordSchema>
 
 /////////////////////////////////////////
 // RESOURCE SCHEMA
@@ -367,6 +384,7 @@ export type Order = z.infer<typeof OrderSchema>
 
 export const SimulationRecordIncludeSchema: z.ZodType<Prisma.SimulationRecordInclude> = z.object({
   kpis: z.union([z.boolean(),z.lazy(() => KpiRecordFindManyArgsSchema)]).optional(),
+  bottlenecks: z.union([z.boolean(),z.lazy(() => BottleneckRecordFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SimulationRecordCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
@@ -381,6 +399,7 @@ export const SimulationRecordCountOutputTypeArgsSchema: z.ZodType<Prisma.Simulat
 
 export const SimulationRecordCountOutputTypeSelectSchema: z.ZodType<Prisma.SimulationRecordCountOutputTypeSelect> = z.object({
   kpis: z.boolean().optional(),
+  bottlenecks: z.boolean().optional(),
 }).strict();
 
 export const SimulationRecordSelectSchema: z.ZodType<Prisma.SimulationRecordSelect> = z.object({
@@ -389,6 +408,7 @@ export const SimulationRecordSelectSchema: z.ZodType<Prisma.SimulationRecordSele
   updatedAt: z.boolean().optional(),
   name: z.boolean().optional(),
   kpis: z.union([z.boolean(),z.lazy(() => KpiRecordFindManyArgsSchema)]).optional(),
+  bottlenecks: z.union([z.boolean(),z.lazy(() => BottleneckRecordFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => SimulationRecordCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
@@ -410,6 +430,28 @@ export const KpiRecordSelectSchema: z.ZodType<Prisma.KpiRecordSelect> = z.object
   updatedAt: z.boolean().optional(),
   key: z.boolean().optional(),
   value: z.boolean().optional(),
+  name: z.boolean().optional(),
+  simulationId: z.boolean().optional(),
+  simulation: z.union([z.boolean(),z.lazy(() => SimulationRecordArgsSchema)]).optional(),
+}).strict()
+
+// BOTTLENECK RECORD
+//------------------------------------------------------
+
+export const BottleneckRecordIncludeSchema: z.ZodType<Prisma.BottleneckRecordInclude> = z.object({
+  simulation: z.union([z.boolean(),z.lazy(() => SimulationRecordArgsSchema)]).optional(),
+}).strict()
+
+export const BottleneckRecordArgsSchema: z.ZodType<Prisma.BottleneckRecordDefaultArgs> = z.object({
+  select: z.lazy(() => BottleneckRecordSelectSchema).optional(),
+  include: z.lazy(() => BottleneckRecordIncludeSchema).optional(),
+}).strict();
+
+export const BottleneckRecordSelectSchema: z.ZodType<Prisma.BottleneckRecordSelect> = z.object({
+  id: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  tick: z.boolean().optional(),
   name: z.boolean().optional(),
   simulationId: z.boolean().optional(),
   simulation: z.union([z.boolean(),z.lazy(() => SimulationRecordArgsSchema)]).optional(),
@@ -988,7 +1030,8 @@ export const SimulationRecordWhereInputSchema: z.ZodType<Prisma.SimulationRecord
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
-  kpis: z.lazy(() => KpiRecordListRelationFilterSchema).optional()
+  kpis: z.lazy(() => KpiRecordListRelationFilterSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordListRelationFilterSchema).optional()
 }).strict();
 
 export const SimulationRecordOrderByWithRelationInputSchema: z.ZodType<Prisma.SimulationRecordOrderByWithRelationInput> = z.object({
@@ -996,7 +1039,8 @@ export const SimulationRecordOrderByWithRelationInputSchema: z.ZodType<Prisma.Si
   createdAt: z.lazy(() => SortOrderSchema).optional(),
   updatedAt: z.lazy(() => SortOrderSchema).optional(),
   name: z.lazy(() => SortOrderSchema).optional(),
-  kpis: z.lazy(() => KpiRecordOrderByRelationAggregateInputSchema).optional()
+  kpis: z.lazy(() => KpiRecordOrderByRelationAggregateInputSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordOrderByRelationAggregateInputSchema).optional()
 }).strict();
 
 export const SimulationRecordWhereUniqueInputSchema: z.ZodType<Prisma.SimulationRecordWhereUniqueInput> = z.object({
@@ -1010,7 +1054,8 @@ export const SimulationRecordWhereUniqueInputSchema: z.ZodType<Prisma.Simulation
   createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
-  kpis: z.lazy(() => KpiRecordListRelationFilterSchema).optional()
+  kpis: z.lazy(() => KpiRecordListRelationFilterSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordListRelationFilterSchema).optional()
 }).strict());
 
 export const SimulationRecordOrderByWithAggregationInputSchema: z.ZodType<Prisma.SimulationRecordOrderByWithAggregationInput> = z.object({
@@ -1102,6 +1147,71 @@ export const KpiRecordScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Kpi
   key: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
   value: z.union([ z.lazy(() => FloatWithAggregatesFilterSchema),z.number() ]).optional(),
   name: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  simulationId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+}).strict();
+
+export const BottleneckRecordWhereInputSchema: z.ZodType<Prisma.BottleneckRecordWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => BottleneckRecordWhereInputSchema),z.lazy(() => BottleneckRecordWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => BottleneckRecordWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => BottleneckRecordWhereInputSchema),z.lazy(() => BottleneckRecordWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  tick: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  simulationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  simulation: z.union([ z.lazy(() => SimulationRecordRelationFilterSchema),z.lazy(() => SimulationRecordWhereInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordOrderByWithRelationInputSchema: z.ZodType<Prisma.BottleneckRecordOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional(),
+  simulation: z.lazy(() => SimulationRecordOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const BottleneckRecordWhereUniqueInputSchema: z.ZodType<Prisma.BottleneckRecordWhereUniqueInput> = z.object({
+  id: z.number().int()
+})
+.and(z.object({
+  id: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => BottleneckRecordWhereInputSchema),z.lazy(() => BottleneckRecordWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => BottleneckRecordWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => BottleneckRecordWhereInputSchema),z.lazy(() => BottleneckRecordWhereInputSchema).array() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  tick: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  simulationId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  simulation: z.union([ z.lazy(() => SimulationRecordRelationFilterSchema),z.lazy(() => SimulationRecordWhereInputSchema) ]).optional(),
+}).strict());
+
+export const BottleneckRecordOrderByWithAggregationInputSchema: z.ZodType<Prisma.BottleneckRecordOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => BottleneckRecordCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => BottleneckRecordAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => BottleneckRecordMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => BottleneckRecordMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => BottleneckRecordSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const BottleneckRecordScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.BottleneckRecordScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => BottleneckRecordScalarWhereWithAggregatesInputSchema),z.lazy(() => BottleneckRecordScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => BottleneckRecordScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => BottleneckRecordScalarWhereWithAggregatesInputSchema),z.lazy(() => BottleneckRecordScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  tick: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  name: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
   simulationId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
@@ -2450,7 +2560,8 @@ export const SimulationRecordCreateInputSchema: z.ZodType<Prisma.SimulationRecor
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   name: z.string(),
-  kpis: z.lazy(() => KpiRecordCreateNestedManyWithoutSimulationInputSchema).optional()
+  kpis: z.lazy(() => KpiRecordCreateNestedManyWithoutSimulationInputSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordCreateNestedManyWithoutSimulationInputSchema).optional()
 }).strict();
 
 export const SimulationRecordUncheckedCreateInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedCreateInput> = z.object({
@@ -2458,14 +2569,16 @@ export const SimulationRecordUncheckedCreateInputSchema: z.ZodType<Prisma.Simula
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   name: z.string(),
-  kpis: z.lazy(() => KpiRecordUncheckedCreateNestedManyWithoutSimulationInputSchema).optional()
+  kpis: z.lazy(() => KpiRecordUncheckedCreateNestedManyWithoutSimulationInputSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordUncheckedCreateNestedManyWithoutSimulationInputSchema).optional()
 }).strict();
 
 export const SimulationRecordUpdateInputSchema: z.ZodType<Prisma.SimulationRecordUpdateInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  kpis: z.lazy(() => KpiRecordUpdateManyWithoutSimulationNestedInputSchema).optional()
+  kpis: z.lazy(() => KpiRecordUpdateManyWithoutSimulationNestedInputSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordUpdateManyWithoutSimulationNestedInputSchema).optional()
 }).strict();
 
 export const SimulationRecordUncheckedUpdateInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedUpdateInput> = z.object({
@@ -2473,7 +2586,8 @@ export const SimulationRecordUncheckedUpdateInputSchema: z.ZodType<Prisma.Simula
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
-  kpis: z.lazy(() => KpiRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema).optional()
+  kpis: z.lazy(() => KpiRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema).optional()
 }).strict();
 
 export const SimulationRecordCreateManyInputSchema: z.ZodType<Prisma.SimulationRecordCreateManyInput> = z.object({
@@ -2559,6 +2673,65 @@ export const KpiRecordUncheckedUpdateManyInputSchema: z.ZodType<Prisma.KpiRecord
   key: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   value: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  simulationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordCreateInputSchema: z.ZodType<Prisma.BottleneckRecordCreateInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string(),
+  simulation: z.lazy(() => SimulationRecordCreateNestedOneWithoutBottlenecksInputSchema)
+}).strict();
+
+export const BottleneckRecordUncheckedCreateInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string(),
+  simulationId: z.number().int()
+}).strict();
+
+export const BottleneckRecordUpdateInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  simulation: z.lazy(() => SimulationRecordUpdateOneRequiredWithoutBottlenecksNestedInputSchema).optional()
+}).strict();
+
+export const BottleneckRecordUncheckedUpdateInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  simulationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordCreateManyInputSchema: z.ZodType<Prisma.BottleneckRecordCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string(),
+  simulationId: z.number().int()
+}).strict();
+
+export const BottleneckRecordUpdateManyMutationInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateManyMutationInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordUncheckedUpdateManyInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   simulationId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
@@ -3827,7 +4000,17 @@ export const KpiRecordListRelationFilterSchema: z.ZodType<Prisma.KpiRecordListRe
   none: z.lazy(() => KpiRecordWhereInputSchema).optional()
 }).strict();
 
+export const BottleneckRecordListRelationFilterSchema: z.ZodType<Prisma.BottleneckRecordListRelationFilter> = z.object({
+  every: z.lazy(() => BottleneckRecordWhereInputSchema).optional(),
+  some: z.lazy(() => BottleneckRecordWhereInputSchema).optional(),
+  none: z.lazy(() => BottleneckRecordWhereInputSchema).optional()
+}).strict();
+
 export const KpiRecordOrderByRelationAggregateInputSchema: z.ZodType<Prisma.KpiRecordOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const BottleneckRecordOrderByRelationAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordOrderByRelationAggregateInput> = z.object({
   _count: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
@@ -4015,6 +4198,45 @@ export const StringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.StringNu
   _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
   _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional()
+}).strict();
+
+export const BottleneckRecordCountOrderByAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const BottleneckRecordAvgOrderByAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const BottleneckRecordMaxOrderByAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const BottleneckRecordMinOrderByAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  name: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const BottleneckRecordSumOrderByAggregateInputSchema: z.ZodType<Prisma.BottleneckRecordSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  tick: z.lazy(() => SortOrderSchema).optional(),
+  simulationId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const BoolFilterSchema: z.ZodType<Prisma.BoolFilter> = z.object({
@@ -5055,11 +5277,25 @@ export const KpiRecordCreateNestedManyWithoutSimulationInputSchema: z.ZodType<Pr
   connect: z.union([ z.lazy(() => KpiRecordWhereUniqueInputSchema),z.lazy(() => KpiRecordWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
+export const BottleneckRecordCreateNestedManyWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordCreateNestedManyWithoutSimulationInput> = z.object({
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema).array(),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => BottleneckRecordCreateManySimulationInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
 export const KpiRecordUncheckedCreateNestedManyWithoutSimulationInputSchema: z.ZodType<Prisma.KpiRecordUncheckedCreateNestedManyWithoutSimulationInput> = z.object({
   create: z.union([ z.lazy(() => KpiRecordCreateWithoutSimulationInputSchema),z.lazy(() => KpiRecordCreateWithoutSimulationInputSchema).array(),z.lazy(() => KpiRecordUncheckedCreateWithoutSimulationInputSchema),z.lazy(() => KpiRecordUncheckedCreateWithoutSimulationInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => KpiRecordCreateOrConnectWithoutSimulationInputSchema),z.lazy(() => KpiRecordCreateOrConnectWithoutSimulationInputSchema).array() ]).optional(),
   createMany: z.lazy(() => KpiRecordCreateManySimulationInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => KpiRecordWhereUniqueInputSchema),z.lazy(() => KpiRecordWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const BottleneckRecordUncheckedCreateNestedManyWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedCreateNestedManyWithoutSimulationInput> = z.object({
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema).array(),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => BottleneckRecordCreateManySimulationInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
 export const DateTimeFieldUpdateOperationsInputSchema: z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput> = z.object({
@@ -5084,6 +5320,20 @@ export const KpiRecordUpdateManyWithoutSimulationNestedInputSchema: z.ZodType<Pr
   deleteMany: z.union([ z.lazy(() => KpiRecordScalarWhereInputSchema),z.lazy(() => KpiRecordScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
+export const BottleneckRecordUpdateManyWithoutSimulationNestedInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateManyWithoutSimulationNestedInput> = z.object({
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema).array(),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => BottleneckRecordCreateManySimulationInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => BottleneckRecordUpdateManyWithWhereWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpdateManyWithWhereWithoutSimulationInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => BottleneckRecordScalarWhereInputSchema),z.lazy(() => BottleneckRecordScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
 export const IntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.IntFieldUpdateOperationsInput> = z.object({
   set: z.number().optional(),
   increment: z.number().optional(),
@@ -5104,6 +5354,20 @@ export const KpiRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema: z.Z
   update: z.union([ z.lazy(() => KpiRecordUpdateWithWhereUniqueWithoutSimulationInputSchema),z.lazy(() => KpiRecordUpdateWithWhereUniqueWithoutSimulationInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => KpiRecordUpdateManyWithWhereWithoutSimulationInputSchema),z.lazy(() => KpiRecordUpdateManyWithWhereWithoutSimulationInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => KpiRecordScalarWhereInputSchema),z.lazy(() => KpiRecordScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const BottleneckRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedUpdateManyWithoutSimulationNestedInput> = z.object({
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema).array(),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordCreateOrConnectWithoutSimulationInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => BottleneckRecordCreateManySimulationInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => BottleneckRecordWhereUniqueInputSchema),z.lazy(() => BottleneckRecordWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => BottleneckRecordUpdateManyWithWhereWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUpdateManyWithWhereWithoutSimulationInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => BottleneckRecordScalarWhereInputSchema),z.lazy(() => BottleneckRecordScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
 export const SimulationRecordCreateNestedOneWithoutKpisInputSchema: z.ZodType<Prisma.SimulationRecordCreateNestedOneWithoutKpisInput> = z.object({
@@ -5130,6 +5394,20 @@ export const SimulationRecordUpdateOneRequiredWithoutKpisNestedInputSchema: z.Zo
   upsert: z.lazy(() => SimulationRecordUpsertWithoutKpisInputSchema).optional(),
   connect: z.lazy(() => SimulationRecordWhereUniqueInputSchema).optional(),
   update: z.union([ z.lazy(() => SimulationRecordUpdateToOneWithWhereWithoutKpisInputSchema),z.lazy(() => SimulationRecordUpdateWithoutKpisInputSchema),z.lazy(() => SimulationRecordUncheckedUpdateWithoutKpisInputSchema) ]).optional(),
+}).strict();
+
+export const SimulationRecordCreateNestedOneWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordCreateNestedOneWithoutBottlenecksInput> = z.object({
+  create: z.union([ z.lazy(() => SimulationRecordCreateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedCreateWithoutBottlenecksInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => SimulationRecordCreateOrConnectWithoutBottlenecksInputSchema).optional(),
+  connect: z.lazy(() => SimulationRecordWhereUniqueInputSchema).optional()
+}).strict();
+
+export const SimulationRecordUpdateOneRequiredWithoutBottlenecksNestedInputSchema: z.ZodType<Prisma.SimulationRecordUpdateOneRequiredWithoutBottlenecksNestedInput> = z.object({
+  create: z.union([ z.lazy(() => SimulationRecordCreateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedCreateWithoutBottlenecksInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => SimulationRecordCreateOrConnectWithoutBottlenecksInputSchema).optional(),
+  upsert: z.lazy(() => SimulationRecordUpsertWithoutBottlenecksInputSchema).optional(),
+  connect: z.lazy(() => SimulationRecordWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => SimulationRecordUpdateToOneWithWhereWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUpdateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedUpdateWithoutBottlenecksInputSchema) ]).optional(),
 }).strict();
 
 export const MachineCreateNestedOneWithoutResourceInputSchema: z.ZodType<Prisma.MachineCreateNestedOneWithoutResourceInput> = z.object({
@@ -6752,6 +7030,30 @@ export const KpiRecordCreateManySimulationInputEnvelopeSchema: z.ZodType<Prisma.
   data: z.union([ z.lazy(() => KpiRecordCreateManySimulationInputSchema),z.lazy(() => KpiRecordCreateManySimulationInputSchema).array() ]),
 }).strict();
 
+export const BottleneckRecordCreateWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordCreateWithoutSimulationInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string()
+}).strict();
+
+export const BottleneckRecordUncheckedCreateWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedCreateWithoutSimulationInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string()
+}).strict();
+
+export const BottleneckRecordCreateOrConnectWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordCreateOrConnectWithoutSimulationInput> = z.object({
+  where: z.lazy(() => BottleneckRecordWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema) ]),
+}).strict();
+
+export const BottleneckRecordCreateManySimulationInputEnvelopeSchema: z.ZodType<Prisma.BottleneckRecordCreateManySimulationInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => BottleneckRecordCreateManySimulationInputSchema),z.lazy(() => BottleneckRecordCreateManySimulationInputSchema).array() ]),
+}).strict();
+
 export const KpiRecordUpsertWithWhereUniqueWithoutSimulationInputSchema: z.ZodType<Prisma.KpiRecordUpsertWithWhereUniqueWithoutSimulationInput> = z.object({
   where: z.lazy(() => KpiRecordWhereUniqueInputSchema),
   update: z.union([ z.lazy(() => KpiRecordUpdateWithoutSimulationInputSchema),z.lazy(() => KpiRecordUncheckedUpdateWithoutSimulationInputSchema) ]),
@@ -6781,17 +7083,47 @@ export const KpiRecordScalarWhereInputSchema: z.ZodType<Prisma.KpiRecordScalarWh
   simulationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
 }).strict();
 
+export const BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUpsertWithWhereUniqueWithoutSimulationInput> = z.object({
+  where: z.lazy(() => BottleneckRecordWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => BottleneckRecordUpdateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedUpdateWithoutSimulationInputSchema) ]),
+  create: z.union([ z.lazy(() => BottleneckRecordCreateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedCreateWithoutSimulationInputSchema) ]),
+}).strict();
+
+export const BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateWithWhereUniqueWithoutSimulationInput> = z.object({
+  where: z.lazy(() => BottleneckRecordWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => BottleneckRecordUpdateWithoutSimulationInputSchema),z.lazy(() => BottleneckRecordUncheckedUpdateWithoutSimulationInputSchema) ]),
+}).strict();
+
+export const BottleneckRecordUpdateManyWithWhereWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateManyWithWhereWithoutSimulationInput> = z.object({
+  where: z.lazy(() => BottleneckRecordScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => BottleneckRecordUpdateManyMutationInputSchema),z.lazy(() => BottleneckRecordUncheckedUpdateManyWithoutSimulationInputSchema) ]),
+}).strict();
+
+export const BottleneckRecordScalarWhereInputSchema: z.ZodType<Prisma.BottleneckRecordScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => BottleneckRecordScalarWhereInputSchema),z.lazy(() => BottleneckRecordScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => BottleneckRecordScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => BottleneckRecordScalarWhereInputSchema),z.lazy(() => BottleneckRecordScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  tick: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  name: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  simulationId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+}).strict();
+
 export const SimulationRecordCreateWithoutKpisInputSchema: z.ZodType<Prisma.SimulationRecordCreateWithoutKpisInput> = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  name: z.string()
+  name: z.string(),
+  bottlenecks: z.lazy(() => BottleneckRecordCreateNestedManyWithoutSimulationInputSchema).optional()
 }).strict();
 
 export const SimulationRecordUncheckedCreateWithoutKpisInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedCreateWithoutKpisInput> = z.object({
   id: z.number().int().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  name: z.string()
+  name: z.string(),
+  bottlenecks: z.lazy(() => BottleneckRecordUncheckedCreateNestedManyWithoutSimulationInputSchema).optional()
 }).strict();
 
 export const SimulationRecordCreateOrConnectWithoutKpisInputSchema: z.ZodType<Prisma.SimulationRecordCreateOrConnectWithoutKpisInput> = z.object({
@@ -6814,6 +7146,7 @@ export const SimulationRecordUpdateWithoutKpisInputSchema: z.ZodType<Prisma.Simu
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordUpdateManyWithoutSimulationNestedInputSchema).optional()
 }).strict();
 
 export const SimulationRecordUncheckedUpdateWithoutKpisInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedUpdateWithoutKpisInput> = z.object({
@@ -6821,6 +7154,53 @@ export const SimulationRecordUncheckedUpdateWithoutKpisInputSchema: z.ZodType<Pr
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  bottlenecks: z.lazy(() => BottleneckRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema).optional()
+}).strict();
+
+export const SimulationRecordCreateWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordCreateWithoutBottlenecksInput> = z.object({
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  kpis: z.lazy(() => KpiRecordCreateNestedManyWithoutSimulationInputSchema).optional()
+}).strict();
+
+export const SimulationRecordUncheckedCreateWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedCreateWithoutBottlenecksInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  name: z.string(),
+  kpis: z.lazy(() => KpiRecordUncheckedCreateNestedManyWithoutSimulationInputSchema).optional()
+}).strict();
+
+export const SimulationRecordCreateOrConnectWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordCreateOrConnectWithoutBottlenecksInput> = z.object({
+  where: z.lazy(() => SimulationRecordWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => SimulationRecordCreateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedCreateWithoutBottlenecksInputSchema) ]),
+}).strict();
+
+export const SimulationRecordUpsertWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordUpsertWithoutBottlenecksInput> = z.object({
+  update: z.union([ z.lazy(() => SimulationRecordUpdateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedUpdateWithoutBottlenecksInputSchema) ]),
+  create: z.union([ z.lazy(() => SimulationRecordCreateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedCreateWithoutBottlenecksInputSchema) ]),
+  where: z.lazy(() => SimulationRecordWhereInputSchema).optional()
+}).strict();
+
+export const SimulationRecordUpdateToOneWithWhereWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordUpdateToOneWithWhereWithoutBottlenecksInput> = z.object({
+  where: z.lazy(() => SimulationRecordWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => SimulationRecordUpdateWithoutBottlenecksInputSchema),z.lazy(() => SimulationRecordUncheckedUpdateWithoutBottlenecksInputSchema) ]),
+}).strict();
+
+export const SimulationRecordUpdateWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordUpdateWithoutBottlenecksInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  kpis: z.lazy(() => KpiRecordUpdateManyWithoutSimulationNestedInputSchema).optional()
+}).strict();
+
+export const SimulationRecordUncheckedUpdateWithoutBottlenecksInputSchema: z.ZodType<Prisma.SimulationRecordUncheckedUpdateWithoutBottlenecksInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  kpis: z.lazy(() => KpiRecordUncheckedUpdateManyWithoutSimulationNestedInputSchema).optional()
 }).strict();
 
 export const MachineCreateWithoutResourceInputSchema: z.ZodType<Prisma.MachineCreateWithoutResourceInput> = z.object({
@@ -9850,6 +10230,14 @@ export const KpiRecordCreateManySimulationInputSchema: z.ZodType<Prisma.KpiRecor
   name: z.string().optional().nullable()
 }).strict();
 
+export const BottleneckRecordCreateManySimulationInputSchema: z.ZodType<Prisma.BottleneckRecordCreateManySimulationInput> = z.object({
+  id: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  tick: z.number().int(),
+  name: z.string()
+}).strict();
+
 export const KpiRecordUpdateWithoutSimulationInputSchema: z.ZodType<Prisma.KpiRecordUpdateWithoutSimulationInput> = z.object({
   createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -9874,6 +10262,29 @@ export const KpiRecordUncheckedUpdateManyWithoutSimulationInputSchema: z.ZodType
   key: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   value: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   name: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const BottleneckRecordUpdateWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUpdateWithoutSimulationInput> = z.object({
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordUncheckedUpdateWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedUpdateWithoutSimulationInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const BottleneckRecordUncheckedUpdateManyWithoutSimulationInputSchema: z.ZodType<Prisma.BottleneckRecordUncheckedUpdateManyWithoutSimulationInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  tick: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  name: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const WorkerRoleUpdateWithoutWorkersInputSchema: z.ZodType<Prisma.WorkerRoleUpdateWithoutWorkersInput> = z.object({
@@ -11006,6 +11417,68 @@ export const KpiRecordFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.KpiRecordFin
   select: KpiRecordSelectSchema.optional(),
   include: KpiRecordIncludeSchema.optional(),
   where: KpiRecordWhereUniqueInputSchema,
+}).strict() ;
+
+export const BottleneckRecordFindFirstArgsSchema: z.ZodType<Prisma.BottleneckRecordFindFirstArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereInputSchema.optional(),
+  orderBy: z.union([ BottleneckRecordOrderByWithRelationInputSchema.array(),BottleneckRecordOrderByWithRelationInputSchema ]).optional(),
+  cursor: BottleneckRecordWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ BottleneckRecordScalarFieldEnumSchema,BottleneckRecordScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const BottleneckRecordFindFirstOrThrowArgsSchema: z.ZodType<Prisma.BottleneckRecordFindFirstOrThrowArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereInputSchema.optional(),
+  orderBy: z.union([ BottleneckRecordOrderByWithRelationInputSchema.array(),BottleneckRecordOrderByWithRelationInputSchema ]).optional(),
+  cursor: BottleneckRecordWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ BottleneckRecordScalarFieldEnumSchema,BottleneckRecordScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const BottleneckRecordFindManyArgsSchema: z.ZodType<Prisma.BottleneckRecordFindManyArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereInputSchema.optional(),
+  orderBy: z.union([ BottleneckRecordOrderByWithRelationInputSchema.array(),BottleneckRecordOrderByWithRelationInputSchema ]).optional(),
+  cursor: BottleneckRecordWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ BottleneckRecordScalarFieldEnumSchema,BottleneckRecordScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const BottleneckRecordAggregateArgsSchema: z.ZodType<Prisma.BottleneckRecordAggregateArgs> = z.object({
+  where: BottleneckRecordWhereInputSchema.optional(),
+  orderBy: z.union([ BottleneckRecordOrderByWithRelationInputSchema.array(),BottleneckRecordOrderByWithRelationInputSchema ]).optional(),
+  cursor: BottleneckRecordWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const BottleneckRecordGroupByArgsSchema: z.ZodType<Prisma.BottleneckRecordGroupByArgs> = z.object({
+  where: BottleneckRecordWhereInputSchema.optional(),
+  orderBy: z.union([ BottleneckRecordOrderByWithAggregationInputSchema.array(),BottleneckRecordOrderByWithAggregationInputSchema ]).optional(),
+  by: BottleneckRecordScalarFieldEnumSchema.array(),
+  having: BottleneckRecordScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const BottleneckRecordFindUniqueArgsSchema: z.ZodType<Prisma.BottleneckRecordFindUniqueArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereUniqueInputSchema,
+}).strict() ;
+
+export const BottleneckRecordFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.BottleneckRecordFindUniqueOrThrowArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereUniqueInputSchema,
 }).strict() ;
 
 export const ResourceFindFirstArgsSchema: z.ZodType<Prisma.ResourceFindFirstArgs> = z.object({
@@ -12148,6 +12621,50 @@ export const KpiRecordUpdateManyArgsSchema: z.ZodType<Prisma.KpiRecordUpdateMany
 
 export const KpiRecordDeleteManyArgsSchema: z.ZodType<Prisma.KpiRecordDeleteManyArgs> = z.object({
   where: KpiRecordWhereInputSchema.optional(),
+}).strict() ;
+
+export const BottleneckRecordCreateArgsSchema: z.ZodType<Prisma.BottleneckRecordCreateArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  data: z.union([ BottleneckRecordCreateInputSchema,BottleneckRecordUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const BottleneckRecordUpsertArgsSchema: z.ZodType<Prisma.BottleneckRecordUpsertArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereUniqueInputSchema,
+  create: z.union([ BottleneckRecordCreateInputSchema,BottleneckRecordUncheckedCreateInputSchema ]),
+  update: z.union([ BottleneckRecordUpdateInputSchema,BottleneckRecordUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const BottleneckRecordCreateManyArgsSchema: z.ZodType<Prisma.BottleneckRecordCreateManyArgs> = z.object({
+  data: z.union([ BottleneckRecordCreateManyInputSchema,BottleneckRecordCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const BottleneckRecordCreateManyAndReturnArgsSchema: z.ZodType<Prisma.BottleneckRecordCreateManyAndReturnArgs> = z.object({
+  data: z.union([ BottleneckRecordCreateManyInputSchema,BottleneckRecordCreateManyInputSchema.array() ]),
+}).strict() ;
+
+export const BottleneckRecordDeleteArgsSchema: z.ZodType<Prisma.BottleneckRecordDeleteArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  where: BottleneckRecordWhereUniqueInputSchema,
+}).strict() ;
+
+export const BottleneckRecordUpdateArgsSchema: z.ZodType<Prisma.BottleneckRecordUpdateArgs> = z.object({
+  select: BottleneckRecordSelectSchema.optional(),
+  include: BottleneckRecordIncludeSchema.optional(),
+  data: z.union([ BottleneckRecordUpdateInputSchema,BottleneckRecordUncheckedUpdateInputSchema ]),
+  where: BottleneckRecordWhereUniqueInputSchema,
+}).strict() ;
+
+export const BottleneckRecordUpdateManyArgsSchema: z.ZodType<Prisma.BottleneckRecordUpdateManyArgs> = z.object({
+  data: z.union([ BottleneckRecordUpdateManyMutationInputSchema,BottleneckRecordUncheckedUpdateManyInputSchema ]),
+  where: BottleneckRecordWhereInputSchema.optional(),
+}).strict() ;
+
+export const BottleneckRecordDeleteManyArgsSchema: z.ZodType<Prisma.BottleneckRecordDeleteManyArgs> = z.object({
+  where: BottleneckRecordWhereInputSchema.optional(),
 }).strict() ;
 
 export const ResourceCreateArgsSchema: z.ZodType<Prisma.ResourceCreateArgs> = z.object({

@@ -102,7 +102,6 @@ const SimulationControlOverlay: FunctionComponent = () => {
     ]
     : [];
 
-
   async function handleSaveKPIs() {
     if (!simulationName.trim()) {
       alert("Please enter a simulation name.");
@@ -110,12 +109,17 @@ const SimulationControlOverlay: FunctionComponent = () => {
     }
 
     try {
+      // NEW: Gather bottlenecks array from the simulation state, if it exists
+      const bottlenecksArray = simulation?.frames[frame].state.bottlenecks ?? [];
+      console.log("Bottlenecks Array:", bottlenecksArray);
+
       const response = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           simulationName,
           kpis: kpiArray,
+          bottlenecks: bottlenecksArray,
         }),
       });
 
@@ -124,6 +128,7 @@ const SimulationControlOverlay: FunctionComponent = () => {
         const result = await response.json();
         if (result.success) {
           console.log("Simulation saved with ID:", result.simulationId);
+          console.log("res", response);
           setSaveModalOpen(false);
           setSimulationName("");
         } else {

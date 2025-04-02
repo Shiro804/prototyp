@@ -26,6 +26,14 @@ import { SimulationStepC } from "./logic/SimulationStepC";
 import { SimulationStepD } from "./logic/SimulationStepD";
 
 /**
+ * An in-memory structure for each bottleneck event.
+ */
+export interface BottleneckEvent {
+  tick: number; // which tick the bottleneck occurred
+  name: string; // e.g. the name of the PS/TS
+}
+
+/**
  * Prisma Location Type with all relations included.
  */
 export type LocationFull = Prisma.LocationGetPayload<{
@@ -164,8 +172,18 @@ export type ProcessStepFull = Prisma.ProcessStepGetPayload<{
   };
 }>;
 
+/**
+ * The simulation state entity, including a custom array for bottlenecks.
+ */
 export interface SimulationEntityState {
   locations: LocationFull[];
+
+  /**
+   * If you want to store an in-memory array of bottlenecks across ticks,
+   * you can define it here. It's optional, but helps keep them in the
+   * same state object so you can retrieve them later.
+   */
+  bottlenecks?: BottleneckEvent[];
 }
 
 export interface SimulationFrame {
@@ -230,6 +248,11 @@ export class Simulation {
     // Initialize slot usage if needed
     this.assignInitialSlots(this.currentState);
 
+    // Create bottlenecks array if missing
+    if (!this.currentState.bottlenecks) {
+      this.currentState.bottlenecks = [];
+    }
+
     // Initial frame
     this.frames.push({
       state: Simulation.cloneState(this.currentState),
@@ -257,6 +280,11 @@ export class Simulation {
   public reset(): void {
     this.currentTick = 0;
     this.currentState = Simulation.cloneState(this.initialState);
+
+    // Create bottlenecks array if missing
+    if (!this.currentState.bottlenecks) {
+      this.currentState.bottlenecks = [];
+    }
 
     // Re-assign slots for pre-existing items
     this.assignInitialSlots(this.currentState);
@@ -452,7 +480,9 @@ export class Simulation {
   private computeNextTick(
     oldState: SimulationEntityState
   ): SimulationEntityState {
+    // Clone the state
     let newState = Simulation.cloneState(oldState);
+    // Re-link references
     Simulation.objectsToReferences(newState);
 
     // 1) resource logic
@@ -483,8 +513,8 @@ export class Simulation {
         .map((o) => o.id)
     );
 
-    // [QUEUE CODE] Dequeue from PS & TS
-    this.dequeueItems(newState);
+    // [QUEUE CODE] Dequeue from PS & TS, passing currentTick so we can log bottlenecks
+    this.dequeueItems(newState, this.currentTick);
 
     // ---------------- (A) RECIPE STEPS ----------------
     SimulationStepA.handleRecipeSteps(
@@ -495,7 +525,8 @@ export class Simulation {
       psDurationMap,
       (ps) => this.checkResourceFaulty(ps),
       (ps) => this.productionSucceeds(ps),
-      (ps, production) => this.finalizeProductionRun(ps, newState, production, movedOrderIds)
+      (ps, production) =>
+        this.finalizeProductionRun(ps, newState, production, movedOrderIds)
     );
 
     // ---------------- (B) NO-RECIPE STEPS ----------------
@@ -583,9 +614,13 @@ export class Simulation {
   }
 
   // --------------- QUEUEING / DEQUEUEING ---------------
-  private dequeueItems(newState: SimulationEntityState) {
-    // Delegates to the extracted code:
-    SimulationQueueManager.dequeueItems(newState, this.notificationsEnabled);
+  private dequeueItems(newState: SimulationEntityState, currentTick: number) {
+    // Delegates to the extracted code, passing currentTick so we can record bottlenecks:
+    SimulationQueueManager.dequeueItems(
+      newState,
+      this.notificationsEnabled,
+      currentTick
+    );
   }
 
   // --------------- Resource Logic ---------------

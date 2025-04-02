@@ -91,7 +91,7 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                             shadow="xl"
                             p="md"
                             withBorder
-                            bd={"2px solid #4d93ff"}
+                            bd={"1px solid #4d93ff"}
                             bg={BG_COLOR}
                             miw={500}
                         >

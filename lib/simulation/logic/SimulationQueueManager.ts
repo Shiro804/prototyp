@@ -4,11 +4,23 @@ import { SimulationEntityState, InventoryEntryWithDelay } from "../Simulation";
 import { handleNotification } from "@/app/notification-settings/page";
 
 export class SimulationQueueManager {
+  /**
+   * Dequeues items from process steps and transport systems if there is capacity.
+   * If items are actually dequeued, we record a bottleneck event in `newState.bottlenecks`.
+   */
   public static dequeueItems(
     newState: SimulationEntityState,
-    notificationsEnabled: boolean
+    notificationsEnabled: boolean,
+    currentTick: number
   ): void {
+    // If for some reason bottlenecks is missing, ensure it exists
+    // (In practice, the Simulation constructor or reset method might do this)
+    if (!newState.bottlenecks) {
+      newState.bottlenecks = [];
+    }
+
     for (const loc of newState.locations) {
+      // 1) Dequeue from ProcessSteps
       for (const ps of loc.processSteps) {
         // If ps has a queue
         if (!(ps as any).__queue) continue;
@@ -20,7 +32,12 @@ export class SimulationQueueManager {
         const psQueue = (ps as any).__queue as InventoryEntryWithDelay[];
         const toMove = psQueue.splice(0, capNow);
         if (toMove.length > 0) {
-          // Unqueued from a process step
+          // Record a bottleneck event
+          newState.bottlenecks.push({
+            tick: currentTick,
+            name: ps.name,
+          });
+
           if (notificationsEnabled) {
             handleNotification(
               "Queue",
@@ -29,13 +46,13 @@ export class SimulationQueueManager {
             );
           }
 
+          // Actually dequeue them
           ps.inventory.entries.push(...toMove);
-          // We are referencing Simulation.assignSlots(...) from the main code
-          // but in a real refactor you'd import or replicate that method.
+          // In a real refactor you'd call Simulation.assignSlots(ps.inventory, toMove);
         }
       }
 
-      // For each TS in each processStep
+      // 2) Dequeue from TransportSystems (ps.inputs + ps.outputs)
       for (const ps of loc.processSteps) {
         for (const ts of ps.inputs.concat(ps.outputs)) {
           if (!(ts as any).__queue) continue;
@@ -47,7 +64,12 @@ export class SimulationQueueManager {
           const tsQueue = (ts as any).__queue as InventoryEntryWithDelay[];
           const toMove = tsQueue.splice(0, capNow);
           if (toMove.length > 0) {
-            // Unqueued from a transport system
+            // Record a bottleneck event
+            newState.bottlenecks.push({
+              tick: currentTick,
+              name: ts.name,
+            });
+
             if (notificationsEnabled) {
               handleNotification(
                 "Queue",
@@ -57,8 +79,10 @@ export class SimulationQueueManager {
                 "info"
               );
             }
+
+            // Actually dequeue them
             ts.inventory.entries.push(...toMove);
-            // same note: you'd call Simulation.assignSlots(ts.inventory, toMove);
+            // In a real refactor you'd call Simulation.assignSlots(ts.inventory, toMove);
           }
         }
       }

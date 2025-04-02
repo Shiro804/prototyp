@@ -4,7 +4,10 @@ import { SimulationEntityState, InventoryEntryWithDelay } from "../Simulation";
 import { InventoryEntry } from "@prisma/client";
 
 export class SimulationStepD {
-  // The verbatim logic for (D) INTAKE: TS -> PS, extracted:
+  /**
+   * (D) INTAKE: Move items from TS to PS. If the PS is full, we queue them into PS.__queue
+   * and record a bottleneck event in newState.bottlenecks.
+   */
   public static handleIntake(
     newState: SimulationEntityState,
     currentTick: number,
@@ -26,6 +29,12 @@ export class SimulationStepD {
     ) => boolean,
     canIntakeItems: (ps: any, inputItems: InventoryEntryWithDelay[]) => boolean
   ) {
+    // Ensure we have a place for bottlenecks
+    if (!newState.bottlenecks) {
+      newState.bottlenecks = [];
+    }
+
+    // We'll see if the source has more items
     const sourceAvailability = new Map<number, boolean>();
     for (const loc of newState.locations) {
       for (const ps of loc.processSteps) {
@@ -67,21 +76,25 @@ export class SimulationStepD {
           );
           if (speedIn <= 0) continue;
 
+          // Find items in the TS that are ready to move
           const potentialItems = input.inventory.entries.filter((entry) => {
             if (!entry.orderId || !activeOrderIds.has(entry.orderId)) {
               return false;
             }
             const delayedEntry = entry as InventoryEntryWithDelay;
             if (delayedEntry.arrivedTick == null) return false;
+
             const delayNeeded =
               input.transportDelay != null && input.transportDelay >= 0
                 ? input.transportDelay
                 : defaultTransportDelay;
+
             return currentTick - delayedEntry.arrivedTick >= delayNeeded;
           });
 
           if (potentialItems.length === 0) continue;
 
+          // If minQuantity is set, ensure we have enough items
           if (
             input.minQuantity != null &&
             input.minQuantity > 0 &&
@@ -94,7 +107,7 @@ export class SimulationStepD {
             }
           }
 
-          // We'll do a simple FIFO
+          // We'll do a simple FIFO from the TS
           const sortedPotentials = potentialItems.sort(
             (a, b) => a.addedAt.getTime() - b.addedAt.getTime()
           );
@@ -102,18 +115,27 @@ export class SimulationStepD {
           const acceptedItems: InventoryEntryWithDelay[] = [];
           for (const candidate of sortedPotentials) {
             if (acceptedItems.length >= speedIn) break;
+
+            // If the PS is at capacity, we queue items
             if (
               ps.inventory.entries.length + acceptedItems.length >=
               ps.inventory.limit
             ) {
-              // [QUEUE CODE + NOTIF] If PS is full => queue items
+              // We queue them => record a bottleneck
               (ps as any).__queue.push(candidate);
 
+              newState.bottlenecks.push({
+                tick: currentTick,
+                name: ps.name,
+              });
+
               if (notificationsEnabled) {
-                // handleNotification(...) outside or replicate here
+                // e.g. handleNotification("Queue", `1 item queued in ProcessStep (${ps.name})`, "warning");
               }
               continue;
             }
+
+            // Test if we can intake them
             const testItem: InventoryEntryWithDelay = {
               ...candidate,
               inventoryId: ps.inventory.id,
@@ -128,9 +150,11 @@ export class SimulationStepD {
             continue;
           }
 
+          // Log the TS "output" and PS "input"
           sensorLogTS(input, "output", acceptedItems);
           sensorLogPS(ps, "input", acceptedItems);
 
+          // Update TS Duration
           for (const movedItem of acceptedItems) {
             const typed = movedItem as InventoryEntryWithDelay;
             if (typed.arrivedTick != null) {
@@ -143,12 +167,13 @@ export class SimulationStepD {
             }
           }
 
+          // Remove them from TS
           const acceptedIds = new Set(acceptedItems.map((x) => x.id));
-          // We'll rely on Simulation.freeSlots outside
           input.inventory.entries = input.inventory.entries.filter(
             (e) => !acceptedIds.has(e.id)
           );
 
+          // Add them to PS
           for (const item of acceptedItems) {
             const newItem: InventoryEntryWithDelay = {
               ...item,
@@ -157,12 +182,12 @@ export class SimulationStepD {
               slotNumber: undefined,
             };
             ps.inventory.entries.push(newItem);
-            // We'll rely on Simulation.assignSlots(...) outside
+
             if (newItem.orderId != null) {
               movedOrderIds.add(newItem.orderId);
             }
           }
-        }
+        } // end for each input
       }
     }
 

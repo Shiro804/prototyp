@@ -5,7 +5,11 @@ import { distributeRoundRobin } from "../round-robin";
 import { InventoryEntry } from "@prisma/client";
 
 export class SimulationStepC {
-  // The verbatim logic for (C) OUTLET: PS -> TS, extracted:
+  /**
+   * (C) OUTLET: Move items from a ProcessStep (PS) to its TransportSystems (TS),
+   * distributing them. If the TS is full or inactive, we push them to the TS's queue
+   * and record a bottleneck event in newState.bottlenecks.
+   */
   public static handleOutlet(
     newState: SimulationEntityState,
     currentTick: number,
@@ -23,6 +27,11 @@ export class SimulationStepC {
       items: InventoryEntryWithDelay[]
     ) => boolean
   ) {
+    // Ensure we have a place for bottlenecks
+    if (!newState.bottlenecks) {
+      newState.bottlenecks = [];
+    }
+
     for (const location of newState.locations) {
       for (const ps of location.processSteps) {
         if (!ps.active) continue;
@@ -32,6 +41,7 @@ export class SimulationStepC {
         );
         if (effOutSpeed <= 0) continue;
 
+        // which TS are "active"? We'll consider only active ones for distribution
         const activeOutputs = ps.outputs.filter((o) => o.active);
         const outputSpeeds = activeOutputs.map((o) =>
           Math.min(
@@ -40,6 +50,7 @@ export class SimulationStepC {
           )
         );
 
+        // We do a round-robin distribution among these TS
         const itemsPerOutput = distributeRoundRobin(
           ps.inventory.entries
             .filter(
@@ -55,6 +66,7 @@ export class SimulationStepC {
           )
         );
 
+        // Move items to each TS
         for (let i = 0; i < itemsPerOutput.length; i++) {
           const ts = ps.outputs[i];
           const effTSOutSpeed = Math.floor(
@@ -62,15 +74,17 @@ export class SimulationStepC {
           );
           if (effTSOutSpeed <= 0) continue;
 
+          // Log the PS "output" and TS "input"
           sensorLogPS(ps, "output", itemsPerOutput[i]);
           sensorLogTS(ts, "input", itemsPerOutput[i]);
 
+          // Remove them from PS's inventory
           const outIds = new Set(itemsPerOutput[i].map((x) => x.id));
-          // We'll rely on Simulation.freeSlots outside
           ps.inventory.entries = ps.inventory.entries.filter(
             (e) => !outIds.has(e.id)
           );
 
+          // Prepare the items to be inserted into TS
           const entriesOut = itemsPerOutput[i].map((item) => ({
             ...item,
             addedAt: new Date(),
@@ -85,22 +99,30 @@ export class SimulationStepC {
               ts.inventory.limit ||
             !ts.active
           ) {
+            // Put them in TS's queue
             (ts as any).__queue.push(...entriesOut);
 
-            // [QUEUE NOTIF] for TS
+            // Record a bottleneck event in newState
+            newState.bottlenecks.push({
+              tick: currentTick,
+              name: ts.name,
+            });
+
+            // Optionally show a notification
             if (notificationsEnabled && entriesOut.length > 0) {
-              // handleNotification(...) outside or replicate here
+              // e.g. handleNotification("Queue", `${entriesOut.length} item(s) queued in TS`, "warning");
             }
           } else {
+            // Enough space => push them directly to TS
             ts.inventory.entries.push(...entriesOut);
-            // We'll rely on Simulation.assignSlots(...) outside
+
             for (const eo of entriesOut) {
               if (eo.orderId != null) {
                 movedOrderIds.add(eo.orderId);
               }
             }
           }
-        }
+        } // end for each TS
       }
     }
   }
