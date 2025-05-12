@@ -45,14 +45,14 @@ interface LinkDescription {
 }
 
 const overviewLinks: LinkDescription[] = [
-  { icon: IconHome, label: "Dashboard", href: "/" },
-  { icon: IconChartInfographic, label: "KPIs", href: "/kpis" },
+  // { icon: IconHome, label: "Dashboard", href: "/" },
+  { icon: IconChartInfographic, label: "KPIs", href: "/" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
   // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
 ];
 
 const mockSimulationLinks: LinkDescription[] = [
-  { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
+  // { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
   // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
@@ -63,17 +63,17 @@ const reportsAndAnalytics: LinkDescription[] = [
   {
     icon: IconGraph,
     label: "Process Graph",
-    href: "/simulation-overview",
-  },
-  {
-    icon: IconGraph,
-    label: "Material Flow Graph",
-    href: "/material-flow-graph",
+    href: "/process-graph",
   },
   {
     icon: IconGraph,
     label: "Simulation Analysis",
     href: "/simulation-analysis",
+  },
+  {
+    icon: IconGraph,
+    label: "Inventory Visualization",
+    href: "/inventory-visualization",
   },
   //   {
   //     icon: IconChartInfographic,
@@ -169,7 +169,7 @@ export default function MainContainer({
                   hiddenFrom="sm"
                   size="sm"
                 />
-                <Logo />
+                {/* <Logo /> */}
               </Group>
               <SimulationControlOverlay />
             </Flex>

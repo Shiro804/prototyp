@@ -1,5 +1,3 @@
-// app/kpis/components/KPIItem.tsx
-
 "use client";
 
 import React from "react";
@@ -10,11 +8,21 @@ import { BG_COLOR, PRIMARY, SECONDARY } from "@/lib/theme";
 interface KPIItemProps {
   label: string;
   value: string | number;
-  compareValue?: string | number;  // NEW compare property
+  compareValue?: string | number;  // compare property
   tooltip?: string | React.ReactNode;
+  /**
+   * Optional background color. If provided, overrides the default BG_COLOR.
+   */
+  bg?: string;
 }
 
-export const KPIItem: React.FC<KPIItemProps> = ({ label, value, compareValue, tooltip }) => {
+export const KPIItem: React.FC<KPIItemProps> = ({
+  label,
+  value,
+  compareValue,
+  tooltip,
+  bg,
+}) => {
   const kpiOverviewPaperHeight = 80;
   const kpiOverviewPaperPadding = "xs";
 
@@ -83,7 +91,8 @@ export const KPIItem: React.FC<KPIItemProps> = ({ label, value, compareValue, to
         color: "white",
         minHeight: kpiOverviewPaperHeight,
       }}
-      bg={BG_COLOR}
+      // Use the optional 'bg' if provided; otherwise BG_COLOR
+      bg={bg ?? BG_COLOR}
       bd={`3px solid ${PRIMARY}`}
     >
       <Flex justify={"space-between"} align={"center"}>

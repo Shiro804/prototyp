@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "./global.css";
 
 import MainContainer from "@/components/MainContainer";
 import { theme } from "@/lib/theme";

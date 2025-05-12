@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { Flex, SimpleGrid, Switch, Text } from "@mantine/core";
@@ -25,23 +26,82 @@ export function handleNotification(
 
 function NotificationSettings() {
     const { simulation, frame } = useSimulationLive();
+    const [areAllNotificationsDisabled, setAreAllNotificationsDisabled] = useState(false);
+
+    // Global toggle that updates all notifications (orders and process steps)
+    const toggleAllNotifications = () => {
+        const newDisabledState = !areAllNotificationsDisabled;
+        setAreAllNotificationsDisabled(newDisabledState);
+
+        // Update orders notifications
+        const ordersKeys = [
+            "Order Status",
+            "Order Reservation",
+            "Order Completed",
+            "Order Reservation Failed",
+            "Live Simulation",
+            "Simulation Stopped",
+            "Queue"
+        ];
+        ordersKeys.forEach((key) => {
+            disabledNotifications[key] = newDisabledState;
+            if (newDisabledState) {
+                notifications.hide(key);
+            } else {
+                notifications.show({
+                    id: key,
+                    title: "Notification Enabled",
+                    message: `Notifications for ${key} have been enabled.`,
+                    color: "green",
+                });
+            }
+        });
+
+        // Update process steps notifications in locations
+        if (simulation?.frames[frame].state.locations) {
+            simulation.frames[frame].state.locations.forEach((loc) => {
+                loc.processSteps.forEach((ps) => {
+                    disabledNotifications[ps.name] = newDisabledState;
+                    if (newDisabledState) {
+                        notifications.hide(ps.name);
+                    } else {
+                        notifications.show({
+                            id: ps.name,
+                            title: "Notification Enabled",
+                            message: `Notifications for process step "${ps.name}" have been enabled.`,
+                            color: "green",
+                        });
+                    }
+                });
+            });
+        }
+
+        notifications.show({
+            title: newDisabledState ? "All Notifications Disabled" : "All Notifications Enabled",
+            message: `All notifications have been ${newDisabledState ? "disabled" : "enabled"}.`,
+            color: newDisabledState ? "red" : "green",
+        });
+    };
 
     // Toggle notification visibility for a specific process step
     const toggleNotificationForProcessStep = (processStepName: string) => {
+        // Prevent individual toggles when global notifications are disabled
+        if (areAllNotificationsDisabled) return;
+
         disabledNotifications[processStepName] = !disabledNotifications[processStepName];
 
         if (disabledNotifications[processStepName]) {
             notifications.hide(processStepName);
             notifications.show({
                 title: "Notification Disabled",
-                message: `Notifications for process step \"${processStepName}\" have been disabled.`,
+                message: `Notifications for process step "${processStepName}" have been disabled.`,
                 color: "red",
             });
         } else {
             notifications.show({
                 id: processStepName,
                 title: "Notification Enabled",
-                message: `Notifications for process step \"${processStepName}\" have been enabled.`,
+                message: `Notifications for process step "${processStepName}" have been enabled.`,
                 color: "green",
             });
         }
@@ -49,15 +109,23 @@ function NotificationSettings() {
 
     function returnLocationsWithProcessStepsWithRecipes(locations: LocationFull[]): LocationFull[] {
         return locations.filter((loc) =>
-            loc.processSteps.some((ps) => ps.recipe) // Prüfe, ob mindestens ein `processStep` ein Rezept hat
+            loc.processSteps.some((ps) => ps.recipe)
         );
     }
+
     return (
         <SimpleGrid cols={1}>
-            {/* Notification Settings */}
-            <Text fw={700} fz={25} mb={-10}>
-                Notification Settings
-            </Text>
+            {/* Notification Settings Header */}
+            <Flex align={"center"} h={"fit-content"} gap={10}> 
+                <Text fw={700} fz={25}>
+                    Notification Settings
+                </Text>
+                <Switch
+                    checked={!areAllNotificationsDisabled}
+                    onChange={toggleAllNotifications}
+                    label={areAllNotificationsDisabled ? "Disabled" : "Enabled"}
+                />
+            </Flex>
             <Text fw={600} fz={15} mb={10} maw={800}>
                 Here you can (De-)Activate Notifications for every process step within
                 the Live Simulation. Only process steps, which produce (sub)products, thus producing messages, are being shown.
@@ -71,83 +139,63 @@ function NotificationSettings() {
                     maw={500}
                     gap={20}
                 >
-                    <Text fz={20} fw={700}>Locations</Text>
-                    {simulation?.frames[frame].locations && returnLocationsWithProcessStepsWithRecipes(simulation?.frames[frame].locations).map((loc) => (
-                        <Flex key={loc.id} direction="column" w="100%">
-                            {/* Location Name */}
-                            <Text fw={600} fz={16} mb={10}>
-                                {loc.name}
-                            </Text>
-                            {/* Process Steps */}
-                            <Flex
-                                direction="column"
-                                w="100%"
-                                gap={10}
-                                pl={20} // Indent process steps for better UI
-                            >
-                                {loc.processSteps.map((ps) => (
-                                    <Flex
-                                        key={ps.id}
-                                        direction="row"
-                                        align="center"
-                                        justify="space-between"
-                                    >
-                                        <Text fw={500} fz={16}>
-                                            {ps.name}
-                                        </Text>
-                                        <Switch
-                                            checked={!disabledNotifications[ps.name]}
-                                            onChange={() => toggleNotificationForProcessStep(ps.name)}
-                                        />
-                                    </Flex>
-                                ))}
+                    {/* Locations header with global switch */}
+                    <Flex direction="row" align="center" justify="space-between" w="100%">
+                        <Text fz={20} fw={700}>
+                            Locations
+                        </Text>
+                    </Flex>
+                    {simulation?.frames[frame].state.locations &&
+                        returnLocationsWithProcessStepsWithRecipes(simulation.frames[frame].state.locations).map((loc) => (
+                            <Flex key={loc.id} direction="column" w="100%">
+                                {/* Location Name */}
+                                <Text fw={600} fz={16} mb={10}>
+                                    {loc.name}
+                                </Text>
+                                {/* Process Steps */}
+                                <Flex direction="column" w="100%" gap={10} pl={20}>
+                                    {loc.processSteps.map((ps) => (
+                                        <Flex
+                                            key={ps.id}
+                                            direction="row"
+                                            align="center"
+                                            justify="space-between"
+                                        >
+                                            <Text fw={500} fz={16}>
+                                                {ps.name}
+                                            </Text>
+                                            <Switch
+                                                checked={!disabledNotifications[ps.name]}
+                                                onChange={() => toggleNotificationForProcessStep(ps.name)}
+                                                disabled={areAllNotificationsDisabled}
+                                            />
+                                        </Flex>
+                                    ))}
+                                </Flex>
                             </Flex>
-                        </Flex>
-                    ))}
-                    <Text fz={20} fw={700}>Orders</Text>
-                    <Flex key={"cock"} direction="column" pl={20} w="100%" gap={10}>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Order Status</Text>
-                            <Switch
-                                checked={!disabledNotifications["Order Status"]}
-                                onChange={() => toggleNotificationForProcessStep("Order Status")}
-                            />
-                        </Flex>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Order Reservation</Text>
-                            <Switch
-                                checked={!disabledNotifications["Order Reservation"]}
-                                onChange={() => toggleNotificationForProcessStep("Order Reservation")}
-                            />
-                        </Flex>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Order Completed</Text>
-                            <Switch
-                                checked={!disabledNotifications["Order Completed"]}
-                                onChange={() => toggleNotificationForProcessStep("Order Completed")}
-                            />
-                        </Flex>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Order Reservation Failed</Text>
-                            <Switch
-                                checked={!disabledNotifications["Order Reservation Failed"]}
-                                onChange={() => toggleNotificationForProcessStep("Order Reservation Failed")}
-                            />
-                        </Flex>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Live Simulation</Text>
-                            <Switch
-                                checked={!disabledNotifications["Live Simulation"]}
-                                onChange={() => toggleNotificationForProcessStep("Live Simulation")}
-                            />
-                        </Flex>
-                        <Flex direction="row" align="center" justify="space-between">
-                            <Text>Simulation Stopped</Text>
-                            <Switch
-                                checked={!disabledNotifications["Simulation Stopped"]}
-                                onChange={() => toggleNotificationForProcessStep("Simulation Stopped")}
-                            />
-                        </Flex>
+                        ))}
+                    <Text fz={20} fw={700}>
+                        Orders
+                    </Text>
+                    <Flex key={"orders"} direction="column" pl={20} w="100%" gap={10}>
+                        {[
+                            "Order Status",
+                            "Order Reservation",
+                            "Order Completed",
+                            "Order Reservation Failed",
+                            "Live Simulation",
+                            "Simulation Stopped",
+                            "Queue"
+                        ].map((key) => (
+                            <Flex key={key} direction="row" align="center" justify="space-between">
+                                <Text>{key}</Text>
+                                <Switch
+                                    checked={!disabledNotifications[key]}
+                                    onChange={() => toggleNotificationForProcessStep(key)}
+                                    disabled={areAllNotificationsDisabled}
+                                />
+                            </Flex>
+                        ))}
                     </Flex>
                 </Flex>
             </Flex>

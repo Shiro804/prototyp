@@ -30,7 +30,6 @@ const AdjustSimulationParamsModal: FunctionComponent<AdjustSimulationParamsProps
             </Modal >
             <Tooltip label="Open Simulation Configuration"
                 position="bottom"
-                color="#5300E8"
                 radius="md"
                 offset={10}
                 withArrow>

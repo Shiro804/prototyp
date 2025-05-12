@@ -26,7 +26,7 @@ import { GaugeSection } from "../custom/GaugeSection";
 // We now import our universal table
 import { UniversalTable } from "./Tables";  // <-- wherever the new Tables.tsx is located
 import { getTransportSystemsForProcessStep } from "../helpers";
-import { PRIMARY } from "@/lib/theme";
+import { BG_COLOR, PRIMARY } from "@/lib/theme";
 
 /**
  * "DetailedLocationCard" shows a detailed view of one Location (including all process steps).
@@ -66,7 +66,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
     }
 
     return (
-        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg="white">
+        <Paper shadow="md" p="lg" style={{ overflowY: "auto" }} bg={BG_COLOR}>
             {/* Header */}
             <Flex justify="space-between" align="center" mb="lg">
                 <Text fw="bold" size="xl">
@@ -204,7 +204,6 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                                                             columns={getInventoryEntryColumns()}
                                                                             tableOptions={{
                                                                                 // For example: enableColumnResizing, row selection, etc.
-                                                                                enableColumnResizing: true,
                                                                             }}
                                                                         />
                                                                     </Flex>
@@ -250,18 +249,12 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                                         </Accordion.Panel>
                                     </Accordion.Item>
                                 </Accordion>
-
-                                {/* Sub-Accordion for grouped materials => we'll do 
-                    a "grouped" approach, or simply show a table of them all. */}
                                 <Accordion multiple variant="contained" mt="md">
                                     <Accordion.Item value={`inventory-ps-${ps.id}`}>
                                         <Accordion.Control>
                                             Materials ({ps.inventory.entries.length})
                                         </Accordion.Control>
                                         <Accordion.Panel>
-                                            {/* If you want a grouped approach, you'd do so. 
-                          But we can just show them as a universal table. 
-                          Or you can keep the grouping logic + universal table inside. */}
                                             <UniversalTable<InventoryEntry>
                                                 data={ps.inventory.entries}
                                                 columns={getInventoryEntryColumns()}
@@ -288,7 +281,7 @@ export const DetailedLocationCard: FC<DetailedLocationCardProps> = ({
                     );
                 })}
             </Accordion>
-        </Paper>
+        </Paper >
     );
 };
 
@@ -358,6 +351,10 @@ function getInventoryEntryColumns() {
         {
             accessorKey: "inventoryId",
             header: "Inventory ID",
+        },
+        {
+            accessorKey: "slotNumber",
+            header: "Slot",
         },
     ];
     return columns;
