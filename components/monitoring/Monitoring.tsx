@@ -49,9 +49,6 @@ export function Monitoring({ mode }: MonitoringProps) {
     }
 
     const currentFrame = simulation.frames[frame];
-    const BUTTON_ACTIVE_COLOR = "rgb(209, 212, 255)";
-    const BUTTON_COLOR = "#5300E8";
-
 
 
     if (selectedLocationId !== null) {

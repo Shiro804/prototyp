@@ -9,7 +9,9 @@
     "lint": "next lint",
     "test": "jest",
     "seed": "tsx data/seed.ts",
+    "seed2": "tsx data/seed2.ts",
     "resetandseed": "npx prisma db push --force-reset && npx prisma migrate dev --name init && npx prisma generate && npm run seed && npm run dev",
+    "resetandseed2": "npx prisma db push --force-reset --schema=prisma/schema2.prisma && npx prisma migrate dev --name init --schema=prisma/schema2.prisma && npx prisma generate --schema=prisma/schema2.prisma && npm run seed2 && npm run dev",
     "migrate": "npx prisma migrate dev --name init"
   },
   "dependencies": {
@@ -22,6 +24,7 @@
     "@mantine/form": "^7.12.2",
     "@mantine/hooks": "^7.12.2",
     "@mantine/notifications": "^7.12.2",
+    "@mantine/styles": "^6.0.22",
     "@mui/x-charts": "^7.23.2",
     "@next/bundle-analyzer": "^14.2.14",
     "@prisma/client": "^5.19.1",
@@ -29,13 +32,15 @@
     "@xyflow/react": "^12.3.6",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "elkjs": "^0.10.0",
     "mantine-react-table": "^2.0.0-beta.6",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
     "react-gauge-chart": "^0.5.1",
     "recharts": "^2.12.7",
-    "swr": "^2.2.5"
+    "swr": "^2.2.5",
+    "web-worker": "^1.5.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

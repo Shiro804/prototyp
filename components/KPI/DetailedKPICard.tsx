@@ -2,12 +2,14 @@
 "use client";
 
 import React, { FC, useEffect } from "react";
-import { Paper, Text, Flex, SimpleGrid, Divider, Box, Title, MantineStyleProp, StyleProp } from "@mantine/core";
+import { Paper, Text, Flex, SimpleGrid, Divider, Box, Title, MantineStyleProp, StyleProp, Tooltip } from "@mantine/core";
 import GaugeChart from "react-gauge-chart";
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { ProcessStep } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
 import { getTransportSystemsForProcessStep } from "../helpers";
+import { IconInfoCircle, IconInfoCircleFilled } from "@tabler/icons-react";
+import { BG_COLOR } from "@/lib/theme";
 
 /**
  * Interface for DetailedKPICard Props
@@ -46,13 +48,20 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
         return Math.min(utilization, 1);
     };
 
-    const KPI = (header: string, value: any) => {
+    const KPI = (header: string, value: any, tooltip?: string) => {
         return (
             <Flex direction={"column"}>
-                <Text fw={600} size="sm">
-                    {header}
-                </Text>
-                <Text size="sm" mb="xs">
+                <Flex align={"center"} justify={"space-between"}>
+                    <Text fw={600} size="sm">
+                        {header}
+                    </Text>
+                    {tooltip && (
+                        <Tooltip label={tooltip} multiline maw={500} radius={5}>
+                            <IconInfoCircle />
+                        </Tooltip>
+                    )}
+                </Flex>
+                <Text size="sm">
                     {(typeof value === "number") ? "" + value : value}
                 </Text>
             </Flex>
@@ -60,16 +69,16 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
     }
 
     return (
-        <Paper shadow="md" p="lg" mb="xl" withBorder bg="white">
+        <Paper shadow="md" p="lg" mb="xl" withBorder bg={BG_COLOR} c={"white"}>
             {/* LOCATION INFO */}
             <Text fw="bold" size="xl" mb="sm">
                 {name} - KPI Overview
             </Text>
-            <Text size="sm">Description: {description || "-"}</Text>
-            <Text size="sm">Created At: {new Date(createdAt).toLocaleString()}</Text>
+            {description && <Text size="sm">Description: {description}</Text>}
+            {/* <Text size="sm">Created At: {new Date(createdAt).toLocaleString()}</Text>
             <Text size="sm" mb="md">
                 Updated At: {new Date(updatedAt).toLocaleString()}
-            </Text>
+            </Text> */}
             <Divider mb="lg" />
 
             {/* PROCESS STEPS GRID */}
@@ -82,26 +91,27 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                             shadow="xl"
                             p="md"
                             withBorder
-                            bg="white"
+                            bd={"1px solid #4d93ff"}
+                            bg={BG_COLOR}
                             miw={500}
                         >
-                            <Flex direction={"column"}>
-                                <Box>
+                            <Flex direction={"column"} bg={BG_COLOR}>
+                                <Box bg={BG_COLOR}>
                                     <Title order={4} fw="bold" size="md" mb="xs">
                                         {ps.name}
                                     </Title>
                                     <Divider mb="sm" />
                                 </Box>
-                                <Flex direction={"row"}>
-                                    <Flex p={20} pr={40} w={"50%"}>
+                                <Flex bg={BG_COLOR} direction={"row"}>
+                                    <Flex p={20} pr={40} w={"50%"} direction={"row"} align={"center"} h={"100%"}>
                                         {/* KPIs */}
                                         <SimpleGrid cols={{ base: 2, sm: 2, lg: 2 }} miw={"50%"} mr={"xl"}>
                                             {/* Left column: textual details */}
-                                            {KPI("Status", ps.status)}
-                                            {KPI("Input Speed", ps.inputSpeed)}
-                                            {KPI("Output Speed", ps.outputSpeed)}
-                                            {KPI("Recipe Rate", ps.recipeRate)}
-                                            {KPI("Materials", ps.inventory.entries.length)}
+                                            {KPI("Status", ps.status, "Current status of the process step (e.g. Idling, Running, Stopped.)")}
+                                            {KPI("Input Speed", ps.inputSpeed, "Displays the number of materials that can be taken in by the inventory per tick.")}
+                                            {KPI("Output Speed", ps.outputSpeed, "Displays the number of materials that can be taken out of the inventory per tick.")}
+                                            {KPI("Recipe Rate", ps.recipeRate, "Displays the number of recipes that can be fulfilled within one tick by this process step. One recipe is e.g. 1x Material A + 1x Material B = 1x Product C.")}
+                                            {KPI("Materials", ps.inventory.entries.length, "Total number of the materials within the inventory.")}
 
                                             {KPI("Order IDs",
                                                 ps.orders.length > 0
@@ -111,8 +121,8 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
                                                             {index < ps.orders.length - 1 && ", "}
                                                         </React.Fragment>
                                                     ))
-                                                    : "-"
-                                            )}
+                                                    : "-",
+                                                "Displays the IDs of the orders that are currently being handled within this process step.")}
 
                                             {ps.sensors.find(s => s.type === "counter") != null && (
                                                 <>
@@ -122,55 +132,29 @@ export const DetailedKPICard: FC<DetailedKPICardProps> = ({ location }) => {
 
                                             {/* Right column: Memoized Gauge for inventory utilization */}
                                         </SimpleGrid>
-                                        <GaugeSection percent={utilization} width={170} />
+                                        <Flex direction={"row"} gap={20} align={"center"} justify={"center"} p={20} h={"100%"}>
+                                            <GaugeSection title="Inventory Ut. (%)" percent={utilization} width={170} color="green" tooltip="Displays the current inventory utilization in percent. Formula is '(current number of materials within inventory / inventory limit) * 100'." />
+                                        </Flex>
                                     </Flex>
-                                    <Flex direction={"row"} gap={20} align={"center"}>
-                                        <Title order={5} style={{ transform: "rotate(-90deg)" }} miw={200} mr={-40}>
-                                            Transport System(s)
-                                        </Title>
+                                    <Flex direction={"row"} gap={20} align={"center"} justify={"center"} p={20}>
+                                        {ps.outputs.length > 0 && (
+                                            <Title order={5} style={{ transform: "rotate(-90deg)" }} miw={200} mr={-40}>
+                                                Transport System(s)
+                                            </Title>
+                                        )}
                                         {getTransportSystemsForProcessStep(ps).map(ts => {
                                             return (
-                                                <GaugeSection title="Inventory Ut. (%)" percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" footerLabel={ts.name}/>
+                                                <GaugeSection title="Inventory Ut. (%)" percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" footerLabel={ts.name} tooltip="Displays the current inventory utilization in percent. Formula is 'current materials / limit'." />
 
                                             )
                                         })}
                                     </Flex>
-                                    {/* <Flex direction={"column"} w={"100%"}>
-                                        <Title order={5}>
-                                            Transport System(s)
-                                        </Title>
-                                        {getTransportSystemsForProcessStep(ps).map(ts => {
-                                            return (
-                                                <Paper p={"xs"} shadow="xl" mb="xl" withBorder bg="white">
-                                                    <Flex>
-                                                        <Title order={6} mr={"xs"}>Name:</Title>
-                                                        {KPI("", ts.name)}
-                                                    </Flex>
-                                                    <Flex w={"100%"} justify={"space-between"} p={"xs"} pr={"xl"} >
-                                                        <Flex justify={"center"} align={"center"}>
-                                                            <SimpleGrid cols={{ base: 2, sm: 1, md: 2, lg: 3 }}>
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                                {KPI("Placeholder", 1)}
-                                                            </SimpleGrid>
-                                                        </Flex>
-                                                        <Flex>
-                                                            <GaugeSection percent={ts.inventory.entries.length / ts.inventory.limit} width={170} color="green" />
-                                                        </Flex>
-                                                    </Flex>
-                                                </Paper>
-                                            )
-                                        })}
-                                    </Flex> */}
                                 </Flex>
                             </Flex>
                         </Paper>
                     );
                 })}
-            </SimpleGrid>
-        </Paper>
+            </SimpleGrid >
+        </Paper >
     );
 };

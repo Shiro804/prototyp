@@ -1,0 +1,261 @@
+generator zod {
+  provider = "zod-prisma-types"
+}
+
+datasource db2 {
+  provider = "sqlite"
+  url      = "file:./live.db"
+}
+
+generator client2 {
+  provider = "prisma-client-js"
+  output   = "./client/client2"
+}
+
+model SimulationRecord {
+  id        Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  name      String
+  kpis      KpiRecord[]
+}
+
+model KpiRecord {
+  id           Int              @id @default(autoincrement())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  key          String
+  value        Float
+  name         String?
+  simulationId Int
+  simulation   SimulationRecord @relation(fields: [simulationId], references: [id])
+}
+
+model Resource {
+  id                 Int              @id @default(autoincrement())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  name               String?
+  active             Boolean          @default(true)
+  mandatory          Boolean          @default(false)
+  productionResource Boolean          @default(false)
+  inventoryResource  Boolean          @default(false)
+  locationId         Int
+  processStepId      Int?
+  transportSystemId  Int?
+  faulty             Boolean?         @default(false)
+  faultyRate         Float            @default(0.01)
+  Machine            Machine?
+  processStep        ProcessStep?     @relation(fields: [processStepId], references: [id])
+  transportSystem    TransportSystem? @relation(fields: [transportSystemId], references: [id])
+  location           Location         @relation(fields: [locationId], references: [id])
+  Worker             Worker?
+}
+
+model Machine {
+  id         Int      @id @default(autoincrement())
+  resourceId Int      @unique
+  resource   Resource @relation(fields: [resourceId], references: [id])
+}
+
+model Worker {
+  id           Int          @id @default(autoincrement())
+  workerNumber String
+  fullName     String
+  address      String
+  resourceId   Int          @unique
+  resource     Resource     @relation(fields: [resourceId], references: [id])
+  workerRoles  WorkerRole[] @relation("WorkerToWorkerRole")
+}
+
+model WorkerRole {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  workers     Worker[] @relation("WorkerToWorkerRole")
+}
+
+model Inventory {
+  id              Int              @id @default(autoincrement())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  type            String
+  limit           Int
+  entries         InventoryEntry[]
+  processStep     ProcessStep?
+  transportSystem TransportSystem?
+}
+
+model InventoryEntry {
+  id          Int       @id @default(autoincrement())
+  addedAt     DateTime  @default(now())
+  material    String
+  inventoryId Int
+  inventory   Inventory @relation(fields: [inventoryId], references: [id])
+
+  Order   Order? @relation(fields: [orderId], references: [id])
+  orderId Int?
+}
+
+model Location {
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  name         String
+  description  String?
+  processSteps ProcessStep[]
+  resources    Resource[]
+}
+
+model ProcessStep {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  status      String   @default("IDLING")
+  active      Boolean  @default(true)
+  inputSpeed  Int
+  outputSpeed Int
+  recipeRate  Int      @default(10)
+  duration    Int      @default(1)
+  locationId  Int
+  inventoryId Int      @unique
+  recipeId    Int?
+  errorRate   Float?   @default(0.0)
+
+  orders    Order[]           @relation("OrderToProcessStep")
+  recipe    Recipe?           @relation(fields: [recipeId], references: [id])
+  inventory Inventory         @relation(fields: [inventoryId], references: [id])
+  location  Location          @relation(fields: [locationId], references: [id])
+  resources Resource[]
+  sensors   Sensor[]
+  inputs    TransportSystem[] @relation("stepInputs")
+  outputs   TransportSystem[] @relation("stepOutputs")
+}
+
+model Recipe {
+  id           Int            @id @default(autoincrement())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  name         String
+  processSteps ProcessStep[]
+  inputs       RecipeInput[]
+  outputs      RecipeOutput[]
+}
+
+model RecipeInput {
+  id       Int     @id @default(autoincrement())
+  material String
+  quantity Int
+  recipeId Int?
+  Recipe   Recipe? @relation(fields: [recipeId], references: [id])
+
+  @@unique([material, recipeId])
+}
+
+model RecipeOutput {
+  id       Int     @id @default(autoincrement())
+  material String
+  quantity Int
+  recipeId Int?
+  Recipe   Recipe? @relation(fields: [recipeId], references: [id])
+}
+
+model LogEntry {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  inputType String
+
+  sensorId     Int?
+  sensor       Sensor? @relation(fields: [sensorId], references: [id])
+  materialId   Int
+  materialName String
+
+  processStepId     Int?
+  transportSystemId Int?
+}
+
+model Sensor {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  type        String // e.g. "scanner" oder "counter"
+  value       Int      @default(0)
+  sensorDelay Int      @default(0)
+  active      Boolean  @default(true)
+
+  processStepId     Int?
+  processStep       ProcessStep?     @relation(fields: [processStepId], references: [id])
+  transportSystemId Int?
+  transportSystem   TransportSystem? @relation(fields: [transportSystemId], references: [id])
+  logEntries        LogEntry[]
+}
+
+model FilterEntry {
+  id       Int      @id @default(autoincrement())
+  addedAt  DateTime @default(now())
+  material String
+  filterId Int
+  filter   Filter   @relation(fields: [filterId], references: [id])
+}
+
+model Filter {
+  id                Int             @id @default(autoincrement())
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  transportSystemId Int             @unique
+  transportSystem   TransportSystem @relation(fields: [transportSystemId], references: [id])
+  entries           FilterEntry[]
+  orderId           Int?
+}
+
+model TransportSystem {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  active         Boolean  @default(true)
+  name           String
+  inputSpeed     Int
+  outputSpeed    Int
+  inventoryId    Int      @unique
+  minQuantity    Int?     @default(1)
+  transportDelay Int?     @default(1)
+  startStepId    Int?
+  endStepId      Int?
+  type           String
+
+  // Verweise auf ProcessSteps
+  endStep   ProcessStep? @relation("stepInputs", fields: [endStepId], references: [id])
+  startStep ProcessStep? @relation("stepOutputs", fields: [startStepId], references: [id])
+
+  // NEU: Nur noch IDs, keine Self-Relation-Objekte
+  startTSId Int?
+  endTSId   Int?
+
+  inventory Inventory  @relation(fields: [inventoryId], references: [id])
+  orders    Order[]    @relation("OrderToTransportSystem")
+  filter    Filter?
+  sensors   Sensor[]
+  resources Resource[]
+}
+
+model Order {
+  id               Int               @id @default(autoincrement())
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  status           String            @default("pending")
+  priority         Int               @default(1)
+  dueDate          DateTime?
+  description      String?
+  quantity         Int               @default(1)
+  inventoryEntries InventoryEntry[]
+  processSteps     ProcessStep[]     @relation("OrderToProcessStep")
+  transportSystems TransportSystem[] @relation("OrderToTransportSystem")
+
+  startedAt     DateTime?
+  startedTick   Int?
+  completedTick Int?
+  completedAt   DateTime?
+  canceledAt    DateTime?
+}

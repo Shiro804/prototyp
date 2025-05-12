@@ -262,12 +262,6 @@ async function main() {
                   value: 0,
                   sensorDelay: 1,
                 },
-                {
-                  name: "GoodsEntryPoint-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
-                },
               ],
             },
           },
@@ -311,12 +305,6 @@ async function main() {
                   value: 0,
                   sensorDelay: 1,
                 },
-                {
-                  name: "CoversEntryPoint-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
-                },
               ],
             },
           },
@@ -337,12 +325,6 @@ async function main() {
                   type: "scanner",
                   value: 0,
                   sensorDelay: 1,
-                },
-                {
-                  name: "Shipping-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
                 },
               ],
             },
@@ -376,12 +358,6 @@ async function main() {
                   value: 0,
                   sensorDelay: 1,
                 },
-                {
-                  name: "StorageRack-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
-                },
               ],
             },
           },
@@ -404,6 +380,16 @@ async function main() {
             inputSpeed: 2,
             outputSpeed: 2,
             inventory: { create: { type: "processStep", limit: 20 } },
+            sensors: {
+              create: [
+                {
+                  name: "Pre-Assembly Storage-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
           {
             name: "Pre-Assembly Seat Worker",
@@ -412,6 +398,16 @@ async function main() {
             duration: 5,
             recipe: { connect: { id: preAssemblyRecipeSeat.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "Pre-Assembly Seat Worker-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
           {
             name: "Pre-Assembly Backrest Worker",
@@ -420,12 +416,32 @@ async function main() {
             duration: 5,
             recipe: { connect: { id: preAssemblyRecipeBackrest.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "Pre-Assembly Backrest Worker-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
           {
             name: "Upholstery Storage",
             inputSpeed: 2,
             outputSpeed: 2,
             inventory: { create: { type: "processStep", limit: 20 } },
+            sensors: {
+              create: [
+                {
+                  name: "Upholstery Storage-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
           {
             name: "Upholstery - Seat Worker",
@@ -434,6 +450,16 @@ async function main() {
             duration: 5,
             recipe: { connect: { id: upholsterySeatRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "Upholstery - Seat Worker-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
           {
             name: "Upholstery - Backrest Worker",
@@ -442,6 +468,16 @@ async function main() {
             duration: 5,
             recipe: { connect: { id: upholsteryBackrestRecipe.id } },
             inventory: { create: { type: "processStep", limit: 10 } },
+            sensors: {
+              create: [
+                {
+                  name: "Upholstery - Backrest Worker-scanner",
+                  type: "scanner",
+                  value: 0,
+                  sensorDelay: 1,
+                },
+              ],
+            },
           },
         ],
       },
@@ -469,12 +505,6 @@ async function main() {
                   value: 0,
                   sensorDelay: 1,
                 },
-                {
-                  name: "Assembly-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
-                },
               ],
             },
           },
@@ -490,12 +520,6 @@ async function main() {
                   type: "scanner",
                   value: 0,
                   sensorDelay: 1,
-                },
-                {
-                  name: "EndOfLineCheck-counter",
-                  type: "counter",
-                  value: 0,
-                  sensorDelay: 0,
                 },
               ],
             },

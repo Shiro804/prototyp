@@ -1,22 +1,23 @@
-generator client {
-    provider = "prisma-client-js"
-}
-
 generator zod {
     provider = "zod-prisma-types"
 }
 
 datasource db {
     provider = "sqlite"
-    url      = "file:./dev.db"
+    url      = "file:./mock.db"
+}
+
+generator client {
+    provider = "prisma-client-js"
 }
 
 model SimulationRecord {
-    id        Int         @id @default(autoincrement())
-    createdAt DateTime    @default(now())
-    updatedAt DateTime    @updatedAt
-    name      String
-    kpis      KpiRecord[]
+    id          Int                @id @default(autoincrement())
+    createdAt   DateTime           @default(now())
+    updatedAt   DateTime           @updatedAt
+    name        String
+    kpis        KpiRecord[]
+    bottlenecks BottleneckRecord[]
 }
 
 model KpiRecord {
@@ -26,6 +27,16 @@ model KpiRecord {
     key          String
     value        Float
     name         String?
+    simulationId Int
+    simulation   SimulationRecord @relation(fields: [simulationId], references: [id])
+}
+
+model BottleneckRecord {
+    id           Int              @id @default(autoincrement())
+    createdAt    DateTime         @default(now())
+    updatedAt    DateTime         @updatedAt
+    tick         Int
+    name         String
     simulationId Int
     simulation   SimulationRecord @relation(fields: [simulationId], references: [id])
 }

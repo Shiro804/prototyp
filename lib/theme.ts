@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  Accordion,
   Button,
   createTheme,
   darken,
   lighten,
+  NumberInput,
   Paper,
   Title,
 } from "@mantine/core";
@@ -29,8 +31,38 @@ export const theme = createTheme({
       },
     }),
     Paper: Paper.extend({
+      defaultProps: { c: "white" },
+      styles: () => ({
+        root: {
+          "--mrt-base-background-color": BG_COLOR,
+          "--mrt-row-hover-background-color": lighten(BG_COLOR, 0.1),
+        },
+      }),
+    }),
+    Accordion: Accordion.extend({
       styles: (prev) => ({
-        root: {},
+        item: {
+          backgroundColor: BG_COLOR,
+          border: "1px solid #4d93ff",
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
+        control: {
+          backgroundColor: BG_COLOR,
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
+        panel: {
+          backgroundColor: BG_COLOR,
+          color: "white",
+          "&[data-active]": {
+            backgroundColor: darken(BG_COLOR, 0.1),
+          },
+        },
       }),
     }),
   },

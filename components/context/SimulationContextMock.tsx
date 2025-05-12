@@ -3,7 +3,7 @@
 import React, { createContext, useContext, FC } from "react";
 import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCore";
-import { Resource } from "@prisma/client";
+import { Resource, ProcessStep, TransportSystem } from "@prisma/client";
 
 /**
  * Extended Interface for Mock Simulation State
@@ -12,6 +12,38 @@ export interface SimulationStateMock extends SimulationCoreState {
   toggleTransportSystem: (tsId: number) => void;
   toggleProcessStep: (psId: number) => void;
   toggleResource: (res: Resource) => void;
+
+  updateProcessStep: (
+    psId: number,
+    data: {
+      errorRate?: number;
+      outputSpeed?: number;
+      inputSpeed?: number;
+      recipeRate?: number;
+      duration?: number;
+      active?: boolean;
+      inventoryLimit?: number; // custom
+    }
+  ) => void;
+
+  updateTransportSystem: (
+    tsId: number,
+    data: {
+      inputSpeed?: number;
+      outputSpeed?: number;
+      active?: boolean;
+      minQuantity?: number;
+      transportDelay?: number;
+    }
+  ) => void;
+
+  updateResource: (
+    resId: number,
+    data: {
+      faultyRate?: number;
+      active?: boolean;
+    }
+  ) => void;
 }
 
 /**
@@ -35,76 +67,152 @@ export const SimulationContextMock = createContext<SimulationStateMock>({
   toggleProcessStep: () => { },
   toggleTransportSystem: () => { },
   toggleResource: () => { },
+  updateProcessStep: () => { },
+  updateTransportSystem: () => { },
+  updateResource: () => { },
 });
 
 /**
  * Provider Component for Mock Simulation Context
  */
-export const SimulationProviderMock: FC<{ children: React.ReactNode }> = ({ children }) => {
-  const core = useSimulationCore(1); // Initialize with default speed
+export const SimulationProviderMock: FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const core = useSimulationCore(1); // Initialize with default speed = 1
 
   /**
-   * Toggle the active state of a transport system.
+   * Toggle the active state of a TransportSystem.
    */
   const toggleTransportSystem = (tsId: number) => {
     if (!core.simInstance) return;
 
-    // Toggle in the Simulation (also discards future frames)
     core.simInstance.toggleTransportSystem(tsId);
 
-    // Retrieve the updated SimulationRun
     const newRun = core.simInstance.getSimulationRun();
     core.setSimulation(newRun);
 
-    // If the current frame index is now out of bounds (e.g., future frames discarded),
-    // set it to the last available frame
     if (core.frame >= newRun.frames.length) {
       core.setFrame(newRun.frames.length - 1);
     }
   };
 
   /**
-   * Toggle the active state of a transport system.
+   * Toggle the active state of a ProcessStep.
    */
   const toggleProcessStep = (psId: number) => {
     if (!core.simInstance) return;
 
-    // Toggle in the Simulation (also discards future frames)
     core.simInstance.toggleProcessStep(psId);
 
-    // Retrieve the updated SimulationRun
     const newRun = core.simInstance.getSimulationRun();
     core.setSimulation(newRun);
 
-    // If the current frame index is now out of bounds (e.g., future frames discarded),
-    // set it to the last available frame
     if (core.frame >= newRun.frames.length) {
       core.setFrame(newRun.frames.length - 1);
     }
   };
 
   /**
-   * Toggle the active state of a transport system.
+   * Toggle the active state of a Resource (machine/worker).
    */
   const toggleResource = (res: Resource) => {
     if (!core.simInstance) return;
 
-    // Toggle in the Simulation (also discards future frames)
     core.simInstance.toggleResource(res);
 
-    // Retrieve the updated SimulationRun
     const newRun = core.simInstance.getSimulationRun();
     core.setSimulation(newRun);
 
-    // If the current frame index is now out of bounds (e.g., future frames discarded),
-    // set it to the last available frame
+    if (core.frame >= newRun.frames.length) {
+      core.setFrame(newRun.frames.length - 1);
+    }
+  };
+
+  /**
+   * Update various fields of a ProcessStep in-memory.
+   */
+  const updateProcessStep = (
+    psId: number,
+    data: {
+      errorRate?: number;
+      outputSpeed?: number;
+      inputSpeed?: number;
+      recipeRate?: number;
+      duration?: number;
+      active?: boolean;
+      inventoryLimit?: number;
+    }
+  ) => {
+    if (!core.simInstance) return;
+
+    core.simInstance.updateProcessStep(psId, data);
+
+    const newRun = core.simInstance.getSimulationRun();
+    core.setSimulation(newRun);
+
+    if (core.frame >= newRun.frames.length) {
+      core.setFrame(newRun.frames.length - 1);
+    }
+  };
+
+  /**
+   * Update various fields of a TransportSystem in-memory.
+   */
+  const updateTransportSystem = (
+    tsId: number,
+    data: {
+      inputSpeed?: number;
+      outputSpeed?: number;
+      active?: boolean;
+      minQuantity?: number;
+      transportDelay?: number;
+    }
+  ) => {
+    if (!core.simInstance) return;
+
+    core.simInstance.updateTransportSystem(tsId, data);
+
+    const newRun = core.simInstance.getSimulationRun();
+    core.setSimulation(newRun);
+
+    if (core.frame >= newRun.frames.length) {
+      core.setFrame(newRun.frames.length - 1);
+    }
+  };
+
+  /**
+   * Update various fields of a Resource in-memory.
+   */
+  const updateResource = (
+    resId: number,
+    data: {
+      faultyRate?: number;
+    }
+  ) => {
+    if (!core.simInstance) return;
+
+    core.simInstance.updateResource(resId, data);
+
+    const newRun = core.simInstance.getSimulationRun();
+    core.setSimulation(newRun);
+
     if (core.frame >= newRun.frames.length) {
       core.setFrame(newRun.frames.length - 1);
     }
   };
 
   return (
-    <SimulationContextMock.Provider value={{ ...core, toggleProcessStep, toggleTransportSystem, toggleResource }}>
+    <SimulationContextMock.Provider
+      value={{
+        ...core,
+        toggleProcessStep,
+        toggleTransportSystem,
+        toggleResource,
+        updateProcessStep,
+        updateTransportSystem,
+        updateResource,
+      }}
+    >
       {children}
     </SimulationContextMock.Provider>
   );
