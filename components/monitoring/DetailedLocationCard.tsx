@@ -4,7 +4,6 @@
 import React, { FC } from "react";
 import {
     Accordion,
-    Box,
     Button,
     Divider,
     Flex,
@@ -19,8 +18,6 @@ import { LocationFull, SensorFull, TransportSystemFull } from "@/lib/simulation/
 import {
     InventoryEntry,
     LogEntry,
-    ProcessStep,
-    Sensor,
 } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
 // We now import our universal table

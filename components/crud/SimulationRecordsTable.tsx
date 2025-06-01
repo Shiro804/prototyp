@@ -109,11 +109,6 @@ export function SimulationRecordsTable({
         enablePagination: false,
         enableBottomToolbar: false,
         getRowId: (row) => row.id.toString(),
-        // mantineTableContainerProps: {
-        //   style: {
-        //     minHeight: "500px",
-        //   },
-        // },
         onCreatingRowCancel: () => resetValidationErrors(),
         onCreatingRowSave: handleCreate,
         onEditingRowCancel: () => resetValidationErrors(),
@@ -150,12 +145,6 @@ export function SimulationRecordsTable({
                 <IconPlus />
             </ActionIcon>
         ),
-        // state: {
-        //   isLoading: isLoadingUsers,
-        //   isSaving: isCreatingUser || isUpdatingUser || isDeletingUser,
-        //   showAlertBanner: isLoadingUsersError,
-        //   showProgressBars: isFetchingUsers,
-        // },
     });
 
     return <MantineReactTable table={table} />;

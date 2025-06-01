@@ -4,15 +4,23 @@
 
 import React from "react";
 import { Flex, SimpleGrid, Text, Title } from "@mantine/core";
-import { SimulationEntityState, SimulationRun } from "@/lib/simulation/Simulation";
 import { KPIs } from "../hooks/useKPIs";
 import { KPIItem } from "./KPIItem";
 
+// Interface defining the structure for transport type statistics
 interface TransportTypeStats {
     durations: number[];
     average: number;
 }
 
+/**
+ * KPIsOverview Component
+ * Displays a comprehensive dashboard of Key Performance Indicators (KPIs) for a manufacturing/assembly system.
+ * The component is divided into three main sections:
+ * 1. General KPIs
+ * 2. Transport Systems metrics
+ * 3. Process Steps information
+ */
 export const KPIsOverview: React.FC<KPIs> = ({
     pendingCount,
     inProgressCount,
@@ -28,22 +36,22 @@ export const KPIsOverview: React.FC<KPIs> = ({
     transportSystemCounts,
     totalTransportSystems,
     processStepDurationsAverages
-    // transportSystemAverages, // new
-    // allTransportTypes,
 }) => {
-
-
 
     return (
         <>
+            {/* Section 1: General KPIs display */}
             <Title order={4}>
                 General KPIs
             </Title>
             <SimpleGrid cols={4} spacing="md" mb="xl">
+                {/* Basic order status metrics */}
                 <KPIItem label="Pending Orders" value={pendingCount} tooltip="Amount of pending orders within the simulation. An order is pending when no material of this order has been moved yet." />
                 <KPIItem label="Running Orders" value={inProgressCount} tooltip="Amount of running orders within the simulation. An order is running when it's in progress (atleast one material of this order has already been moved)." />
                 <KPIItem label="Completed Orders" value={completedCount} tooltip="Amount of completed orders within the simulation." />
                 <KPIItem label="Open Assemblies" value={openAssemblies} tooltip="Amount of completed seats being left to fulfill 100% of the orders." />
+
+                {/* Performance metrics */}
                 <KPIItem label="Completed Seats" value={completedSeatsCount} tooltip="Amount of completed seats already assembled." />
                 <KPIItem
                     label="⌀ Processing Time (Min.)"
@@ -62,10 +70,12 @@ export const KPIsOverview: React.FC<KPIs> = ({
                 />
             </SimpleGrid>
 
+            {/* Section 2: Transport Systems metrics */}
             <Title order={4} fw="bold" mt="xl" mb="md">
                 Transport Systems
             </Title>
             <SimpleGrid cols={5} spacing="md">
+                {/* Display total transport systems with breakdown */}
                 <KPIItem label="Transport Systems" value={totalTransportSystems} tooltip={
                     <Flex direction={"column"}>
                         {Object.keys(transportSystemCounts).map(e => {
@@ -78,9 +88,10 @@ export const KPIsOverview: React.FC<KPIs> = ({
                     </Flex>
                 }>
                 </KPIItem>
+                {/* Display average duration for each transport type */}
                 {Object.entries(transportTypeDurations).map(([tsType, stats]) => {
                     const avgTicks = stats.average;
-                    const avgMins = avgTicks / 60; // if you want to convert ticks -> minutes
+                    const avgMins = avgTicks / 60; // Convert ticks to minutes
                     return (
                         <>
                             <KPIItem
@@ -94,6 +105,7 @@ export const KPIsOverview: React.FC<KPIs> = ({
                 })}
             </SimpleGrid>
 
+            {/* Section 3: ProcessStep metrics */}
             <Title order={4} fw="bold" mt="xl" mb="md">
                 Process Steps
             </Title>

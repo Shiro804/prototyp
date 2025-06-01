@@ -7,8 +7,6 @@ import {
     Text,
     Button,
     SimpleGrid,
-    darken,
-    lighten,
 } from "@mantine/core";
 import { Order } from "@prisma/client";
 
@@ -65,7 +63,7 @@ export function Monitoring({ mode }: MonitoringProps) {
         );
     }
 
-    
+
 
     return (
         <>

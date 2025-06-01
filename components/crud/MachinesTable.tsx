@@ -93,11 +93,6 @@ export function MachinesTable({
     enablePagination: false,
     enableBottomToolbar: false,
     getRowId: (row) => row.id.toString(),
-    // mantineTableContainerProps: {
-    //   style: {
-    //     minHeight: "500px",
-    //   },
-    // },
     onCreatingRowCancel: () => resetValidationErrors(),
     onCreatingRowSave: handleCreate,
     onEditingRowCancel: () => resetValidationErrors(),
@@ -134,12 +129,6 @@ export function MachinesTable({
         <IconPlus />
       </ActionIcon>
     ),
-    // state: {
-    //   isLoading: isLoadingUsers,
-    //   isSaving: isCreatingUser || isUpdatingUser || isDeletingUser,
-    //   showAlertBanner: isLoadingUsersError,
-    //   showProgressBars: isFetchingUsers,
-    // },
   });
 
   return <MantineReactTable table={table} />;

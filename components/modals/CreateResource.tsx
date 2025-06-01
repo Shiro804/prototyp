@@ -7,7 +7,7 @@ import { Resource } from "@prisma/client";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 
 import { CreateModalProps } from "./CreateModal";
-import { useSubmit } from "./SubmitHook";
+import { useSubmit } from "../hooks/useSubmit";
 
 export function CreateResourceModal({
     onSubmit,

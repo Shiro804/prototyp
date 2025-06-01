@@ -159,12 +159,6 @@ export function LocationsTable({
         <IconPlus />
       </ActionIcon>
     ),
-    // state: {
-    //   isLoading: isLoadingUsers,
-    //   isSaving: isCreatingUser || isUpdatingUser || isDeletingUser,
-    //   showAlertBanner: isLoadingUsersError,
-    //   showProgressBars: isFetchingUsers,
-    // },
   });
 
   return <MantineReactTable table={table} />;

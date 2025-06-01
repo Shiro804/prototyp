@@ -6,13 +6,12 @@ import {
     Button,
     Flex,
     NumberInput,
-    Switch,
     Text,
     Divider,
     Tooltip,
 } from "@mantine/core";
 import { useSimulationMock } from "../context/SimulationContextMock";
-import { IconCheck, IconPlayerPause, IconX, IconInfoCircle } from "@tabler/icons-react";
+import { IconPlayerPause, IconInfoCircle } from "@tabler/icons-react";
 import {
     ProcessStep as ProcessStepModel,
     TransportSystem as TransportSystemModel,

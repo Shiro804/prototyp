@@ -1,11 +1,8 @@
 // app/kpis/hooks/useKPIs.ts
 
 import { useMemo } from "react";
-import { Order, InventoryEntry, ProcessStep } from "@prisma/client";
-import {
-  SimulationRun,
-  SimulationFrame,
-} from "@/lib/simulation/Simulation";
+import { Order } from "@prisma/client";
+import { SimulationRun } from "@/lib/simulation/Simulation";
 
 // Our external KPI interface
 export interface KPIs {
@@ -57,8 +54,9 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
   const inProgressCount = useMemo(
     () =>
       simulation
-        ? simulation.frames[frame].orders.filter((o) => o.status === "in_progress")
-            .length
+        ? simulation.frames[frame].orders.filter(
+            (o) => o.status === "in_progress"
+          ).length
         : 0,
     [simulation, frame]
   );
@@ -66,8 +64,9 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
   const completedCount = useMemo(
     () =>
       simulation
-        ? simulation.frames[frame].orders.filter((o) => o.status === "completed")
-            .length
+        ? simulation.frames[frame].orders.filter(
+            (o) => o.status === "completed"
+          ).length
         : 0,
     [simulation, frame]
   );
@@ -214,7 +213,8 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
 
   // numberOfProcessSteps + processStepNames
   const { numberOfProcessSteps, processStepNames } = useMemo(() => {
-    if (!simulation) return { numberOfProcessSteps: 0, processStepNames: new Map() };
+    if (!simulation)
+      return { numberOfProcessSteps: 0, processStepNames: new Map() };
     let countPS = 0;
     let names: Map<number, string> = new Map();
     const fr = simulation.frames[frame];
@@ -232,7 +232,8 @@ export const useKPIs = ({ simulation, frame, speed }: UseKPIsProps): KPIs => {
 
   // TS counts
   const { transportSystemCounts, totalTransportSystems } = useMemo(() => {
-    if (!simulation) return { transportSystemCounts: {}, totalTransportSystems: 0 };
+    if (!simulation)
+      return { transportSystemCounts: {}, totalTransportSystems: 0 };
     const aggregator: Record<string, Set<number>> = {};
     const fr = simulation.frames[frame];
     for (const loc of fr.state.locations) {

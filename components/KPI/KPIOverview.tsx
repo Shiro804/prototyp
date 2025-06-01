@@ -1,24 +1,15 @@
-// app/kpis/page.tsx
 "use client";
 
 import React, { useState } from "react";
 import {
     Title,
-    SimpleGrid,
     Text,
-    Paper,
-    Badge,
-    Flex,
     Select,
-    Button,
-    Tooltip,
 } from "@mantine/core";
 import { useSimulationLive } from "@/components/context/SimulationContextLive";
 import { Order } from "@prisma/client";
-import { IconInfoCircleFilled } from "@tabler/icons-react";
 import { useKPIs } from "@/components/hooks/useKPIs";
 import { useSimulationMock } from "../context/SimulationContextMock";
-import { useTransportTypes } from "../hooks/useTransportTypes";
 import { OrdersList } from "../custom/OrderList";
 import { KPIsOverview } from "./KPIsOverview";
 import { DetailedKPICard } from "./DetailedKPICard";
@@ -78,22 +69,6 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
         processStepDurationsAverages
     } = useKPIs({ simulation, frame, speed });
 
-    // Helper to determine background color for an Order based on status
-    const getStatusColor = (status: string): string => {
-        switch (status) {
-            case "completed":
-                return "#2ECC40";
-            case "pending":
-                return "#9B59B6";
-            case "in_progress":
-                return "#5300E8";
-            default:
-                return "#95A5A6";
-        }
-    };
-
-    const allTypes = useTransportTypes(simulation)
-
     return (
         <>
             <Title order={2} mb="md">
@@ -125,8 +100,6 @@ export default function KPIOverview({ mode }: KPIOverviewProps) {
                 transportSystemCounts={transportSystemCounts}
                 totalTransportSystems={totalTransportSystems}
                 processStepDurationsAverages={processStepDurationsAverages}
-            // transportSystemAverages={transportSystemAverages}
-            // allTransportTypes={allTypes}
             />
 
 

@@ -3,7 +3,7 @@
 import React from "react";
 import { Button, Flex, Paper, Text, Tooltip } from "@mantine/core";
 import { IconInfoCircleFilled, IconArrowUp, IconArrowDown } from "@tabler/icons-react";
-import { BG_COLOR, PRIMARY, SECONDARY } from "@/lib/theme";
+import { BG_COLOR, PRIMARY } from "@/lib/theme";
 
 interface KPIItemProps {
   label: string;
@@ -87,13 +87,12 @@ export const KPIItem: React.FC<KPIItemProps> = ({
     <Paper
       shadow="xl"
       p={kpiOverviewPaperPadding}
+      bg={bg ?? BG_COLOR}
+      bd={`3px solid ${PRIMARY}`}
       style={{
         color: "white",
         minHeight: kpiOverviewPaperHeight,
       }}
-      // Use the optional 'bg' if provided; otherwise BG_COLOR
-      bg={bg ?? BG_COLOR}
-      bd={`3px solid ${PRIMARY}`}
     >
       <Flex justify={"space-between"} align={"center"}>
         <Text fw="bold">{label}</Text>

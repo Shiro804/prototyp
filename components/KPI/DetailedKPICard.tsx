@@ -2,10 +2,8 @@
 "use client";
 
 import React, { FC, useEffect } from "react";
-import { Paper, Text, Flex, SimpleGrid, Divider, Box, Title, MantineStyleProp, StyleProp, Tooltip } from "@mantine/core";
-import GaugeChart from "react-gauge-chart";
+import { Paper, Text, Flex, SimpleGrid, Divider, Box, Title, Tooltip } from "@mantine/core";
 import { LocationFull } from "@/lib/simulation/Simulation";
-import { ProcessStep } from "@prisma/client";
 import { GaugeSection } from "../custom/GaugeSection";
 import { getTransportSystemsForProcessStep } from "../helpers";
 import { IconInfoCircle, IconInfoCircleFilled } from "@tabler/icons-react";

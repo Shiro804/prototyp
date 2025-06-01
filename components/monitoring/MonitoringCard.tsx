@@ -7,7 +7,6 @@ import {
     Text,
     Button,
     Switch,
-    Divider,
 } from "@mantine/core";
 import { LocationFull } from "@/lib/simulation/Simulation";
 import { groupInventory } from "@/components/helpers";

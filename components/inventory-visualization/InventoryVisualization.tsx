@@ -1,6 +1,6 @@
 "use client";
 
-import { InventoryEntryWithDelay, LocationFull } from "@/lib/simulation/Simulation";
+import { InventoryEntryWithDelay } from "@/lib/simulation/Simulation";
 import { Box, Flex, Paper, Select, SimpleGrid, Text } from "@mantine/core";
 import { FC, useState } from "react";
 import { GaugeSection } from "../custom/GaugeSection";

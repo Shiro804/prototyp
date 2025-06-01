@@ -23,7 +23,7 @@ import { FunctionComponent, useState } from "react";
 import { useSimulationMock } from "../context/SimulationContextMock";
 import AdjustSimulationParams from "../modals/AdjustSimulationParamsModal";
 import { useKPIs } from "@/components/hooks/useKPIs";
-import { BG_COLOR, PRIMARY } from "@/lib/theme";
+import { PRIMARY } from "@/lib/theme";
 
 const SimulationControlOverlay: FunctionComponent = () => {
   const {

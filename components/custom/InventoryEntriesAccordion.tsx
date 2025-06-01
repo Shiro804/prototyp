@@ -2,7 +2,7 @@ import { Accordion, Table } from "@mantine/core";
 
 interface InventoryEntry {
   id: number;
-  addedAt: Date; // <--
+  addedAt: Date;
   material: string;
   inventoryId: number;
 }
@@ -14,7 +14,7 @@ interface InventoryEntriesAccordionProps {
 export function InventoryEntriesAccordion({
   entries,
 }: InventoryEntriesAccordionProps) {
-  // 1) Wir gruppieren die Einträge nach 'material'
+  // 1) We group the entries by 'material'
   const groupedByMaterial = entries.reduce<Record<string, InventoryEntry[]>>(
     (acc, entry) => {
       if (!acc[entry.material]) {
@@ -29,7 +29,7 @@ export function InventoryEntriesAccordion({
   // 2) Sort the keys (material names) alphabetically
   const sortedMaterials = Object.keys(groupedByMaterial).sort();
 
-  // 2) Wir bauen ein Accordion auf, in dem jedes Material sein eigenes Panel hat
+  // 2) We build an accordion where each material has its own panel
   return (
     <Accordion multiple variant="separated">
       {sortedMaterials.map((material, materialEntries) => (
@@ -38,7 +38,7 @@ export function InventoryEntriesAccordion({
             {material} ({groupedByMaterial[material].length})
           </Accordion.Control>
           <Accordion.Panel>
-            {/* Beispiel: Tabelle mit den Einträgen dieses Materials */}
+            {/* Example: Table with entries for this material */}
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>

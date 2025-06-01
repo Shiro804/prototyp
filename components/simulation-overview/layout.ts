@@ -4,17 +4,27 @@ import ELK from "elkjs/lib/elk.bundled.js";
 import { useEffect } from "react";
 import { NodeType } from "./nodes";
 
+// Interface defining layout direction options for the graph
 export interface LayoutOptions {
   direction: "DOWN" | "RIGHT";
 }
 
+// Interface defining the structure of a laid out graph with nodes and edges
 export interface LayoutedGraph<N extends Node = Node, E extends Edge = Edge> {
   nodes: N[];
   edges: E[];
 }
 
+// Initialize ELK layout engine instance
 const elk = new ELK();
 
+/**
+ * Calculates the layout for a graph using ELK layout engine
+ * @param nodes Array of graph nodes
+ * @param edges Array of graph edges
+ * @param options Layout options including direction
+ * @returns Promise with the calculated layout
+ */
 export async function getLayoutedElements<
   N extends Node = Node,
   E extends Edge = Edge,
@@ -23,6 +33,7 @@ export async function getLayoutedElements<
   edges: E[],
   options: LayoutOptions,
 ): Promise<LayoutedGraph<N, E>> {
+  // Configure ELK layout options
   const elkOptions: ELKOptions = {
     "elk.algorithm": "layered",
     "elk.direction": options.direction,
@@ -30,6 +41,7 @@ export async function getLayoutedElements<
     "elk.spacing.nodeNode": "80",
   };
 
+  // Prepare graph structure for ELK
   const graph: ElkNode = {
     id: "root",
     layoutOptions: elkOptions,
@@ -45,6 +57,7 @@ export async function getLayoutedElements<
     })),
   };
 
+  // Process layout with ELK
   let children: ElkNode[] = [];
   try {
     const result = await elk.layout(graph);
@@ -53,6 +66,7 @@ export async function getLayoutedElements<
     console.error(e);
   }
 
+  // Apply calculated positions to nodes
   return {
     nodes: nodes.map((n) => {
       const child = children.find((c) => c.id === n.id);
@@ -68,6 +82,10 @@ export async function getLayoutedElements<
   };
 }
 
+/**
+ * React hook for handling automatic layout of newly added nodes
+ * @param options Layout options including direction
+ */
 export function useLayout({ direction }: LayoutOptions) {
   const { getNodes, setNodes, getEdges, setEdges } = useReactFlow<NodeType>();
   const nodesInitialized = useNodesInitialized();
@@ -75,8 +93,10 @@ export function useLayout({ direction }: LayoutOptions) {
   useEffect(() => {
     const nodes = getNodes();
 
+    // Check for nodes that need layout (marked with '-unlayouted' suffix)
     if (nodesInitialized && nodes.some((n) => n.id.endsWith("-unlayouted"))) {
       getLayoutedElements(nodes, getEdges(), { direction }).then((g) => {
+        // Update nodes: remove '-unlayouted' suffix and set opacity to 1
         setNodes([
           ...g.nodes
             .filter((n) => n.id.endsWith("-unlayouted"))
@@ -88,6 +108,7 @@ export function useLayout({ direction }: LayoutOptions) {
               return n;
             }),
         ]);
+        // Update edges: remove '-unlayouted' suffix from IDs and endpoints
         setEdges([
           ...g.edges
             .filter((e) => e.id.endsWith("-unlayouted"))

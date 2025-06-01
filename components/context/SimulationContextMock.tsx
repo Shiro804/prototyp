@@ -1,9 +1,8 @@
 // SimulationContextMock.tsx
 
 import React, { createContext, useContext, FC } from "react";
-import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCore";
-import { Resource, ProcessStep, TransportSystem } from "@prisma/client";
+import { Resource } from "@prisma/client";
 
 /**
  * Extended Interface for Mock Simulation State

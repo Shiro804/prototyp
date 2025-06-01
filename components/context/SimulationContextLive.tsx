@@ -1,7 +1,6 @@
 // SimulationContextLive.tsx
 import { createContext, useContext, useEffect } from "react";
 import { SimulationCoreState, useSimulationCore } from "../hooks/useSimulationCore"; // Path to the shared hook
-import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 
 /**
  * Interface: Return type from the context

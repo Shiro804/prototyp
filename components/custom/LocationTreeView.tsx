@@ -9,7 +9,7 @@ interface LocationTreeViewProps {
 export function LocationTreeView({ location }: LocationTreeViewProps) {
     return (
         <Accordion multiple variant="contained">
-            {/* Allgemeine Infos zur Location */}
+            {/* General information about the location */}
             <Accordion.Item value="locationInfo">
                 <Accordion.Control>Location Info</Accordion.Control>
                 <Accordion.Panel>
@@ -33,7 +33,7 @@ export function LocationTreeView({ location }: LocationTreeViewProps) {
                                     <Text>Output Speed: {ps.outputSpeed}</Text>
                                     <Text>Recipe Rate: {ps.recipeRate}</Text>
 
-                                    {/* Beispiel: Inventar als JSON anzeigen */}
+                                    {/* Example: Display inventory as JSON */}
                                     <Accordion multiple mt="md">
                                         <Accordion.Item value={`ps-${ps.id}-inventory`}>
                                             <Accordion.Control>
@@ -45,7 +45,7 @@ export function LocationTreeView({ location }: LocationTreeViewProps) {
                                         </Accordion.Item>
                                     </Accordion>
 
-                                    {/* Falls du Ressourcen / Worker / Maschinen hast */}
+                                    {/* If you have resources / workers / machines */}
                                     {ps.resources.length > 0 && (
                                         <Accordion multiple mt="md">
                                             <Accordion.Item value={`ps-${ps.id}-resources`}>
@@ -65,8 +65,8 @@ export function LocationTreeView({ location }: LocationTreeViewProps) {
                 </Accordion.Panel>
             </Accordion.Item>
 
-            {/* Wenn du an anderer Stelle mehr Daten hast, kannst du analog weitere Accordion-Items anlegen */}
-            {/* z.B. "location.resources" oder "transportSystems" etc. */}
+            {/* If you have more data elsewhere, you can add more accordion items similarly */}
+            {/* e.g., "location.resources" or "transportSystems" etc. */}
         </Accordion>
     );
 }
