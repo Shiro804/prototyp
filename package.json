@@ -11,7 +11,7 @@
     "seed": "tsx data/seed.ts",
     "seed2": "tsx data/seed2.ts",
     "resetandseed": "npx prisma db push --force-reset && npx prisma migrate dev --name init && npx prisma generate && npm run seed && npm run dev",
-    "resetandseed2": "npx prisma db push --force-reset --schema=prisma/schema2.prisma && npx prisma migrate dev --name init --schema=prisma/schema2.prisma && npx prisma generate --schema=prisma/schema2.prisma && npm run seed2 && npm run dev",
+    "resetandseed2": "npx prisma db push --force-reset --schema=prisma/schema2.prisma && npx prisma migrate dev --name init --schema=prisma/schema2.prisma && npx prisma generate --schema=prisma/schema2.prisma && npm run seed2",
     "migrate": "npx prisma migrate dev --name init"
   },
   "dependencies": {
