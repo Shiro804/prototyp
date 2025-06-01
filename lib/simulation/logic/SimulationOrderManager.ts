@@ -4,7 +4,17 @@ import { Order } from "@prisma/client";
 import { SimulationEntityState, InventoryEntryWithDelay } from "../Simulation";
 import { handleNotification } from "@/app/notification-settings/page";
 
+/**
+ * Manages the lifecycle of orders within the simulation, including material reservation,
+ * order completion tracking, and relationship management between orders and process steps.
+ */
 export class SimulationOrderManager {
+  /**
+   * Processes pending orders by attempting to reserve required materials.
+   * @param orders Array of orders to process
+   * @param state Current state of the simulation
+   * @param notificationsEnabled Flag to control notification display
+   */
   public static handleOrders(
     orders: (Order & { materialsReserved?: boolean })[],
     state: SimulationEntityState,
@@ -38,6 +48,12 @@ export class SimulationOrderManager {
     }
   }
 
+  /**
+   * Determines the list of materials required for a given order.
+   * Returns a list of standard components needed for seat manufacturing.
+   * @param order The order to analyze
+   * @returns Array of required materials or null if order quantity is invalid
+   */
   private static getRequiredMaterialsForOrder(
     order: Order & { materialsReserved?: boolean }
   ): { material: string }[] | null {
@@ -56,6 +72,15 @@ export class SimulationOrderManager {
     return baseMaterials.map((m) => ({ material: m }));
   }
 
+  /**
+   * Attempts to reserve materials for an order across all locations.
+   * If insufficient materials are available, reverts any partial reservations.
+   * @param order The order requiring materials
+   * @param materials List of materials to reserve
+   * @param state Current simulation state
+   * @param notificationsEnabled Flag to control notifications
+   * @returns boolean indicating if reservation was successful
+   */
   private static reserveMaterialsForOrder(
     order: Order & { materialsReserved?: boolean },
     materials: { material: string }[],
@@ -97,6 +122,14 @@ export class SimulationOrderManager {
     return allOk;
   }
 
+  /**
+   * Checks if orders can be marked as completed based on completed seats in shipping.
+   * Updates order status and timestamps when completion criteria are met.
+   * @param orders List of orders to check
+   * @param state Current simulation state
+   * @param currentTick Current simulation tick
+   * @param notificationsEnabled Flag to control notifications
+   */
   public static checkAndCompleteOrders(
     orders: (Order & { materialsReserved?: boolean })[],
     state: SimulationEntityState,
@@ -135,10 +168,21 @@ export class SimulationOrderManager {
     }
   }
 
+  /**
+   * Checks if a material represents a completed seat
+   * @param material Material to check
+   * @returns boolean indicating if the material is a completed seat
+   */
   private static isSeatCompleted(material: string): boolean {
     return material === "Complete Seat";
   }
 
+  /**
+   * Updates the relationships between orders and process steps/transport systems.
+   * Maintains bidirectional references between orders and their associated components.
+   * @param orders List of orders to update relationships for
+   * @param state Current simulation state
+   */
   public static updateOrderRelationships(
     orders: (Order & { materialsReserved?: boolean })[],
     state: SimulationEntityState

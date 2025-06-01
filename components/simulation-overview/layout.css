@@ -69,7 +69,7 @@
   border: 2px solid var(--mantine-color-red-3);
   min-width: 80px;
   text-align: center;
-
+  color: var(--mantine-color-gray-9);
   display: flex;
   justify-content: center;
   align-items: center;

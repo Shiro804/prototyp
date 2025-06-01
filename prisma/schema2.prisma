@@ -9,7 +9,7 @@ datasource db2 {
 
 generator client2 {
     provider = "prisma-client-js"
-    output   = "./client/client2"
+    output   = "./client2"
 }
 
 model SimulationRecord {

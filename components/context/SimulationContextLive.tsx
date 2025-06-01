@@ -32,7 +32,7 @@ export const SimulationContextLive = createContext<SimulationStateLive>({
  * Provider Component for Live Simulation Context
  */
 export function SimulationProviderLive({ children }: { children: React.ReactNode }) {
-    const core = useSimulationCore(5); // Initialize with default speed
+    const core = useSimulationCore(10); // Initialize with default speed
 
     useEffect(() => {
         core.load(1)

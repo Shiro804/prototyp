@@ -10,6 +10,10 @@ export interface StatCardProps<T extends ReactNode> {
   width?: string;
 }
 
+/**
+ * Reusable statistical display card component with loading state support
+ * Supports any ReactNode as value content (text, numbers, charts, etc.)
+ */
 export function StatCard<T extends ReactNode>({
   title,
   skeletonOnUndefinedValue = true,
@@ -24,6 +28,7 @@ export function StatCard<T extends ReactNode>({
         <Text fw={600} c="black">{title}</Text>
         {icon}
       </Group>
+      {/* Conditional skeleton loading: shows loading state when value is undefined, unless explicitly disabled */}
       {skeletonOnUndefinedValue && value === undefined ? (
         <Skeleton />
       ) : (

@@ -16,14 +16,12 @@ import {
   IconAddressBook,
   IconArrowBadgeRight,
   IconBaselineDensityLarge,
-  IconBaselineDensitySmall,
   IconBell,
   IconBrandSteam,
   IconBuildingFactory2,
   IconChartInfographic,
   IconDeviceDesktopAnalytics,
   IconGraph,
-  IconHome,
   IconLogs,
   IconSettings,
   IconTruck,
@@ -32,7 +30,6 @@ import { ExoticComponent, ReactNode, useEffect } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Logo } from "./Logo";
 
 import SimulationControlOverlay from "./SimulationControlOverlay/SimulationControlOverlay";
 import { SimulationProviderMock, useSimulationMock } from "./context/SimulationContextMock";
@@ -44,20 +41,19 @@ interface LinkDescription {
   href: string;
 }
 
+// Navigation structure: Live monitoring links for real-time data
 const overviewLinks: LinkDescription[] = [
-  // { icon: IconHome, label: "Dashboard", href: "/" },
   { icon: IconChartInfographic, label: "KPIs", href: "/" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/monitoring" },
-  // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
+  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-live" },
 ];
 
+// Navigation structure: Mock simulation links for testing/development
 const mockSimulationLinks: LinkDescription[] = [
-  // { icon: IconHome, label: "Dashboard", href: "/mock-dashboard" },
   { icon: IconChartInfographic, label: "KPIs", href: "/kpis-mock" },
   { icon: IconDeviceDesktopAnalytics, label: "Monitoring", href: "/mock-monitoring" },
-  // { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
+  { icon: IconBaselineDensityLarge, label: "Hybrid Monitoring", href: "/general-monitoring-mock" },
 ];
-
 
 const reportsAndAnalytics: LinkDescription[] = [
   {
@@ -75,23 +71,9 @@ const reportsAndAnalytics: LinkDescription[] = [
     label: "Inventory Visualization",
     href: "/inventory-visualization",
   },
-  //   {
-  //     icon: IconChartInfographic,
-  //     label: "Operational Efficiency Reports",
-  //     href: "/placeholder1",
-  //   },
-  //   {
-  //     icon: IconReportSearch,
-  //     label: "Inventory and Stock Reports",
-  //     href: "/placeholder2",
-  //   },
-  //   {
-  //     icon: IconReportAnalytics,
-  //     label: "Quality Control & Compliance Reports",
-  //     href: "/placeholder3",
-  //   },
 ];
 
+// CRUD operations for managing system entities
 const crudLinks: LinkDescription[] = [
   { icon: IconBuildingFactory2, label: "Locations", href: "/locations" },
   { icon: IconAddressBook, label: "Resources", href: "/resources" },
@@ -111,6 +93,10 @@ const settingsLinks: LinkDescription[] = [
   },
 ];
 
+/**
+ * Navigation link component with active state management
+ * Uses Next.js router to highlight current page
+ */
 function MenuLink({ link }: { link: LinkDescription }) {
   const path = usePathname();
 
@@ -126,6 +112,10 @@ function MenuLink({ link }: { link: LinkDescription }) {
   );
 }
 
+/**
+ * Main application layout container with dual simulation context support
+ * Provides both mock and live simulation environments for development and production
+ */
 export default function MainContainer({
   children,
 }: Readonly<{
@@ -133,13 +123,13 @@ export default function MainContainer({
 }>) {
   const [opened, { toggle }] = useDisclosure();
 
-  // Initialize both simulation contexts
+  // Initialize both simulation contexts to support parallel mock/live environments
   const simulationContextMock = useSimulationMock();
   const simulationContextLive = useSimulationLive();
 
   useEffect(() => {
-    // Load both simulations if needed
-    // Assuming you want to load both Mock and Live simulations on mount
+    // Auto-load simulation ID 1 for both mock and live contexts on component mount
+    // This ensures both simulation environments are ready when the app starts
     simulationContextMock.load(1);
     simulationContextLive.load(1);
   }, []);
@@ -169,12 +159,13 @@ export default function MainContainer({
                   hiddenFrom="sm"
                   size="sm"
                 />
-                {/* <Logo /> */}
               </Group>
+              {/* Simulation control overlay provides global simulation management */}
               <SimulationControlOverlay />
             </Flex>
           </AppShell.Header>
           <AppShell.Navbar p="sm" component={ScrollArea}>
+            {/* Organized navigation sections for different functional areas */}
             <AppShell.Section my="sm">
               Live Monitoring
               {overviewLinks.map((l) => (

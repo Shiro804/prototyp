@@ -1,4 +1,3 @@
-// MonitoringCard.tsx
 import { FC, useState } from "react";
 import {
     Paper,
@@ -31,11 +30,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
     const { toggleProcessStep, toggleTransportSystem, toggleResource, playing } =
         useSimulationMock();
 
-    // We track popover states:
     const [openedPopoverId, setOpenedPopoverId] = useState<string | null>(null);
-    // The idea is: for each entity, we pass an ID like "processStep-123" or "ts-45" or "resource-99"
-    // so only one popover is open at a time. If you want multiple open, do a different approach.
-
     const handlePopoverToggle = (entityId: string) => {
         if (openedPopoverId === entityId) {
             // close it
@@ -55,6 +50,7 @@ export const MonitoringCard: FC<MonitoringCardProps> = ({
             c={"white"}
             radius={10}
         >
+            {/* COMPONENT CONTENT HERE */}
             <Flex direction="column" h="100%">
                 <Flex align="center" justify="center" direction="row" w="100%" pb={20}>
                     <Text miw="120px"></Text>

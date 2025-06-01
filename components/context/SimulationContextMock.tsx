@@ -1,13 +1,9 @@
-// SimulationContextMock.tsx
-
 import React, { createContext, useContext, FC } from "react";
 import { SimulationRun, Simulation } from "@/lib/simulation/Simulation";
 import { useSimulationCore, SimulationCoreState } from "../hooks/useSimulationCore";
 import { Resource, ProcessStep, TransportSystem } from "@prisma/client";
 
-/**
- * Extended Interface for Mock Simulation State
- */
+
 export interface SimulationStateMock extends SimulationCoreState {
   toggleTransportSystem: (tsId: number) => void;
   toggleProcessStep: (psId: number) => void;

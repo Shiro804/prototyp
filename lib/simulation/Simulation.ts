@@ -231,7 +231,7 @@ export class Simulation {
   private currentTick: number = 0;
   private currentState: SimulationEntityState;
   private isStopped: boolean = false;
-  private notificationsEnabled: boolean = false; // we set this true for demonstration
+  private notificationsEnabled: boolean = true; // we set this true for demonstration
   private initialState: SimulationEntityState;
 
   // Default Transport-System delay in ticks
@@ -580,7 +580,7 @@ export class Simulation {
         if (this.notificationsEnabled) {
           handleNotification(
             "Order Status",
-            `Order ${orderObj.id} ist jetzt in Bearbeitung (erstes Material bewegt).`,
+            `Order ${orderObj.id} is now being processed (first material moved).`,
             "info"
           );
         }
